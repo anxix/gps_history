@@ -51,12 +51,26 @@ class GpsMeasurement extends GpsPoint {
       : super(time, latitude, longitude, altitude);
 }
 
-/// Provides access to GPS poins
-abstract class GpsPointsProvider<T extends GpsPoint> {
+/// Provides read-only access to GPS poins, therefore typically acting as
+/// a view onto a read/write collection of GpsPoints.
+abstract class GpsPointsView<T extends GpsPoint> {
+  // List-likes
   int get length;
-  T operator [](index);
-  GpsPointsProvider<T> selectInBoundingBox(
-      minLatitude, minLongitude, maxLatitude, maxLongitude);
+  forEach(void f(T element));
+  T operator [](int index);
+
+  // Other
+  GpsPointsView<T> selectInBoundingBox(double minLatitude, double minLongitude,
+      double maxLatitude, double maxLongitude);
 }
 
-
+/// Provides read/write access to GPS points. Because lightweight
+/// views may be created on the data in the list, adding is the only
+/// modification operation that's allowed, as inserting or removing
+/// could lead to invalid views.
+abstract class GpsPointsCollection<T extends GpsPoint>
+    extends GpsPointsView<T> {
+  // List-like.
+  add(T element);
+  addAll(Iterable<T> iterable);
+}
