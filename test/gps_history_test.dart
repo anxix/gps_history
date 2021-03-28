@@ -13,11 +13,9 @@ void main() {
   group('Test GpsPoint', () {
     GpsPoint point = GpsPoint(DateTime.utc(2020), 10, 20, 30);
 
-    test('Check correct initialization', () {
-      expect(point.time, DateTime.utc(2020), reason: 'Wrong datetime');
-      expect(point.latitude, 10, reason: 'Wrong latitude');
-      expect(point.longitude, 20, reason: 'Wrong longitude');
-      expect(point.altitude, 30, reason: 'Wrong altitude');
-    });
+    test('Check time', () => expect(point.time, DateTime.utc(2020)));
+    test('Check latitude', () => expect(point.latitude, 10));
+    test('Check longitude', () => expect(point.longitude, 20));
+    test('Check altitude', () => expect(point.altitude, 30));
   });
 }
