@@ -1,5 +1,6 @@
-/*
- * Copyright (c) 
+/* Base classes for the GPS History functionality
+ *
+ * Copyright (c)
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this

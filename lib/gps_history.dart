@@ -11,6 +11,6 @@
 /// More dartdocs go here.
 library gps_history;
 
-export 'src/gps_history_base.dart';
+export 'src/base.dart';
 
 // TODO: Export any libraries intended for clients of this package.
