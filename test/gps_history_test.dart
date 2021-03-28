@@ -10,15 +10,14 @@ import 'package:gps_history/gps_history.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('A group of tests', () {
-    Awesome? awesome;
+  group('Test GpsPoint', () {
+    GpsPoint point = GpsPoint(DateTime.utc(2020), 10, 20, 30);
 
-    setUp(() {
-      awesome = Awesome();
-    });
-
-    test('First Test', () {
-      expect(awesome?.isAwesome, isTrue);
+    test('Check correct initialization', () {
+      expect(point.time, DateTime.utc(2020), reason: 'Wrong datetime');
+      expect(point.latitude, 10, reason: 'Wrong latitude');
+      expect(point.longitude, 20, reason: 'Wrong longitude');
+      expect(point.altitude, 30, reason: 'Wrong altitude');
     });
   });
 }
