@@ -7,6 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'package:gps_history/gps_history.dart';
+
 /// Represents a GPS location (excludes heading and accuracy
 /// information that is typically provided by GPS sensors).
 class GpsPoint {
@@ -23,6 +25,24 @@ class GpsPoint {
   final double altitude;
 
   GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
+
+  /// Equality should be tested based on values, because we may use this class
+  /// by instantiating it at runtime based on some other source. In that case,
+  /// there may be multiple distinct instances representing the same point.
+  @override
+  operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (this.runtimeType != other.runtimeType) {
+      return false;
+    }
+    return other is GpsPoint &&
+        other.time == this.time &&
+        other.latitude == this.latitude &&
+        other.longitude == this.longitude &&
+        other.altitude == this.altitude;
+  }
 }
 
 /// GPS point with additional information related to the measurement.
@@ -50,6 +70,19 @@ class GpsMeasurement extends GpsPoint {
       this.speed,
       this.speedAccuracy)
       : super(time, latitude, longitude, altitude);
+
+  @override
+  operator ==(other) {
+    var result = super == (other);
+    if (!result) {
+      return false;
+    }
+    return other is GpsMeasurement &&
+        other.accuracy == this.accuracy &&
+        other.heading == this.heading &&
+        other.speed == this.speed &&
+        other.speedAccuracy == this.speedAccuracy;
+  }
 }
 
 /// Provides read-only access to GPS poins, therefore typically acting as
