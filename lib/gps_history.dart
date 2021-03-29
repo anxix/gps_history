@@ -10,4 +10,4 @@
 library gps_history;
 
 export 'src/base.dart';
-export 'src/simple_collection.dart';
+export 'src/gpc_list_based.dart';
