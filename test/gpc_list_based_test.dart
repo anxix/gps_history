@@ -43,8 +43,7 @@ void main() {
     });
 
     test('Check AddAll', () {
-      List<GpsPoint> src = List<GpsPoint>.filled(
-          2, GpsPoint(DateTime.utc(0), 0, 0, 0),
+      var src = List<GpsPoint>.filled(2, GpsPoint(DateTime.utc(0), 0, 0, 0),
           growable: true);
 
       for (var i = 0; i < src.length; i++) {

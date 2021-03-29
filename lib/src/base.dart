@@ -7,7 +7,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/src/hash.dart';
 
 /// Represents a GPS location (excludes heading and accuracy
@@ -31,23 +30,23 @@ class GpsPoint {
   /// by instantiating it at runtime based on some other source. In that case,
   /// there may be multiple distinct instances representing the same point.
   @override
-  operator ==(other) {
+  bool operator ==(other) {
     if (identical(this, other)) {
       return true;
     }
-    if (this.runtimeType != other.runtimeType) {
+    if (runtimeType != other.runtimeType) {
       return false;
     }
     return other is GpsPoint &&
-        other.time == this.time &&
-        other.latitude == this.latitude &&
-        other.longitude == this.longitude &&
-        other.altitude == this.altitude;
+        other.time == time &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.altitude == altitude;
   }
 
   @override
   int get hashCode {
-    return hash4(this.time, this.latitude, this.longitude, this.altitude);
+    return hash4(time, latitude, longitude, altitude);
   }
 }
 
@@ -78,22 +77,21 @@ class GpsMeasurement extends GpsPoint {
       : super(time, latitude, longitude, altitude);
 
   @override
-  operator ==(other) {
+  bool operator ==(other) {
     var result = super == (other);
     if (!result) {
       return false;
     }
     return other is GpsMeasurement &&
-        other.accuracy == this.accuracy &&
-        other.heading == this.heading &&
-        other.speed == this.speed &&
-        other.speedAccuracy == this.speedAccuracy;
+        other.accuracy == accuracy &&
+        other.heading == heading &&
+        other.speed == speed &&
+        other.speedAccuracy == speedAccuracy;
   }
 
   @override
   int get hashCode {
-    return hash5(super.hashCode, this.accuracy, this.heading, this.speed,
-        this.speedAccuracy);
+    return hash5(super.hashCode, accuracy, heading, speed, speedAccuracy);
   }
 }
 
@@ -103,7 +101,7 @@ class GpsMeasurement extends GpsPoint {
 abstract class GpsPointsView<T extends GpsPoint> {
   // List-likes
   int get length;
-  forEach(void f(T element));
+  void forEach(void Function(T) element);
   T operator [](int index);
 
   // Other
@@ -119,6 +117,6 @@ abstract class GpsPointsView<T extends GpsPoint> {
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
   // List-like.
-  add(T element);
-  addAll(Iterable<T> iterable);
+  void add(T element);
+  void addAll(Iterable<T> iterable);
 }

@@ -13,7 +13,7 @@ typedef PointConstructor = GpsPoint Function(
 
 /// Perform basic point tests. The makePoint function should be optimized to
 /// create a point that has different values for all fields.
-testBasicPoint(PointConstructor makePoint) {
+void testBasicPoint(PointConstructor makePoint) {
   var p = makePoint(DateTime.utc(2020), 10, 20, 30);
 
   test('Check time', () => expect(p.time, DateTime.utc(2020)));
@@ -31,7 +31,7 @@ testBasicPoint(PointConstructor makePoint) {
       () => expect(p.hashCode, p2.hashCode));
 }
 
-testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
+void testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
   test('Check inequality by $description', () => expect(p0 == p1, false));
 
   test('Check different hash for objects with different values',
@@ -40,7 +40,7 @@ testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
 
 /// Perform equality tests on points. The makePoint function should be optimized
 /// to create a point that has the same value for all fields.
-testEqualityOfPoints(PointConstructor makePoint) {
+void testEqualityOfPoints(PointConstructor makePoint) {
   // Test against an all-zeroes point, so we can vary one field at a time to
   // make sure that the comparisons work properly.
   var p = makePoint(DateTime.utc(0), 0, 0, 0);
@@ -102,7 +102,7 @@ void main() {
   });
 
   group('Test GpsMeasurement nulls', () {
-    GpsMeasurement m =
+    var m =
         GpsMeasurement(DateTime.utc(2020), 10, 20, 30, null, null, null, null);
 
     test('Check accuracy', () => expect(m.accuracy, null));

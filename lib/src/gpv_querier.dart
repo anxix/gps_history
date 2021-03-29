@@ -28,7 +28,7 @@ class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
   int get length => _indices.length;
 
   @override
-  forEach(void f(T element)) => _indices.forEach((index) {
+  void forEach(void Function(T) f) => _indices.forEach((index) {
         f(this[index]);
       });
 
