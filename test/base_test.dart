@@ -24,12 +24,18 @@ testBasicPoint(PointConstructor makePoint) {
   // Do a basic equality test for objects with different values in the various
   // fields (testEqualityOfPoints will test for objects that are mostly identical).
   test('Check equality of same object', () => expect(p, p));
+  var p2 = makePoint(p.time, p.latitude, p.longitude, p.altitude);
   test('Check equality of different object with same values',
-      () => expect(p, makePoint(p.time, p.latitude, p.longitude, p.altitude)));
+      () => expect(p, p2));
+  test('Check same hash for different object with same values',
+      () => expect(p.hashCode, p2.hashCode));
 }
 
 testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
   test('Check inequality by $description', () => expect(p0 == p1, false));
+
+  test('Check different hash for objects with different values',
+      () => expect(p0.hashCode == p1.hashCode, false));
 }
 
 /// Perform equality tests on points. The makePoint function should be optimized
@@ -41,6 +47,8 @@ testEqualityOfPoints(PointConstructor makePoint) {
 
   test('Check equality of different object with same values',
       () => expect(p, makePoint(DateTime.utc(0), 0, 0, 0)));
+  test('Check equal hashes of different object with same values',
+      () => expect(p.hashCode, makePoint(DateTime.utc(0), 0, 0, 0).hashCode));
 
   testUnequalPoints('date', p, makePoint(DateTime.utc(1), 0, 0, 0));
   testUnequalPoints('latitude', p, makePoint(DateTime.utc(0), 1, 0, 0));

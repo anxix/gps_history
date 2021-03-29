@@ -8,6 +8,7 @@
  */
 
 import 'package:gps_history/gps_history.dart';
+import 'package:gps_history/src/hash.dart';
 
 /// Represents a GPS location (excludes heading and accuracy
 /// information that is typically provided by GPS sensors).
@@ -42,6 +43,11 @@ class GpsPoint {
         other.latitude == this.latitude &&
         other.longitude == this.longitude &&
         other.altitude == this.altitude;
+  }
+
+  @override
+  int get hashCode {
+    return hash4(this.time, this.latitude, this.longitude, this.altitude);
   }
 }
 
@@ -82,6 +88,12 @@ class GpsMeasurement extends GpsPoint {
         other.heading == this.heading &&
         other.speed == this.speed &&
         other.speedAccuracy == this.speedAccuracy;
+  }
+
+  @override
+  int get hashCode {
+    return hash5(super.hashCode, this.accuracy, this.heading, this.speed,
+        this.speedAccuracy);
   }
 }
 
