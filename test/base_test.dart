@@ -8,56 +8,89 @@
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
-testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
-  test('Check inequality by $description', () => expect(p0 == p1, false));
-}
+typedef PointConstructor = GpsPoint Function(
+    DateTime date, double latitude, double longitude, double altitude);
 
-testBasicPoint(GpsPoint p) {
+/// Perform basic point tests. The makePoint function should be optimized to
+/// create a point that has different values for all fields.
+testBasicPoint(PointConstructor makePoint) {
+  var p = makePoint(DateTime.utc(2020), 10, 20, 30);
+
   test('Check time', () => expect(p.time, DateTime.utc(2020)));
   test('Check latitude', () => expect(p.latitude, 10));
   test('Check longitude', () => expect(p.longitude, 20));
   test('Check altitude', () => expect(p.altitude, 30));
+
+  // Do a basic equality test for objects with different values in the various
+  // fields (testEqualityOfPoints will test for objects that are mostly identical).
   test('Check equality of same object', () => expect(p, p));
+  test('Check equality of different object with same values',
+      () => expect(p, makePoint(p.time, p.latitude, p.longitude, p.altitude)));
+}
+
+testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
+  test('Check inequality by $description', () => expect(p0 == p1, false));
+}
+
+/// Perform equality tests on points. The makePoint function should be optimized
+/// to create a point that has the same value for all fields.
+testEqualityOfPoints(PointConstructor makePoint) {
+  // Test against an all-zeroes point, so we can vary one field at a time to
+  // make sure that the comparisons work properly.
+  var p = makePoint(DateTime.utc(0), 0, 0, 0);
+
+  test('Check equality of different object with same values',
+      () => expect(p, makePoint(DateTime.utc(0), 0, 0, 0)));
+
+  testUnequalPoints('date', p, makePoint(DateTime.utc(1), 0, 0, 0));
+  testUnequalPoints('latitude', p, makePoint(DateTime.utc(0), 1, 0, 0));
+  testUnequalPoints('longitude', p, makePoint(DateTime.utc(0), 0, 1, 0));
+  testUnequalPoints('altitude', p, makePoint(DateTime.utc(0), 0, 0, 1));
 }
 
 void main() {
   group('Test GpsPoint', () {
-    GpsPoint p = GpsPoint(DateTime.utc(2020), 10, 20, 30);
+    var makePoint =
+        (DateTime date, double latitude, double longitude, double altitude) =>
+            GpsPoint(date, latitude, longitude, altitude);
 
-    testBasicPoint(p);
-    test('Check equality of different object with same values',
-        () => expect(p, GpsPoint(DateTime.utc(2020), 10, 20, 30)));
-    testUnequalPoints('date', p, GpsPoint(DateTime.utc(2021), 10, 20, 30));
-    testUnequalPoints('latitude', p, GpsPoint(DateTime.utc(2020), 11, 20, 30));
-    testUnequalPoints('longitude', p, GpsPoint(DateTime.utc(2020), 10, 21, 30));
-    testUnequalPoints('altitude', p, GpsPoint(DateTime.utc(2020), 10, 20, 31));
+    testBasicPoint(makePoint);
+    testEqualityOfPoints(makePoint);
   });
 
   group('Test GpsMeasurement', () {
-    GpsMeasurement m =
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 40, 50, 60, 70);
+    // For basic point tests we want to have all fields different values, so any
+    // mistaken implementation doesn't accidentally pass a test due to the
+    // wrong fields being compared, that happen to have the same default value.
+    var makeMeasurement = (DateTime date, double latitude, double longitude,
+            double altitude) =>
+        GpsMeasurement(date, latitude, longitude, altitude, 400, 500, 600, 700);
+    testBasicPoint(makeMeasurement);
 
-    testBasicPoint(m);
-    test(
-        'Check equality of different object with same values',
-        () => expect(
-            m, GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 40, 50, 60, 70)));
-    testUnequalPoints('date', m,
-        GpsMeasurement(DateTime.utc(2021), 10, 20, 30, 40, 50, 60, 70));
-    testUnequalPoints('latitude', m,
-        GpsMeasurement(DateTime.utc(2020), 11, 20, 30, 40, 50, 60, 70));
-    testUnequalPoints('longitude', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 21, 30, 40, 50, 60, 70));
-    testUnequalPoints('altitude', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 31, 40, 50, 60, 70));
-    testUnequalPoints('accuracy', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 41, 50, 60, 70));
-    testUnequalPoints('heading', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 40, 51, 60, 70));
-    testUnequalPoints('speed', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 40, 50, 61, 70));
-    testUnequalPoints('speedAccuracy', m,
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, 40, 50, 60, 71));
+    // run specific tests that are not covered by the basic point test
+    var m = makeMeasurement(DateTime.utc(2020), 10, 20, 30);
+    test('Check accuracy', () => expect(m.accuracy, 400));
+    test('Check heading', () => expect(m.heading, 500));
+    test('Check speed', () => expect(m.speed, 600));
+    test('Check speedAccuracy', () => expect(m.speedAccuracy, 700));
+
+    // For equality tests we want all fields as equal as possible, because we
+    // will vary one field at a time. That way a mistaken implementation doesn't
+    // accidentally pass due to fields being unequal just because they're in
+    // reality different fields.
+    var makeMeasurementWithNulls =
+        (DateTime date, double latitude, double longitude, double altitude) =>
+            GpsMeasurement(date, latitude, longitude, altitude, 0, 0, 0, 0);
+    testEqualityOfPoints(makeMeasurementWithNulls);
+    var mz = makeMeasurementWithNulls(DateTime.utc(0), 0, 0, 0);
+    testUnequalPoints(
+        'accuracy', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 1, 0, 0, 0));
+    testUnequalPoints(
+        'heading', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 1, 0, 0));
+    testUnequalPoints(
+        'speed', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 0, 1, 0));
+    testUnequalPoints('speedAccuracy', mz,
+        GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 0, 0, 1));
   });
 
   group('Test GpsMeasurement nulls', () {
