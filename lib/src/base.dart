@@ -7,6 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:collection';
+
 import 'package:gps_history/src/hash.dart';
 
 /// Represents a GPS location (excludes heading and accuracy
@@ -95,19 +97,39 @@ class GpsMeasurement extends GpsPoint {
   }
 }
 
+/// Implements the iterator so that GpsPointsView and children can easily
+/// implement an Iterable interface.
+class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
+  int _index = -1;
+  final GpsPointsView<T> _source;
+
+  GpsPointsViewIterator(this._source);
+
+  @override
+  bool moveNext() {
+    if (_index + 1 >= _source.length) {
+      return false;
+    }
+
+    _index += 1;
+    return true;
+  }
+
+  @override
+  T get current {
+    return _source[_index];
+  }
+}
+
 /// Provides read-only access to GPS poins, therefore typically acting as
 /// a view onto a read/write collection of GpsPoints.
 /// Subclass names may start with "Gpv".
-abstract class GpsPointsView<T extends GpsPoint> {
+abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
   // List-likes
-  int get length;
-  T operator [](int index);
+  @override
+  Iterator<T> get iterator => GpsPointsViewIterator<T>(this);
 
-  void forEach(void Function(T) f) {
-    for (var i = 0; i < length; i++) {
-      f(this[i]);
-    }
-  }
+  T operator [](int index);
 
   // Other
 //  GpsPointsView<T> selectInBoundingBox(double minLatitude, double minLongitude,
@@ -121,7 +143,7 @@ abstract class GpsPointsView<T extends GpsPoint> {
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
-  // List-like.
+  // List-like wriet operations.
   void add(T element);
   void addAll(Iterable<T> iterable);
 }
