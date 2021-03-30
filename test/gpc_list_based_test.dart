@@ -13,10 +13,6 @@ import 'package:gps_history/gps_history.dart';
 //       f(element);
 //     });
 
-// addAll(Iterable<T> iterable) {
-//   _points.addAll(iterable);
-// }
-
 void main() {
   group('Test GpcListBased', () {
     GpcListBased<GpsPoint>? gpc;
@@ -56,6 +52,20 @@ void main() {
       for (var i = 0; i < src.length; i++) {
         expect(gpc![i], src[i], reason: 'incorrect point at position $i');
       }
+    });
+
+    test('Check forEach', () {
+      // Add three points.
+      for (var i = 1; i < 4; i++) {
+        gpc!.add(GpsPoint(
+            DateTime.utc(i), i.toDouble(), i.toDouble(), i.toDouble()));
+      }
+
+      var total = 0.0;
+      gpc!.forEach((point) {
+        total += point.latitude;
+      });
+      expect(total, 6.0);
     });
   });
 }

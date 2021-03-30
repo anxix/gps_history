@@ -101,8 +101,13 @@ class GpsMeasurement extends GpsPoint {
 abstract class GpsPointsView<T extends GpsPoint> {
   // List-likes
   int get length;
-  void forEach(void Function(T) element);
   T operator [](int index);
+
+  void forEach(void Function(T) f) {
+    for (var i = 0; i < length; i++) {
+      f(this[i]);
+    }
+  }
 
   // Other
 //  GpsPointsView<T> selectInBoundingBox(double minLatitude, double minLongitude,
