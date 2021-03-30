@@ -23,11 +23,6 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   int get length => _points.length;
 
   @override
-  void forEach(void Function(T) f) => _points.forEach((element) {
-        f(element);
-      });
-
-  @override
   T operator [](int index) => _points[index];
 
   @override
