@@ -55,7 +55,9 @@ void main() {
     });
 
     test('Check forEach', () {
-      // Add three points.
+      // Add three points. Start from 1 rather than 0, because we'll use
+      // addition to detect if all elements have been traversed, and skipping
+      // something with value 0 would obviously not be noticed.
       for (var i = 1; i < 4; i++) {
         gpc!.add(GpsPoint(
             DateTime.utc(i), i.toDouble(), i.toDouble(), i.toDouble()));
