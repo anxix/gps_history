@@ -1,3 +1,6 @@
+/// The GPS History library provides facilities to store and query GPS points.
+/// This can be used to for example build a location tracking app.
+
 /* Copyright (c) 
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -5,8 +8,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/// Implements a module for working with GPS points histories, useful for
-/// location tracking and such.
 library gps_history;
 
 export 'src/base.dart';

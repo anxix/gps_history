@@ -1,5 +1,6 @@
-/* Base classes for the GPS History functionality
- *
+/// Base classes for the GPS History functionality
+
+/*
  * Copyright (c)
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,8 +12,10 @@ import 'dart:collection';
 
 import 'package:gps_history/src/hash.dart';
 
-/// Represents a GPS location (excludes heading and accuracy
-/// information that is typically provided by GPS sensors).
+/// Represents the most basic GPS location.
+///
+/// This excludes heading and accuracy information that is typically provided
+/// by GPS sensors).
 class GpsPoint {
   /// The datetime for the point record.
   final DateTime time;
@@ -28,6 +31,8 @@ class GpsPoint {
 
   GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
 
+  /// Equality operator overload.
+  ///
   /// Equality should be tested based on values, because we may use this class
   /// by instantiating it at runtime based on some other source. In that case,
   /// there may be multiple distinct instances representing the same point.
@@ -53,7 +58,8 @@ class GpsPoint {
 }
 
 /// GPS point with additional information related to the measurement.
-/// Some fields may be unavailable, depending on data source.
+///
+/// Some fields may be unavailable (null), depending on data source.
 class GpsMeasurement extends GpsPoint {
   /// The accuracy of the measurement.
   final double? accuracy;
@@ -97,8 +103,10 @@ class GpsMeasurement extends GpsPoint {
   }
 }
 
-/// Implements the iterator so that GpsPointsView and children can easily
-/// implement an Iterable interface.
+/// Iterator support for GPS points views.
+///
+/// The iterator allows [GpsPointsView] and children to easily implement
+/// an Iterable interface.
 class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
   int _index = -1;
   final GpsPointsView<T> _source;
@@ -121,6 +129,8 @@ class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
   }
 }
 
+/// Read-only view on the GPS points stored in a [GpsPointsCollection].
+///
 /// Provides read-only access to GPS poins, therefore typically acting as
 /// a view onto a read/write collection of GpsPoints.
 /// Subclass names may start with "Gpv".
@@ -136,10 +146,12 @@ abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
 //      double maxLatitude, double maxLongitude);
 }
 
+/// Stores GPS points with read/write access.
+///
 /// Provides read/write access to GPS points. Because lightweight
-/// views may be created on the data in the list, adding is the only
-/// modification operation that's allowed, as inserting or removing
-/// could lead to invalid views.
+/// [GpsPointsView]s may be created on the data in the list, adding is the only
+/// modification operation that's allowed, as inserting or removing could lead
+/// to invalid views.
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {

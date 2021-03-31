@@ -32,12 +32,14 @@ int hash4(a, b, c, d) => _finish(_combine(
     _combine(_combine(_combine(0, a.hashCode), b.hashCode), c.hashCode),
     d.hashCode));
 
+/// Generates a hash code for five objects.
 int hash5(a, b, c, d, e) => _finish(_combine(
     _combine(
         _combine(_combine(_combine(0, a.hashCode), b.hashCode), c.hashCode),
         d.hashCode),
     e.hashCode));
 
+/// Generates a hash code for six objects.
 int hash6(a, b, c, d, e, f) => _finish(_combine(
     _combine(
         _combine(
@@ -46,6 +48,7 @@ int hash6(a, b, c, d, e, f) => _finish(_combine(
         e.hashCode),
     f.hashCode));
 
+/// Generates a hash code for seven objects.
 int hash7(a, b, c, d, e, f, g) => _finish(_combine(
     _combine(
         _combine(
@@ -57,6 +60,7 @@ int hash7(a, b, c, d, e, f, g) => _finish(_combine(
         f.hashCode),
     g.hashCode));
 
+/// Generates a hash code for eight objects.
 int hash8(a, b, c, d, e, f, g, h) => _finish(_combine(
     _combine(
         _combine(

@@ -1,5 +1,6 @@
-/* GPS points collections optimized for high performance and memory efficiency
- *
+/// GPS points collections optimized for high performance and memory efficiency
+
+/*
  * Copyright (c)
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,6 +12,8 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:gps_history/src/base.dart';
 
+/// A space-efficient storage [GpsPointsCollection] implementation.
+///
 /// Implements a collection that internally stores the points in ByteData.
 /// This requires runtime value conversions, but cuts down drastically on
 /// memory use particularly for large data sets. A test of 12.5 million
@@ -23,18 +26,20 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// The raw data representation of the collection (starts empty).
   var _rawData = ByteData(0);
 
-  /// The elements are measured in externally perceived elements, not as bytes.
+  /// The number of elements as externally perceived elements, not as bytes.
   var _elementsCount = 0;
 
   GpcEfficient([int startCapacity = 0]) {
     _rawData = ByteData(_elementNrToByteOffset(startCapacity));
   }
 
+  /// The number of bytes in [_rawData] required to store a single element.
+  ///
   /// Subclasses must override this to indicate how many slots in the buffer
   /// are required to store every element.
   int get _bytesPerElement;
 
-  /// Length indicates how many elements are currently stored in the container.
+  /// The number of elements currently stored in the container.
   @override
   int get length => _elementsCount;
 
@@ -42,11 +47,13 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   T operator [](int index) =>
       _readElementFromByte(_elementNrToByteOffset(index));
 
-  /// Capacity indicates how much space there is in the storage for elements.
+  /// The available capacity (in elements) for storage.
+  ///
   /// Not all the space is necessarily currently used (used space is indicated
-  /// by the length property). Capacity may be increased manually for efficiency
-  /// (pre-allocating the required memory), and will be grown automatically
-  /// if elements are added without explicit pre-allocation of capacity.
+  /// by the [length] property). Capacity may be increased manually for
+  /// efficiency (pre-allocating the required memory), and will be grown
+  /// automatically if elements are added without explicit pre-allocation of
+  /// capacity.
   /// Capacity cannot be decreased to less than the current length, since
   /// that might invalidate any pre-existing views on this container.
   int get capacity => _rawData.lengthInBytes ~/ _bytesPerElement;
@@ -73,10 +80,11 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     _rawData = newData;
   }
 
-  /// Makes sure there is enough space to add at least incrementHint elements.
+  /// Makes sure there is enough space to add at least [incrementHint] elements.
+  ///
   /// May decide to increment by more than the hint though, in order to prevent
   /// repetitive resizing, which is a relatively expensive operation.
-  /// For setting the capacity exactly, use the capacity property.
+  /// For setting the capacity exactly, use the [capacity] property.
   void _growCapacity([int? incrementHint]) {
     // If we have enough capacity to fit the hint, don't bother increasing
     var localCapacity = capacity; // cache since we'll be using it quite a bit
@@ -120,14 +128,16 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// of that element starts in the buffer.
   int _elementNrToByteOffset(int elementNr) => elementNr * _bytesPerElement;
 
-  /// Returns the element stored starting at the specified byteIndex. Must be
-  /// overridden in children, as it depends on how they implement storage and
-  /// what type T is.
+  /// Returns the element stored starting at the specified byteIndex.
+  ///
+  /// Must be overridden in children, as it depends on how they implement
+  /// storage and what type T is.
   T _readElementFromByte(int byteIndex);
 
-  /// Writes the element, starting at the specified byteIndex. Must be overridden
-  /// in children, as it depends on how they implement storage and what type
-  /// T is.
+  /// Writes the element, starting at the specified byteIndex.
+  ///
+  /// Must be overridden in children, as it depends on how they implement
+  /// storage and what type T is.
   void _writeElementToByte(T element, int byteIndex);
 
   @override
