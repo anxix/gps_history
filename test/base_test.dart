@@ -11,8 +11,10 @@ import 'package:gps_history/gps_history.dart';
 typedef PointConstructor = GpsPoint Function(
     DateTime date, double latitude, double longitude, double altitude);
 
-/// Perform basic point tests. The makePoint function should be optimized to
-/// create a point that has different values for all fields.
+/// Perform basic point tests.
+///
+/// The [makePoint] function should be such that it creates a point that has
+/// different values for all fields.
 void testBasicPoint(PointConstructor makePoint) {
   var p = makePoint(DateTime.utc(2020), 10, 20, 30);
 
@@ -22,7 +24,8 @@ void testBasicPoint(PointConstructor makePoint) {
   test('Check altitude', () => expect(p.altitude, 30));
 
   // Do a basic equality test for objects with different values in the various
-  // fields (testEqualityOfPoints will test for objects that are mostly identical).
+  // fields (testEqualityOfPoints will test for objects that are mostly
+  // identical).
   test('Check equality of same object', () => expect(p, p));
   var p2 = makePoint(p.time, p.latitude, p.longitude, p.altitude);
   test('Check equality of different object with same values',
@@ -38,8 +41,10 @@ void testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
       () => expect(p0.hashCode == p1.hashCode, false));
 }
 
-/// Perform equality tests on points. The makePoint function should be optimized
-/// to create a point that has the same value for all fields.
+/// Perform equality tests on points.
+///
+/// The [makePoint] function should be optimized to create a point that has the
+/// same value for all fields.
 void testEqualityOfPoints(PointConstructor makePoint) {
   // Test against an all-zeroes point, so we can vary one field at a time to
   // make sure that the comparisons work properly.

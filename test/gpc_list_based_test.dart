@@ -8,11 +8,6 @@
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
-// @override
-// forEach(void f(T element)) => _points.forEach((element) {
-//       f(element);
-//     });
-
 void main() {
   group('Test GpcListBased', () {
     GpcListBased<GpsPoint>? gpc;
