@@ -55,6 +55,10 @@ class GpsPoint {
   int get hashCode {
     return hash4(time, latitude, longitude, altitude);
   }
+
+  @override
+  String toString() =>
+      't: $time\tlat:\t$latitude\tlong: $longitude\talt: $altitude';
 }
 
 /// GPS point with additional information related to the measurement.
@@ -100,6 +104,11 @@ class GpsMeasurement extends GpsPoint {
   int get hashCode {
     return hash5(super.hashCode, accuracy, heading, speed, speedAccuracy);
   }
+
+  @override
+  String toString() =>
+      super.toString() +
+      '\tacc: $accuracy\thedng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
 }
 
 /// Iterator support for GPS points views.
