@@ -68,10 +68,10 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     }
 
     // Capacity needs to change -> rebuild the list
-    var newData = ByteData(_elementNrToByteOffset(newCapacity));
+    final newData = ByteData(_elementNrToByteOffset(newCapacity));
     // Even though currently we don't alow decreasing capacity below length,
     // keep in a safeguard that we won't copy more than the capacity.
-    var bytesToCopy = _elementNrToByteOffset(min(newCapacity, length));
+    final bytesToCopy = _elementNrToByteOffset(min(newCapacity, length));
     // do a hopefully optimized memcopy
     newData.buffer
         .asUint8List()
@@ -87,8 +87,9 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// For setting the capacity exactly, use the [capacity] property.
   void _growCapacity([int? incrementHint]) {
     // If we have enough capacity to fit the hint, don't bother increasing
-    var localCapacity = capacity; // cache since we'll be using it quite a bit
-    if (localCapacity >= length + (incrementHint ?? 1)) {
+    final currentCapacity =
+        capacity; // cache since we'll be using it quite a bit
+    if (currentCapacity >= length + (incrementHint ?? 1)) {
       return;
     }
 
@@ -102,18 +103,18 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     // In terms of memory use, an unsophisticated implementation using 8 Int32
     // fields for each element, 100k elements represent ~3 MiB.
     var minIncrement = 0;
-    if (localCapacity >= 1 << 18) {
+    if (currentCapacity >= 1 << 18) {
       // over ~500k, grow in big chunks of about 260k
       minIncrement = 1 << 17;
-    } else if (localCapacity >= 1 << 16) {
+    } else if (currentCapacity >= 1 << 16) {
       // over ~130k, grow at >30k chunks
-      minIncrement = localCapacity ~/ 4;
-    } else if (localCapacity >= 1 << 13) {
+      minIncrement = currentCapacity ~/ 4;
+    } else if (currentCapacity >= 1 << 13) {
       // over ~16k, grow at >8k chunks
-      minIncrement = localCapacity ~/ 2;
-    } else if (localCapacity >= 1 << 7) {
+      minIncrement = currentCapacity ~/ 2;
+    } else if (currentCapacity >= 1 << 7) {
       // over 256, double in size
-      minIncrement = localCapacity;
+      minIncrement = currentCapacity;
     } else {
       // grow by 32
       minIncrement = 1 << 5;
@@ -153,5 +154,108 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     for (var element in iterable) {
       add(element);
     }
+  }
+}
+
+/// Implements common conversions needed for storing GPS values in byte arrays
+class Conversions {
+  static final _zeroDateTimeUtc = DateTime.utc(1970);
+  static final _maxDatetimeUtc =
+      _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
+  static final int _extremeAltitude = 0xffff.toUnsigned(16) ~/ 2;
+
+  /// Convert a latitude/longitude in degrees to E7-spec, i.e.
+  /// round(degrees * 1E7).
+  ///
+  /// The minimum distance that can be represented by this accuracy is
+  /// 1E-7 degrees, which at the equator represents about 1 cm.
+  static int degreesToInt32(double value) => (value * 1E7).round();
+
+  /// The opposite of [degreesToInt32].
+  static double int32ToDegrees(int value) => value / 1E7;
+
+  /// Convert regular DateTime object to a Uint32 value.
+  ///
+  /// The result will be seconds since 1/1/1970, in UTC. This amount is enough
+  /// to cover over 135 years. Any fictitious GPS records before 1970 are
+  /// thereby not supported, and neither are years beyond about 2105.
+  /// If values outside the supported range are provided, they will be capped
+  /// at the appropriate boundary (no exception will be raised).
+  static int dateTimeToUint32(DateTime value) {
+    final valueUtc = value.toUtc();
+    // Cap the value between the zero and the max allowed
+    final cappedValue = valueUtc.isBefore(_zeroDateTimeUtc)
+        ? _zeroDateTimeUtc
+        : valueUtc.isAfter(_maxDatetimeUtc)
+            ? _maxDatetimeUtc
+            : valueUtc;
+    return cappedValue.difference(_zeroDateTimeUtc).inSeconds;
+  }
+
+  /// The opposite of [dateTimeToUint32]
+  static DateTime uint32ToDateTime(int value) =>
+      _zeroDateTimeUtc.add(Duration(seconds: value));
+
+  /// Convert altitude in meters to an Int16 value.
+  ///
+  /// This is done by counting half-meters below/above zero, i.e.
+  /// round(2 * altitude). That's enough to cover about 16km above/below zero
+  /// level, a range outside which not many people venture. The altitude
+  /// measurement accuracy of GPS devices also tends to be way more than
+  /// 1 meter, so storing at half-meter accuracy doesn't lose us much.
+  /// If values outside the supported range are provided, they will be capped
+  /// at the appropriate boundary (no exception will be raised).
+  static int altitudeToInt16(double value) {
+    final cappedValue =
+        value.abs() < _extremeAltitude ? value : value.sign * _extremeAltitude;
+    return (cappedValue * 2).round();
+  }
+
+  /// The opposite of [altitudeToInt16].
+  static double int16ToAltitude(int value) => value / 2.0;
+}
+
+/// Implements efficient storage for [GpsPoint] elements.
+///
+/// [GpsPoint] consists of four doubles: time, latitude, longitude, altitude.
+/// In order to improve the storage efficiency, these are stored as follows,
+/// all in *little endian* representation:
+/// - [GpsPoint.time]: UInt32 representation of time. For details see
+///   [Conversions.dateTimeToUint32].
+/// - [GpsPoint.latitude]: Int32 in E7-spec. For details see
+///   [Conversions.degreesToInt32].
+/// - [GpsPoint.longitude]: like the latitude
+/// - [GpsPoint.altitude]: Int16. For details see [Conversions.altitudeToInt16].
+/// Added together it's 14 bytes per element.
+class GpcEfficientGpsPoint extends GpcEfficient<GpsPoint> {
+  static const _endian = Endian.little;
+
+  @override
+  int get _bytesPerElement => 14;
+
+  @override
+  GpsPoint _readElementFromByte(int byteIndex) {
+    final raw_datetime = _rawData.getUint32(byteIndex, _endian);
+    final raw_latitude = _rawData.getInt32(byteIndex + 4, _endian);
+    final raw_longitude = _rawData.getInt32(byteIndex + 8, _endian);
+    final raw_altitude = _rawData.getInt16(byteIndex + 12, _endian);
+
+    return GpsPoint(
+        Conversions.uint32ToDateTime(raw_datetime),
+        Conversions.int32ToDegrees(raw_latitude),
+        Conversions.int32ToDegrees(raw_longitude),
+        Conversions.int16ToAltitude(raw_altitude));
+  }
+
+  @override
+  void _writeElementToByte(GpsPoint element, int byteIndex) {
+    _rawData.setInt32(
+        byteIndex, Conversions.dateTimeToUint32(element.time), _endian);
+    _rawData.setInt32(
+        byteIndex + 4, Conversions.degreesToInt32(element.latitude), _endian);
+    _rawData.setInt32(
+        byteIndex + 8, Conversions.degreesToInt32(element.longitude), _endian);
+    _rawData.setInt16(
+        byteIndex + 12, Conversions.altitudeToInt16(element.altitude), _endian);
   }
 }
