@@ -33,13 +33,13 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
     test('Check simple add and indexing', () {
       // basic tests with just one point
-      var p0 = itemConstructor(1);
+      final p0 = itemConstructor(1);
       gpc!.add(p0);
       expect(gpc!.length, 1, reason: 'wrong length after first add');
       expect(gpc![0], p0, reason: 'wrong point after first add');
 
       // basic tests with a second point
-      var p1 = itemConstructor(2);
+      final p1 = itemConstructor(2);
       gpc!.add(p1);
       expect(gpc!.length, 2, reason: 'wrong length after second add');
       expect(gpc![0], p0, reason: 'wrong point at [0] after second add');
@@ -47,7 +47,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
     });
 
     test('Check AddAll', () {
-      var src = List<T>.filled(2, itemConstructor(0), growable: true);
+      final src = List<T>.filled(2, itemConstructor(0), growable: true);
 
       for (var i = 0; i < src.length; i++) {
         src[i] = itemConstructor(i + 1);

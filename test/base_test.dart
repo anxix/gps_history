@@ -16,7 +16,7 @@ typedef PointConstructor = GpsPoint Function(
 /// The [makePoint] function should be such that it creates a point that has
 /// different values for all fields.
 void testBasicPoint(PointConstructor makePoint) {
-  var p = makePoint(DateTime.utc(2020), 10, 20, 30);
+  final p = makePoint(DateTime.utc(2020), 10, 20, 30);
 
   test('Check time', () => expect(p.time, DateTime.utc(2020)));
   test('Check latitude', () => expect(p.latitude, 10));
@@ -27,7 +27,7 @@ void testBasicPoint(PointConstructor makePoint) {
   // fields (testEqualityOfPoints will test for objects that are mostly
   // identical).
   test('Check equality of same object', () => expect(p, p));
-  var p2 = makePoint(p.time, p.latitude, p.longitude, p.altitude);
+  final p2 = makePoint(p.time, p.latitude, p.longitude, p.altitude);
   test('Check equality of different object with same values',
       () => expect(p, p2));
   test('Check same hash for different object with same values',
@@ -48,7 +48,7 @@ void testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
 void testEqualityOfPoints(PointConstructor makePoint) {
   // Test against an all-zeroes point, so we can vary one field at a time to
   // make sure that the comparisons work properly.
-  var p = makePoint(DateTime.utc(0), 0, 0, 0);
+  final p = makePoint(DateTime.utc(0), 0, 0, 0);
 
   test('Check equality of different object with same values',
       () => expect(p, makePoint(DateTime.utc(0), 0, 0, 0)));
@@ -63,7 +63,7 @@ void testEqualityOfPoints(PointConstructor makePoint) {
 
 void main() {
   group('Test GpsPoint', () {
-    var makePoint =
+    final makePoint =
         (DateTime date, double latitude, double longitude, double altitude) =>
             GpsPoint(date, latitude, longitude, altitude);
 
@@ -75,13 +75,13 @@ void main() {
     // For basic point tests we want to have all fields different values, so any
     // mistaken implementation doesn't accidentally pass a test due to the
     // wrong fields being compared, that happen to have the same default value.
-    var makeMeasurement = (DateTime date, double latitude, double longitude,
+    final makeMeasurement = (DateTime date, double latitude, double longitude,
             double altitude) =>
         GpsMeasurement(date, latitude, longitude, altitude, 400, 500, 600, 700);
     testBasicPoint(makeMeasurement);
 
     // run specific tests that are not covered by the basic point test
-    var m = makeMeasurement(DateTime.utc(2020), 10, 20, 30);
+    final m = makeMeasurement(DateTime.utc(2020), 10, 20, 30);
     test('Check accuracy', () => expect(m.accuracy, 400));
     test('Check heading', () => expect(m.heading, 500));
     test('Check speed', () => expect(m.speed, 600));
@@ -91,11 +91,11 @@ void main() {
     // will vary one field at a time. That way a mistaken implementation doesn't
     // accidentally pass due to fields being unequal just because they're in
     // reality different fields.
-    var makeMeasurementWithNulls =
+    final makeMeasurementWithNulls =
         (DateTime date, double latitude, double longitude, double altitude) =>
             GpsMeasurement(date, latitude, longitude, altitude, 0, 0, 0, 0);
     testEqualityOfPoints(makeMeasurementWithNulls);
-    var mz = makeMeasurementWithNulls(DateTime.utc(0), 0, 0, 0);
+    final mz = makeMeasurementWithNulls(DateTime.utc(0), 0, 0, 0);
     testUnequalPoints(
         'accuracy', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 1, 0, 0, 0));
     testUnequalPoints(
@@ -107,7 +107,7 @@ void main() {
   });
 
   group('Test GpsMeasurement nulls', () {
-    var m =
+    final m =
         GpsMeasurement(DateTime.utc(2020), 10, 20, 30, null, null, null, null);
 
     test('Check accuracy', () => expect(m.accuracy, null));

@@ -86,8 +86,7 @@ class GpsMeasurement extends GpsPoint {
 
   @override
   bool operator ==(other) {
-    var result = super == (other);
-    if (!result) {
+    if (!(super == (other))) {
       return false;
     }
     return other is GpsMeasurement &&
