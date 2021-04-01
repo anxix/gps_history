@@ -62,7 +62,7 @@ void testConversions() {
 
   test('Check altitude to Int16 conversions', () {
     // Check that converting back and forth gives the same value.
-    for (var i = 100; i <= 100; i++) {
+    for (var i = 0; i <= 100; i++) {
       final altitude = i / 2;
       expect(Conversions.int16ToAltitude(Conversions.altitudeToInt16(altitude)),
           altitude);
@@ -77,6 +77,44 @@ void testConversions() {
     expect(Conversions.altitudeToInt16(-999999), -32767);
     expect(Conversions.altitudeToInt16(999999), 32767);
   });
+
+  test('Check small double to Uint16 conversions, with null support', () {
+    // Check that converting back and fort gives the same value.
+    for (var i = 0; i <= 100; i++) {
+      final value = i / 2;
+      expect(
+          Conversions.uint16ToSmallDouble(
+              Conversions.smallDoubleToUint16(value)),
+          value);
+    }
+
+    // Test converting null back and forth.
+    expect(
+        Conversions.uint16ToSmallDouble(Conversions.smallDoubleToUint16(null)),
+        null);
+
+    // Check that converting one way gives the correct value (the back and
+    // forth test ensures implicitly that the other direction is correct too).
+    expect(Conversions.smallDoubleToUint16(10.2), 102);
+    expect(Conversions.smallDoubleToUint16(null), 65535);
+
+    // Check the caps.
+    expect(Conversions.smallDoubleToUint16(-999999), 0);
+    expect(Conversions.smallDoubleToUint16(999999), 65534);
+  });
+
+  test('Check heading to Uint16 conversions, with null support', () {
+    /// [headingToInt16] calls [uint16ToSmallDouble] (and similar for the
+    /// inverse conversion). No need to do a full test, the caps suffice.
+    expect(Conversions.headingToInt16(-90.0), 270.0 * 10);
+    expect(Conversions.headingToInt16(-180.0), 180.0 * 10);
+    expect(Conversions.headingToInt16(-450), 270.0 * 10);
+    expect(Conversions.headingToInt16(450), 90.0 * 10);
+    expect(Conversions.headingToInt16(null), 65535);
+  });
+
+// headingToInt16
+// int16ToHeading
 }
 
 /// Wraps around [testGpsPointsCollection] and adds extra tests.
@@ -156,4 +194,19 @@ void main() {
           i.toDouble(), // required to be equal to i
           175.0 + i,
           16E3 + i));
+
+  testGpc<GpsMeasurement>(
+      'GpcCompactGpsMeasurement with extreme values',
+      () => GpcCompactGpsMeasurement(),
+      (int i) => GpsMeasurement(
+          // Repeat the test with values close to the maximum date range, to
+          // check that storage works OK near the boundaries.
+          DateTime.utc(2103 + i),
+          i.toDouble(), // required to be equal to i
+          175.0 + i,
+          16E3 + i,
+          3.2,
+          null, // make sure we also test a null
+          6546.0,
+          6545.0));
 }

@@ -166,6 +166,7 @@ class Conversions {
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
   static final double _extremeAltitude = 32767 / 2.0; //int16 is -32768..32767
+  static final int _maxSmallDouble = 0xffff.toUnsigned(16);
 
   /// Convert a latitude/longitude in degrees to E7-spec, i.e.
   /// round(degrees * 1E7).
@@ -224,6 +225,44 @@ class Conversions {
 
   /// The opposite of [altitudeToInt16].
   static double int16ToAltitude(int value) => value / 2.0;
+
+  /// Convert small double values (range about 0..6.5k) to [Uint16], maintaining
+  /// one decimal of accuracy. Null values are supported and encoded as well.
+  ///
+  /// This is done by storing round(10 * value). Null values are stored as the
+  /// maximum [Uint16]. Such values are useful for representing things like
+  /// heading, speed, etc. all of which are positive and have relatively small
+  /// values in human context.
+  /// If values outside the supported range are provided, they will be capped
+  /// at the appropriate boundary (no exception will be raised).
+  static int smallDoubleToUint16(double? value) {
+    // Encode null as max allowed.
+    if (value == null) {
+      return _maxSmallDouble;
+    } else {
+      // Clamp the value between 0 and _maxSmallDouble-1 (since _maxSmallDouble
+      // is interpreted as null). In order to store one decimal, multiply by 10.
+      return min(max(0, 10 * value), _maxSmallDouble - 1).round();
+    }
+  }
+
+  /// The opposite of [smallDoubleToUint16].
+  static double? uint16ToSmallDouble(int value) =>
+      value != _maxSmallDouble ? value / 10.0 : null;
+
+  /// Converts a heading to [Int16], making sure that heading values are
+  /// between 0..360 even if provided as -huge..+huge (e.g. 450 degrees is the
+  /// same as 90 degrees, -450 degrees is the same as 270 degrees).
+  ///
+  /// For the internal conversion and null handling see [smallDoubleToUint16].
+  /// Note that unit tests assume [headingToInt16] calls [smallDoubleToUint16]
+  /// and therefore will only test the boundaries. If this is changed, the unit
+  /// tests need to be extended.
+  static int headingToInt16(double? value) =>
+      smallDoubleToUint16(value != null ? value % 360.0 : null);
+
+  //// The opposite of [headingToInt16].
+  static double? int16ToHeading(int value) => uint16ToSmallDouble(value);
 }
 
 /// Implements compact storage for [GpsPoint] elements.
@@ -245,41 +284,99 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   @override
   int get _bytesPerElement => 14;
 
-  /// Reads a single GPS point from the bytes.
+  // Various wrappers around ByteData routines to ensure uniform endianness.
+  int _getInt16(int byteIndex) => _rawData.getInt16(byteIndex, _endian);
+  int _getInt32(int byteIndex) => _rawData.getInt32(byteIndex, _endian);
+  int _getUint16(int byteIndex) => _rawData.getUint16(byteIndex, _endian);
+  int _getUint32(int byteIndex) => _rawData.getUint32(byteIndex, _endian);
+  void _setInt16(int byteIndex, int value) =>
+      _rawData.setInt16(byteIndex, value, _endian);
+  void _setInt32(int byteIndex, int value) =>
+      _rawData.setInt32(byteIndex, value, _endian);
+  void _setUint16(int byteIndex, int value) =>
+      _rawData.setUint16(byteIndex, value, _endian);
+  void _setUint32(int byteIndex, int value) =>
+      _rawData.setUint32(byteIndex, value, _endian);
+
+  /// Reads a single GPS point from the [_rawData].
   ///
   /// Useful to use in children's [_readElementFromBytes] implementations.
   GpsPoint _readGpsPointFromBytes(int byteIndex) {
-    final raw_datetime = _rawData.getUint32(byteIndex, _endian);
-    final raw_latitude = _rawData.getInt32(byteIndex + 4, _endian);
-    final raw_longitude = _rawData.getInt32(byteIndex + 8, _endian);
-    final raw_altitude = _rawData.getInt16(byteIndex + 12, _endian);
-
     return GpsPoint(
-        Conversions.uint32ToDateTime(raw_datetime),
-        Conversions.int32ToDegrees(raw_latitude),
-        Conversions.int32ToDegrees(raw_longitude),
-        Conversions.int16ToAltitude(raw_altitude));
+        Conversions.uint32ToDateTime(_getUint32(byteIndex)),
+        Conversions.int32ToDegrees(_getInt32(byteIndex + 4)),
+        Conversions.int32ToDegrees(_getInt32(byteIndex + 8)),
+        Conversions.int16ToAltitude(_getInt16(byteIndex + 12)));
   }
 
-  @override
-  void _writeElementToBytes(GpsPoint element, int byteIndex) {
-    _rawData.setInt32(
-        byteIndex, Conversions.dateTimeToUint32(element.time), _endian);
-    _rawData.setInt32(
-        byteIndex + 4, Conversions.degreesToInt32(element.latitude), _endian);
-    _rawData.setInt32(
-        byteIndex + 8, Conversions.degreesToInt32(element.longitude), _endian);
-    _rawData.setInt16(
-        byteIndex + 12, Conversions.altitudeToInt16(element.altitude), _endian);
+  /// Writes a single GPS point to the [_rawData].
+  ///
+  /// Useful to use in children's [_writeElementToBytes] implmentations.
+  void _writeGpsPointToBytes(T element, int byteIndex) {
+    _setUint32(byteIndex, Conversions.dateTimeToUint32(element.time));
+    _setInt32(byteIndex + 4, Conversions.degreesToInt32(element.latitude));
+    _setInt32(byteIndex + 8, Conversions.degreesToInt32(element.longitude));
+    _setInt16(byteIndex + 12, Conversions.altitudeToInt16(element.altitude));
   }
 }
 
 class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   @override
-  int get _bytesPerElement => 14;
-
-  @override
   GpsPoint _readElementFromBytes(int byteIndex) {
     return _readGpsPointFromBytes(byteIndex);
+  }
+
+  @override
+  void _writeElementToBytes(GpsPoint element, int byteIndex) {
+    return _writeGpsPointToBytes(element, byteIndex);
+  }
+}
+
+/// Implements efficient storage for [GpsMeasurement] elements.
+///
+/// The basic storage is the same of [GpcCompactGpsPoint], with additional
+/// fields for: accuracy, heading, speed, speedAccuracy. One or more of these
+/// may be null.
+/// These are stored as follows after the inherited fields, all in
+/// *little endian* representation:
+/// - [GpsMeasurement.accuracy]: [Uint16] representation of accuracy.
+///   For details see [Conversions.smallDoubleToUint16].
+/// - [GpsMeasurement.heading]: [Uint16] representation of heading.
+///   For details see [Conversions.headingToInt16].
+/// - [GpsMeasurement.speed]: [Uint16] representation of speed.
+///   For details see [Conversions.smallDoubleToUint16].
+/// - [GpsMeasurement.speedAccuracy]: [Uint16] representation of speed accuracy.
+///   For details see [Conversions.smallDoubleToUint16].
+/// Added together it's 8 bytes per element extra compared to what's needed
+/// for the inherited [GpsPoint] properties.
+class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
+  @override
+  int get _bytesPerElement => 22;
+
+  @override
+  GpsMeasurement _readElementFromBytes(int byteIndex) {
+    final point = _readGpsPointFromBytes(byteIndex);
+
+    return GpsMeasurement(
+        point.time,
+        point.latitude,
+        point.longitude,
+        point.altitude,
+        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 14)),
+        Conversions.int16ToHeading(_getUint16(byteIndex + 16)),
+        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 18)),
+        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 20)));
+  }
+
+  @override
+  void _writeElementToBytes(GpsMeasurement element, int byteIndex) {
+    _writeGpsPointToBytes(element, byteIndex);
+
+    _setUint16(
+        byteIndex + 14, Conversions.smallDoubleToUint16(element.accuracy));
+    _setUint16(byteIndex + 16, Conversions.headingToInt16(element.heading));
+    _setUint16(byteIndex + 18, Conversions.smallDoubleToUint16(element.speed));
+    _setUint16(
+        byteIndex + 20, Conversions.smallDoubleToUint16(element.speedAccuracy));
   }
 }
