@@ -108,7 +108,7 @@ class GpsMeasurement extends GpsPoint {
   @override
   String toString() =>
       super.toString() +
-      '\tacc: $accuracy\thedng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
+      '\tacc: $accuracy\thdng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
 }
 
 /// Iterator support for GPS points views.
