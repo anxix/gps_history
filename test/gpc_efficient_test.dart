@@ -79,10 +79,63 @@ void testConversions() {
   });
 }
 
+/// Wraps around [testGpsPointsCollection] and adds extra tests.
+///
+/// See [testGpsPointsCollection] for the meaning of the parameters.
+void testGpc<T extends GpsPoint>(
+    String name,
+    GpcEfficient<T> Function() collectionConstructor,
+    T Function(int itemIndex) itemConstructor) {
+  testGpsPointsCollection<T>(name, collectionConstructor, itemConstructor);
+
+  test('$name: capacity', () {
+    final gpc = collectionConstructor();
+    const targetCapacity =
+        77; // pick a number that's unlikely to be on an increment boundary
+
+    // Start out empty.
+    expect(gpc.capacity, 0, reason: 'Wrong initial capacity');
+    expect(gpc.length, 0, reason: 'Wrong initial length');
+
+    // Increase capacity without affecting length.
+    gpc.capacity = targetCapacity;
+    expect(gpc.capacity, targetCapacity,
+        reason: 'Wrong capacity after initial increase');
+    expect(gpc.length, 0, reason: 'Wrong length after incrased capacity');
+
+    // Fill up to the capacity, shouldn't increase capacity.
+    var oldcapacity = gpc.capacity;
+    for (var i = 0; i < oldcapacity; i++) {
+      var p = itemConstructor(i);
+      gpc.add(p);
+    }
+    expect(gpc.capacity, oldcapacity, reason: 'Wrong capacity after filling');
+    expect(gpc.length, oldcapacity, reason: 'Wrong length after filling');
+
+    // Add beyond capacity -> should increase it.
+    gpc.add(itemConstructor(gpc.length));
+    expect(gpc.capacity > oldcapacity, true,
+        reason: 'Capacity should have increased');
+
+    // Test that we cannot decrease capacity below length.
+    gpc.capacity += 50;
+    gpc.capacity = gpc.length - 3;
+    expect(gpc.capacity, gpc.length,
+        reason: 'Capacity should have decreased to length');
+
+    // Check that the contents still make sense
+    expect(gpc.length, targetCapacity + 1,
+        reason: 'Incorrect length after previous manipulations');
+    for (var i = 0; i < gpc.length; i++) {
+      expect(gpc[i].altitude.round(), i, reason: 'Incorrect item at $i');
+    }
+  });
+}
+
 void main() {
   testConversions();
 
-  testGpsPointsCollection<GpsPoint>(
+  testGpc<GpsPoint>(
       'GpcEfficientGpsPoint',
       () => GpcEfficientGpsPoint(),
       (int i) => GpsPoint(
