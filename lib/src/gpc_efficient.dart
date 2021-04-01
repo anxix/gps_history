@@ -157,19 +157,30 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 }
 
-/// Implements common conversions needed for storing GPS values in byte arrays
+/// Implements common conversions needed for storing GPS values in byte arrays.
+///
+/// Ranges of data will be ensured only at writing time. This because the data
+/// is written only once, but potentially read many times.
 class Conversions {
   static final _zeroDateTimeUtc = DateTime.utc(1970);
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
-  static final int _extremeAltitude = 0xffff.toUnsigned(16) ~/ 2;
+  static final double _extremeAltitude = 32767 / 2.0; //int16 is -32768..32767
 
   /// Convert a latitude/longitude in degrees to E7-spec, i.e.
   /// round(degrees * 1E7).
   ///
   /// The minimum distance that can be represented by this accuracy is
-  /// 1E-7 degrees, which at the equator represents about 1 cm.
-  static int degreesToInt32(double value) => (value * 1E7).round();
+  /// 1E-7 degrees, which at the equator represents about 1 cm. Valid range
+  /// of degrees values is -180 <= value <= 180.
+  /// If values outside the supported range are provided, they will be capped
+  /// at the appropriate boundary (no exception will be raised).
+  static int degreesToInt32(double value) {
+    // Make sure the value is in the valid range of -180..180. This prevents
+    // overloading of the valid integer range.
+    final cappedValue = value.abs() <= 180.0 ? value : value.sign * 180.0;
+    return (cappedValue * 1E7).round();
+  }
 
   /// The opposite of [degreesToInt32].
   static double int32ToDegrees(int value) => value / 1E7;
