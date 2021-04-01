@@ -1,0 +1,1 @@
+clear && dart analyze && $HOME/.pub-cache/bin/dartdoc && dart test
