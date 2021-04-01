@@ -220,7 +220,7 @@ class Conversions {
 /// [GpsPoint] consists of four doubles: time, latitude, longitude, altitude.
 /// In order to improve the storage efficiency, these are stored as follows,
 /// all in *little endian* representation:
-/// - [GpsPoint.time]: [UInt32] representation of time. For details see
+/// - [GpsPoint.time]: [Uint32] representation of time. For details see
 ///   [Conversions.dateTimeToUint32].
 /// - [GpsPoint.latitude]: [Int32] in E7-spec. For details see
 ///   [Conversions.degreesToInt32].
