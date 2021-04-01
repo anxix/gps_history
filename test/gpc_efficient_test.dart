@@ -127,7 +127,7 @@ void testGpc<T extends GpsPoint>(
     expect(gpc.length, targetCapacity + 1,
         reason: 'Incorrect length after previous manipulations');
     for (var i = 0; i < gpc.length; i++) {
-      expect(gpc[i].altitude.round(), i, reason: 'Incorrect item at $i');
+      expect(gpc[i].latitude.round(), i, reason: 'Incorrect item at $i');
     }
   });
 }
@@ -142,7 +142,18 @@ void main() {
           // The constraints of GpcEfficientGpsPoint mean the date must be
           // somewhat reasonable, so we can't just use year 1.
           DateTime.utc(2000 + i),
-          i.toDouble(),
+          i.toDouble(), // required to be equal to i
           i.toDouble(),
           i.toDouble()));
+
+  testGpc<GpsPoint>(
+      'GpcCompactGpsPoint with extreme values',
+      () => GpcCompactGpsPoint(),
+      (int i) => GpsPoint(
+          // Repeat the test with values close to the maximum date range, to
+          // check that storage works OK near the boundaries.
+          DateTime.utc(2103 + i),
+          i.toDouble(), // required to be equal to i
+          175.0 + i,
+          16E3 + i));
 }

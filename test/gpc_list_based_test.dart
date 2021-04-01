@@ -12,6 +12,9 @@ void main() {
   testGpsPointsCollection<GpsPoint>(
       'GpcListBased',
       () => GpcListBased<GpsPoint>(),
-      (int i) =>
-          GpsPoint(DateTime.utc(i), i.toDouble(), i.toDouble(), i.toDouble()));
+      (int i) => GpsPoint(
+          DateTime.utc(i),
+          i.toDouble(), // required to be equal to i
+          i.toDouble(),
+          i.toDouble()));
 }
