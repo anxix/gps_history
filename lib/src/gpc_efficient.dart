@@ -12,13 +12,13 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:gps_history/src/base.dart';
 
-/// A space-efficient storage [GpsPointsCollection] implementation.
+/// A space-efficient [GpsPointsCollection] implementation.
 ///
 /// Implements a collection that internally stores the points in ByteData.
 /// This requires runtime value conversions, but cuts down drastically on
 /// memory use particularly for large data sets. A test of 12.5 million
 /// points represented as a list of objects of 4 doubles each, versus 12.5
-/// million points represented as a list of Int32x4 showed memory use drop
+/// million points represented as a list of [Int32x4] showed memory use drop
 /// from about 400MB to about 200MB. On mobile device in particular this could
 /// be quite a significant gain. This does come at the expense of some accuracy,
 /// as we store lower-accuracy integer subtypes rather than doubles.
@@ -174,7 +174,7 @@ class Conversions {
   /// The opposite of [degreesToInt32].
   static double int32ToDegrees(int value) => value / 1E7;
 
-  /// Convert regular DateTime object to a Uint32 value.
+  /// Convert regular DateTime object to a [Uint32] value.
   ///
   /// The result will be seconds since 1/1/1970, in UTC. This amount is enough
   /// to cover over 135 years. Any fictitious GPS records before 1970 are
@@ -183,7 +183,7 @@ class Conversions {
   /// at the appropriate boundary (no exception will be raised).
   static int dateTimeToUint32(DateTime value) {
     final valueUtc = value.toUtc();
-    // Cap the value between the zero and the max allowed
+    // Cap the value between zero and the max allowed
     final cappedValue = valueUtc.isBefore(_zeroDateTimeUtc)
         ? _zeroDateTimeUtc
         : valueUtc.isAfter(_maxDatetimeUtc)
@@ -196,7 +196,7 @@ class Conversions {
   static DateTime uint32ToDateTime(int value) =>
       _zeroDateTimeUtc.add(Duration(seconds: value));
 
-  /// Convert altitude in meters to an Int16 value.
+  /// Convert altitude in meters to an [Int16] value.
   ///
   /// This is done by counting half-meters below/above zero, i.e.
   /// round(2 * altitude). That's enough to cover about 16km above/below zero
@@ -220,12 +220,13 @@ class Conversions {
 /// [GpsPoint] consists of four doubles: time, latitude, longitude, altitude.
 /// In order to improve the storage efficiency, these are stored as follows,
 /// all in *little endian* representation:
-/// - [GpsPoint.time]: UInt32 representation of time. For details see
+/// - [GpsPoint.time]: [UInt32] representation of time. For details see
 ///   [Conversions.dateTimeToUint32].
-/// - [GpsPoint.latitude]: Int32 in E7-spec. For details see
+/// - [GpsPoint.latitude]: [Int32] in E7-spec. For details see
 ///   [Conversions.degreesToInt32].
 /// - [GpsPoint.longitude]: like the latitude
-/// - [GpsPoint.altitude]: Int16. For details see [Conversions.altitudeToInt16].
+/// - [GpsPoint.altitude]: [Int16]. For details see
+///   [Conversions.altitudeToInt16].
 /// Added together it's 14 bytes per element.
 class GpcEfficientGpsPoint extends GpcEfficient<GpsPoint> {
   static const _endian = Endian.little;
