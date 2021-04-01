@@ -136,8 +136,8 @@ void main() {
   testConversions();
 
   testGpc<GpsPoint>(
-      'GpcEfficientGpsPoint',
-      () => GpcEfficientGpsPoint(),
+      'GpcCompactGpsPoint',
+      () => GpcCompactGpsPoint(),
       (int i) => GpsPoint(
           // The constraints of GpcEfficientGpsPoint mean the date must be
           // somewhat reasonable, so we can't just use year 1.

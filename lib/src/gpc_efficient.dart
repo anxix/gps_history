@@ -45,7 +45,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
   @override
   T operator [](int index) =>
-      _readElementFromByte(_elementNrToByteOffset(index));
+      _readElementFromBytes(_elementNrToByteOffset(index));
 
   /// The available capacity (in elements) for storage.
   ///
@@ -133,18 +133,18 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   ///
   /// Must be overridden in children, as it depends on how they implement
   /// storage and what type T is.
-  T _readElementFromByte(int byteIndex);
+  T _readElementFromBytes(int byteIndex);
 
   /// Writes the element, starting at the specified byteIndex.
   ///
   /// Must be overridden in children, as it depends on how they implement
   /// storage and what type T is.
-  void _writeElementToByte(T element, int byteIndex);
+  void _writeElementToBytes(T element, int byteIndex);
 
   @override
   void add(T element) {
     _growCapacity();
-    _writeElementToByte(element, _elementNrToByteOffset(_elementsCount));
+    _writeElementToBytes(element, _elementNrToByteOffset(_elementsCount));
     _elementsCount += 1;
   }
 
@@ -226,7 +226,7 @@ class Conversions {
   static double int16ToAltitude(int value) => value / 2.0;
 }
 
-/// Implements efficient storage for [GpsPoint] elements.
+/// Implements compact storage for [GpsPoint] elements.
 ///
 /// [GpsPoint] consists of four doubles: time, latitude, longitude, altitude.
 /// In order to improve the storage efficiency, these are stored as follows,
@@ -239,14 +239,16 @@ class Conversions {
 /// - [GpsPoint.altitude]: [Int16]. For details see
 ///   [Conversions.altitudeToInt16].
 /// Added together it's 14 bytes per element.
-class GpcEfficientGpsPoint extends GpcEfficient<GpsPoint> {
+abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   static const _endian = Endian.little;
 
   @override
   int get _bytesPerElement => 14;
 
-  @override
-  GpsPoint _readElementFromByte(int byteIndex) {
+  /// Reads a single GPS point from the bytes.
+  ///
+  /// Useful to use in children's [_readElementFromBytes] implementations.
+  GpsPoint _readGpsPointFromBytes(int byteIndex) {
     final raw_datetime = _rawData.getUint32(byteIndex, _endian);
     final raw_latitude = _rawData.getInt32(byteIndex + 4, _endian);
     final raw_longitude = _rawData.getInt32(byteIndex + 8, _endian);
@@ -260,7 +262,7 @@ class GpcEfficientGpsPoint extends GpcEfficient<GpsPoint> {
   }
 
   @override
-  void _writeElementToByte(GpsPoint element, int byteIndex) {
+  void _writeElementToBytes(GpsPoint element, int byteIndex) {
     _rawData.setInt32(
         byteIndex, Conversions.dateTimeToUint32(element.time), _endian);
     _rawData.setInt32(
@@ -269,5 +271,15 @@ class GpcEfficientGpsPoint extends GpcEfficient<GpsPoint> {
         byteIndex + 8, Conversions.degreesToInt32(element.longitude), _endian);
     _rawData.setInt16(
         byteIndex + 12, Conversions.altitudeToInt16(element.altitude), _endian);
+  }
+}
+
+class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
+  @override
+  int get _bytesPerElement => 14;
+
+  @override
+  GpsPoint _readElementFromBytes(int byteIndex) {
+    return _readGpsPointFromBytes(byteIndex);
   }
 }
