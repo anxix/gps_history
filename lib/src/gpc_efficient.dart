@@ -165,7 +165,7 @@ class Conversions {
   static final _zeroDateTimeUtc = DateTime.utc(1970);
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
-  static final double _extremeAltitude = 32767 / 2.0; //int16 is -32768..32767
+  static final int _extremeAltitude = 32767 ~/ 2; //int16 is -32768..32767
   static final int _maxSmallDouble = 0xffff.toUnsigned(16);
 
   /// Convert a latitude/longitude in degrees to E7-spec, i.e.
@@ -215,16 +215,22 @@ class Conversions {
   /// level, a range outside which not many people venture. The altitude
   /// measurement accuracy of GPS devices also tends to be way more than
   /// 1 meter, so storing at half-meter accuracy doesn't lose us much.
+  /// Null values are stored as the maximum positive [Int16].
   /// If values outside the supported range are provided, they will be capped
   /// at the appropriate boundary (no exception will be raised).
-  static int altitudeToInt16(double value) {
-    final cappedValue =
-        value.abs() < _extremeAltitude ? value : value.sign * _extremeAltitude;
-    return (cappedValue * 2).round();
+  static int altitudeToInt16(double? value) {
+    if (value != null) {
+      final cappedValue = value.sign * min(value.abs(), _extremeAltitude);
+      return (2 * cappedValue).round();
+    } else {
+      // Encode null as the maximum allowed positive Int16.
+      return 2 * _extremeAltitude + 1;
+    }
   }
 
   /// The opposite of [altitudeToInt16].
-  static double int16ToAltitude(int value) => value / 2.0;
+  static double? int16ToAltitude(int value) =>
+      value != 2 * _extremeAltitude + 1 ? value / 2.0 : null;
 
   /// Convert small double values (range about 0..6.5k) to [Uint16], maintaining
   /// one decimal of accuracy. Null values are supported and encoded as well.

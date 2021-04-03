@@ -26,8 +26,9 @@ class GpsPoint {
   /// The longitude of the point, in degrees.
   final double longitude;
 
-  /// The altitude of the point, in meters.
-  final double altitude;
+  /// The altitude of the point, in meters (is not present for some data
+  /// sources).
+  final double? altitude;
 
   GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
 
@@ -81,12 +82,16 @@ class GpsMeasurement extends GpsPoint {
       DateTime time,
       double latitude,
       double longitude,
-      double altitude,
+      double? altitude,
       this.accuracy,
       this.heading,
       this.speed,
       this.speedAccuracy)
       : super(time, latitude, longitude, altitude);
+
+  GpsMeasurement.fromPoint(GpsPoint point, this.accuracy, this.heading,
+      this.speed, this.speedAccuracy)
+      : super(point.time, point.latitude, point.longitude, point.altitude);
 
   @override
   bool operator ==(other) {

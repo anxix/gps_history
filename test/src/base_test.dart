@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
 typedef PointConstructor = GpsPoint Function(
-    DateTime date, double latitude, double longitude, double altitude);
+    DateTime date, double latitude, double longitude, double? altitude);
 
 /// Perform basic point tests.
 ///
@@ -64,7 +64,7 @@ void testEqualityOfPoints(PointConstructor makePoint) {
 void main() {
   group('Test GpsPoint', () {
     final makePoint =
-        (DateTime date, double latitude, double longitude, double altitude) =>
+        (DateTime date, double latitude, double longitude, double? altitude) =>
             GpsPoint(date, latitude, longitude, altitude);
 
     testBasicPoint(makePoint);
@@ -76,7 +76,7 @@ void main() {
     // mistaken implementation doesn't accidentally pass a test due to the
     // wrong fields being compared, that happen to have the same default value.
     final makeMeasurement = (DateTime date, double latitude, double longitude,
-            double altitude) =>
+            double? altitude) =>
         GpsMeasurement(date, latitude, longitude, altitude, 400, 500, 600, 700);
     testBasicPoint(makeMeasurement);
 
@@ -92,7 +92,7 @@ void main() {
     // accidentally pass due to fields being unequal just because they're in
     // reality different fields.
     final makeMeasurementWithNulls =
-        (DateTime date, double latitude, double longitude, double altitude) =>
+        (DateTime date, double latitude, double longitude, double? altitude) =>
             GpsMeasurement(date, latitude, longitude, altitude, 0, 0, 0, 0);
     testEqualityOfPoints(makeMeasurementWithNulls);
     final mz = makeMeasurementWithNulls(DateTime.utc(0), 0, 0, 0);

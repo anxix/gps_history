@@ -63,7 +63,7 @@ void testConversions() {
   test('Check altitude to Int16 conversions', () {
     // Check that converting back and forth gives the same value.
     for (var i = 0; i <= 100; i++) {
-      final altitude = i / 2;
+      final altitude = i / 2.0;
       expect(Conversions.int16ToAltitude(Conversions.altitudeToInt16(altitude)),
           altitude);
     }
@@ -74,8 +74,12 @@ void testConversions() {
     expect(Conversions.altitudeToInt16(-10.2), -20);
 
     // Check the caps
-    expect(Conversions.altitudeToInt16(-999999), -32767);
-    expect(Conversions.altitudeToInt16(999999), 32767);
+    expect(Conversions.altitudeToInt16(-999999), -32766);
+    expect(Conversions.altitudeToInt16(999999), 32766);
+
+    // Check the null
+    expect(Conversions.altitudeToInt16(null), 32767);
+    expect(Conversions.int16ToAltitude(32767), null);
   });
 
   test('Check small double to Uint16 conversions, with null support', () {
