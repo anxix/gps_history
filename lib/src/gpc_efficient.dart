@@ -286,6 +286,9 @@ class Conversions {
 /// Added together it's 14 bytes per element.
 abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   static const _endian = Endian.little;
+  static const int _offsetLatitude = 4;
+  static const int _offsetLongitude = 8;
+  static const int _offsetAltitude = 12;
 
   @override
   int get _bytesPerElement => 14;
@@ -310,9 +313,9 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   GpsPoint _readGpsPointFromBytes(int byteIndex) {
     return GpsPoint(
         Conversions.uint32ToDateTime(_getUint32(byteIndex)),
-        Conversions.int32ToDegrees(_getInt32(byteIndex + 4)),
-        Conversions.int32ToDegrees(_getInt32(byteIndex + 8)),
-        Conversions.int16ToAltitude(_getInt16(byteIndex + 12)));
+        Conversions.int32ToDegrees(_getInt32(byteIndex + _offsetLatitude)),
+        Conversions.int32ToDegrees(_getInt32(byteIndex + _offsetLongitude)),
+        Conversions.int16ToAltitude(_getInt16(byteIndex + _offsetAltitude)));
   }
 
   /// Writes a single GPS point to the [_rawData].
@@ -320,9 +323,12 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   /// Useful to use in children's [_writeElementToBytes] implmentations.
   void _writeGpsPointToBytes(T element, int byteIndex) {
     _setUint32(byteIndex, Conversions.dateTimeToUint32(element.time));
-    _setInt32(byteIndex + 4, Conversions.degreesToInt32(element.latitude));
-    _setInt32(byteIndex + 8, Conversions.degreesToInt32(element.longitude));
-    _setInt16(byteIndex + 12, Conversions.altitudeToInt16(element.altitude));
+    _setInt32(byteIndex + _offsetLatitude,
+        Conversions.degreesToInt32(element.latitude));
+    _setInt32(byteIndex + _offsetLongitude,
+        Conversions.degreesToInt32(element.longitude));
+    _setInt16(byteIndex + _offsetAltitude,
+        Conversions.altitudeToInt16(element.altitude));
   }
 }
 
@@ -356,6 +362,11 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
 /// Added together it's 8 bytes per element extra compared to what's needed
 /// for the inherited [GpsPoint] properties.
 class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
+  static const int _offsetAccuracy = 14;
+  static const int _offsetHeading = 16;
+  static const int _offsetSpeed = 18;
+  static const int _offsetSpeedAccuracy = 20;
+
   @override
   int get _bytesPerElement => 22;
 
@@ -368,21 +379,25 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
         point.latitude,
         point.longitude,
         point.altitude,
-        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 14)),
-        Conversions.int16ToHeading(_getUint16(byteIndex + 16)),
-        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 18)),
-        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + 20)));
+        Conversions.uint16ToSmallDouble(
+            _getUint16(byteIndex + _offsetAccuracy)),
+        Conversions.int16ToHeading(_getUint16(byteIndex + _offsetHeading)),
+        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + _offsetSpeed)),
+        Conversions.uint16ToSmallDouble(
+            _getUint16(byteIndex + _offsetSpeedAccuracy)));
   }
 
   @override
   void _writeElementToBytes(GpsMeasurement element, int byteIndex) {
     _writeGpsPointToBytes(element, byteIndex);
 
-    _setUint16(
-        byteIndex + 14, Conversions.smallDoubleToUint16(element.accuracy));
-    _setUint16(byteIndex + 16, Conversions.headingToInt16(element.heading));
-    _setUint16(byteIndex + 18, Conversions.smallDoubleToUint16(element.speed));
-    _setUint16(
-        byteIndex + 20, Conversions.smallDoubleToUint16(element.speedAccuracy));
+    _setUint16(byteIndex + _offsetAccuracy,
+        Conversions.smallDoubleToUint16(element.accuracy));
+    _setUint16(byteIndex + _offsetHeading,
+        Conversions.headingToInt16(element.heading));
+    _setUint16(byteIndex + _offsetSpeed,
+        Conversions.smallDoubleToUint16(element.speed));
+    _setUint16(byteIndex + _offsetSpeedAccuracy,
+        Conversions.smallDoubleToUint16(element.speedAccuracy));
   }
 }
