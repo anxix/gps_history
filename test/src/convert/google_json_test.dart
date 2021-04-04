@@ -13,21 +13,41 @@ import 'package:gps_history/gps_history_convert.dart';
 /// that it returns the correct response after each line ([expectedPoints]).
 void _runPointParserTest(
     String testName, List<String> lines, List<GpsPoint?> expectedPoints) {
+  // Checks for the given point that it matche sthe first item in
+  // [expectedPoints]. If it doesn't, the test is failed.
+  void checkParserResult(GpsPoint? point) {
+    if (expectedPoints.isEmpty) {
+      fail('Returned more points than expected');
+    }
+
+    expect(point, expectedPoints[0], reason: 'Incorrect result after parsing');
+
+    expectedPoints.removeAt(0);
+  }
+
   test(testName, () {
     final parser = PointParser();
 
     for (var line in lines) {
-      var p = parser.parseUpdate(line);
+      final point = parser.parseUpdate(line);
 
-      if (expectedPoints.isEmpty) {
-        fail('Returned more points than expected');
-      }
-
-      expect(p, expectedPoints[0],
-          reason: 'Incorrect result after parsing: $line');
-
-      expectedPoints.removeAt(0);
+      checkParserResult(point);
     }
+
+    // At the end there may still be a valid point state in the parser, so
+    // check for that.
+    final point = parser.toGpsPointAndReset();
+    if (point != null) {
+      checkParserResult(point);
+    }
+
+    // After we extracted the last bit of information, the parser must not
+    // return any more points.
+    expect(parser.toGpsPointAndReset(), null,
+        reason: 'Parser returned more than one final point.');
+
+    expect(parser.isAllNull, true,
+        reason: 'Parser state not all null after extracting it last state.');
 
     if (expectedPoints.isNotEmpty) {
       fail('Not all expected points found!');
@@ -42,6 +62,7 @@ void testPointParser() {
       'Arbitrary strings',
       ['wnvoiuvh', '"aiuwhe"', '"niniwuev" : "nioj"', '"jnj9aoiue": 3298'],
       [null, null, null, null]);
+//  _runPointParserTest('testName', lines, expectedPoints)
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to

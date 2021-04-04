@@ -133,31 +133,42 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
 ///   starts working on a new point (null is returned).
 class PointParser {
   final _values = List<int?>.filled(5, null);
+  static const int _indexTimestampMs = 0;
+  static const int _indexLatitudeE7 = 1;
+  static const int _indexLongitudeE7 = 2;
+  static const int _indexAltitude = 3;
+  static const int _indexAccuracy = 4;
+
   // Match things such as:
   // "key": "123"
   // key: 456
   // 'key' : '78'
+  // into two groups. First group is the key (without quotes), second key the
+  // value (also without quotes).
   static const String _keyValuePattern =
       r"""(?:["']*)([a-zA-Z0-9]+)(?:["']*)\s*\:\s?(?:["']*)(\d+)(?:["']*)""";
   static final _keyValueRegExp = RegExp(_keyValuePattern);
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
-  bool get isDefined => _values.any((element) => element == null);
+  bool get isUndefined =>
+      ((timestampMs == null) || (latitudeE7 == null) || (longitudeE7 == null));
+
+  bool get isAllNull => !_values.any((element) => element != null);
 
   // Getters for the properties.
-  int? get timestampMs => _values[0];
-  int? get latitudeE7 => _values[1];
-  int? get longitudeE7 => _values[2];
-  int? get altitude => _values[3];
-  int? get accuracy => _values[4];
+  int? get timestampMs => _values[_indexTimestampMs];
+  int? get latitudeE7 => _values[_indexLatitudeE7];
+  int? get longitudeE7 => _values[_indexLongitudeE7];
+  int? get altitude => _values[_indexAltitude];
+  int? get accuracy => _values[_indexAccuracy];
 
   // Setters for the properties.
-  set timestampMs(int? value) => _setValue(0, value);
-  set latitudeE7(int? value) => _setValue(1, value);
-  set longitudeE7(int? value) => _setValue(2, value);
-  set altitude(int? value) => _setValue(3, value);
-  set accuracy(int? value) => _setValue(4, value);
+  set timestampMs(int? value) => _setValue(_indexTimestampMs, value);
+  set latitudeE7(int? value) => _setValue(_indexLatitudeE7, value);
+  set longitudeE7(int? value) => _setValue(_indexLongitudeE7, value);
+  set altitude(int? value) => _setValue(_indexAltitude, value);
+  set accuracy(int? value) => _setValue(_indexAccuracy, value);
 
   /// Sets an individual value in the [_values] list.
   ///
@@ -173,7 +184,7 @@ class PointParser {
     _values[index] = value;
   }
 
-  /// Resets the point to a completely null state.
+  /// Resets the internal parser state to completely null.
   void reset() {
     for (var i = 0; i < _values.length; i++) {
       _values[i] = null;
@@ -200,23 +211,34 @@ class PointParser {
       return null;
     }
 
-    int? index = null;
+    int? index;
     if (key == 'timestampms') {
-      index = 0;
+      index = _indexTimestampMs;
     } else if (key == 'latitudee7') {
-      index = 1;
+      index = _indexLatitudeE7;
     } else if (key == 'longitudee7') {
-      index = 2;
+      index = _indexLongitudeE7;
     } else if (key == 'altitude') {
-      index = 3;
+      index = _indexAltitude;
     } else if (key == 'accuracy') {
-      index = 4;
+      index = _indexAccuracy;
     } else {
       return null;
     }
   }
 
-  GpsPoint toGpsPoint() {
+  /// Returns a GpsPoint representing the current internal state, if that state
+  /// is sufficiently defined to represent such a point (null otherwise). The
+  /// internal state is reset by this operation.
+  ///
+  /// The returned point may be GpsPoint if no accuracy is present in the
+  /// current state, or GpsMeasurement if the accuracy is present.
+  GpsPoint? toGpsPointAndReset() {
+    if (isUndefined) {
+      reset();
+      return null;
+    }
+
     var p = GpsPoint(DateTime.fromMillisecondsSinceEpoch(timestampMs!),
         latitudeE7! / 1E7, longitudeE7! / 1E7, altitude?.toDouble() ?? 0.0);
 
@@ -226,6 +248,7 @@ class PointParser {
       p = GpsMeasurement.fromPoint(p, accuracy!.toDouble(), null, null, null);
     }
 
+    reset();
     return p;
   }
 }
