@@ -69,12 +69,6 @@ void _testPointParserAllNullsAndLastState(
   expectedPoints.add(expectedPoint);
 }
 
-/// * timestampMs: UTC, in milliseconds since 1/1/1970
-/// * latitudeE7: latitude in E7 notation, i.e. round(degrees * 1E7)
-/// * longitudeE7: longitude, same notation as latitude
-/// * accuracy: in meters (int16)
-/// * altitude: in meters
-
 void testPointParser() {
   // Test the empty cases.
   _testPointParser('Nothing', [], []);
@@ -118,7 +112,7 @@ void testPointParser() {
   _testPointParser('Parse two consecutive points', [
     '"timestampMs" : 0,',
     '"latitudeE7" : 1,',
-    '"longitudeE7:2,',
+    '"longitudeE7" :2,',
     '"timestampMs" : $timeSignature,',
     '"latitudeE7" : 5,',
     '"longitudeE7" : 6,'
@@ -131,6 +125,18 @@ void testPointParser() {
     null,
     GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, null)
   ]);
+
+  // Test parsing to [GpsMeasurement].
+  _testPointParserAllNullsAndLastState(
+      'Parse to GpsMeasurement',
+      [
+        '"timestampMs" : 0,',
+        '"latitudeE7" : 1,',
+        '"longitudeE7" :2,',
+        '"accuracy" : 12,',
+      ],
+      GpsMeasurement(
+          DateTime.utc(1970), 1.0E-7, 2.0E-7, null, 12, null, null, null));
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to
