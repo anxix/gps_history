@@ -67,6 +67,7 @@ void _testPointParserAllNullsAndLastState(
   }
 
   expectedPoints.add(expectedPoint);
+  _testPointParser(testName, lines, expectedPoints);
 }
 
 void testPointParser() {
@@ -75,10 +76,10 @@ void testPointParser() {
   _testPointParser('Empty string', [''], [null]);
 
   // Test arbitrary junk data.
-  _testPointParserAllNullsAndLastState(
+  _testPointParser(
       'Arbitrary strings',
       ['wnvoiuvh', '"aiuwhe"', '"niniwuev" : "nioj"', '"jnj9aoiue": 3298'],
-      null);
+      [null, null, null, null]);
 
   // Test simple one-point defintion.
   _testPointParserAllNullsAndLastState(
@@ -95,25 +96,36 @@ void testPointParser() {
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
 
   // Test resetting of internal state after incomplete initial point state.
-  var timeSignature = 24 * 3600 * 1000; // start of 2 Jan 1970
+  final oneDay = 24 * 3600 * 1000; // start of 2 Jan 1970
   _testPointParserAllNullsAndLastState(
       'Parse single point after incomplete point',
       [
         '"timestampMs" : 0,',
         '"latitudeE7" : 1,',
-        '"timestampMs" : $timeSignature,', // this should lead to the above two being discarded
+        '"timestampMs" : $oneDay,', // this should lead to the above two being discarded
         '"latitudeE7" : 5,',
         '"longitudeE7" : 6,',
         '"altitude" : 8,'
       ],
       GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, 8.0));
 
+  // Test negative values
+  _testPointParserAllNullsAndLastState(
+      'Parse negative values',
+      [
+        '"timestampMs" : -$oneDay,', // this should lead to the above two being discarded
+        '"latitudeE7" : -5,',
+        '"longitudeE7" : -6,',
+        '"altitude" : -80,'
+      ],
+      GpsPoint(DateTime.utc(1969, 12, 31), -5.0E-7, -6.0E-7, -80.0));
+
   // Test parsing of multiple points.
   _testPointParser('Parse two consecutive points', [
     '"timestampMs" : 0,',
     '"latitudeE7" : 1,',
     '"longitudeE7" :2,',
-    '"timestampMs" : $timeSignature,',
+    '"timestampMs" : $oneDay,',
     '"latitudeE7" : 5,',
     '"longitudeE7" : 6,'
   ], [
@@ -137,6 +149,22 @@ void testPointParser() {
       ],
       GpsMeasurement(
           DateTime.utc(1970), 1.0E-7, 2.0E-7, null, 12, null, null, null));
+
+  // Test parsing with some real data.
+  _testPointParserAllNullsAndLastState(
+      'Parse real data',
+      [
+        '}, {',
+        '"timestampMs" : "1616789690748",',
+        '"latitudeE7" : 371395513,',
+        '"longitudeE7" : -79376766,',
+        '"accuracy" : 20,',
+        '"altitude" : 402,',
+        '"verticalAccuracy" : 3',
+        '}, {'
+      ],
+      GpsMeasurement(DateTime.utc(2021, 3, 26, 20, 14, 50, 748), 37.1395513,
+          -7.9376766, 402, 20, null, null, null));
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to
