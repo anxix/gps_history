@@ -11,7 +11,7 @@ import 'package:gps_history/gps_history_convert.dart';
 
 /// Tests the PointParser against the specified sequence of [lines], ensuring
 /// that it returns the correct response after each line ([expectedPoints]).
-void _runPointParserTest(
+void _testPointParser(
     String testName, List<String> lines, List<GpsPoint?> expectedPoints) {
   // Checks for the given point that it matche sthe first item in
   // [expectedPoints]. If it doesn't, the test is failed.
@@ -55,21 +55,82 @@ void _runPointParserTest(
   });
 }
 
+/// Simplified version of [_testPointParser] that expects nulls for every
+/// line in [lines] and only tests the final parser state at the end against
+/// the [expectedPoint].
+void _testPointParserAllNullsAndLastState(
+    String testName, List<String> lines, GpsPoint? expectedPoint) {
+  var expectedPoints = <GpsPoint?>[];
+
+  for (var line in lines) {
+    expectedPoints.add(null);
+  }
+
+  expectedPoints.add(expectedPoint);
+}
+
+/// * timestampMs: UTC, in milliseconds since 1/1/1970
+/// * latitudeE7: latitude in E7 notation, i.e. round(degrees * 1E7)
+/// * longitudeE7: longitude, same notation as latitude
+/// * accuracy: in meters (int16)
+/// * altitude: in meters
+
 void testPointParser() {
-  _runPointParserTest('Nothing', [], []);
-  _runPointParserTest('Empty string', [''], [null]);
-  _runPointParserTest(
+  // Test the empty cases.
+  _testPointParser('Nothing', [], []);
+  _testPointParser('Empty string', [''], [null]);
+
+  // Test arbitrary junk data.
+  _testPointParserAllNullsAndLastState(
       'Arbitrary strings',
       ['wnvoiuvh', '"aiuwhe"', '"niniwuev" : "nioj"', '"jnj9aoiue": 3298'],
-      [null, null, null, null]);
-  _runPointParserTest(
+      null);
+
+  // Test simple one-point defintion.
+  _testPointParserAllNullsAndLastState(
       'Parse single point in standard order',
       ['"timestampMs" : 0,', '"latitudeE7" : 1,', '"longitudeE7:2,'],
-      [null, null, null, GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null)]);
-  _runPointParserTest(
+      GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
+  _testPointParserAllNullsAndLastState(
       'Parse single point in nonstandard order',
       ['"latitudeE7" : \'1\',', 'timestampMs : "0",', '"longitudeE7:2,'],
-      [null, null, null, GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null)]);
+      GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
+  _testPointParserAllNullsAndLastState(
+      'Parse single point with fluff in between',
+      ['"timestampMs" : 0,', '"latitudeE7" : 1,', '"x" : 8', '"longitudeE7:2,'],
+      GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
+
+  // Test resetting of internal state after incomplete initial point state.
+  var timeSignature = 24 * 3600 * 1000; // start of 2 Jan 1970
+  _testPointParserAllNullsAndLastState(
+      'Parse single point after incomplete point',
+      [
+        '"timestampMs" : 0,',
+        '"latitudeE7" : 1,',
+        '"timestampMs" : $timeSignature,', // this should lead to the above two being discarded
+        '"latitudeE7" : 5,',
+        '"longitudeE7" : 6,',
+        '"altitude" : 8,'
+      ],
+      GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, 8.0));
+
+  // Test parsing of multiple points.
+  _testPointParser('Parse two consecutive points', [
+    '"timestampMs" : 0,',
+    '"latitudeE7" : 1,',
+    '"longitudeE7:2,',
+    '"timestampMs" : $timeSignature,',
+    '"latitudeE7" : 5,',
+    '"longitudeE7" : 6,'
+  ], [
+    null,
+    null,
+    null, // Here it doesn't yet know the point is fully defined (finds that next).
+    GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null),
+    null,
+    null,
+    GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, null)
+  ]);
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to

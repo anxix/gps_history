@@ -227,7 +227,15 @@ class PointParser {
       return null;
     }
 
+    // If starting the definition of a new point and the current state looks
+    // like a fully defined point, return the current state as result.
+    final result = (_values[index] != null) && (!isUndefined)
+        ? toGpsPointAndReset()
+        : null;
+
     _setValue(index, value);
+
+    return result;
   }
 
   /// Returns a GpsPoint representing the current internal state, if that state
