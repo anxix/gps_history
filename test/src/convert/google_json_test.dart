@@ -62,7 +62,14 @@ void testPointParser() {
       'Arbitrary strings',
       ['wnvoiuvh', '"aiuwhe"', '"niniwuev" : "nioj"', '"jnj9aoiue": 3298'],
       [null, null, null, null]);
-//  _runPointParserTest('testName', lines, expectedPoints)
+  _runPointParserTest(
+      'Parse single point in standard order',
+      ['"timestampMs" : 0,', '"latitudeE7" : 1,', '"longitudeE7:2,'],
+      [null, null, null, GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null)]);
+  _runPointParserTest(
+      'Parse single point in nonstandard order',
+      ['"latitudeE7" : \'1\',', 'timestampMs : "0",', '"longitudeE7:2,'],
+      [null, null, null, GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null)]);
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to

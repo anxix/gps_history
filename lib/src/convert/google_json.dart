@@ -202,16 +202,10 @@ class PointParser {
       return null;
     }
 
-    final key = match.group(0)!.toLowerCase();
-    final valueString = match.group(1)!;
+    final key = match.group(1)!.toLowerCase();
+    final valueString = match.group(2)!;
 
-    try {
-      final value = int.parse(valueString);
-    } catch (e) {
-      return null;
-    }
-
-    int? index;
+    int index;
     if (key == 'timestampms') {
       index = _indexTimestampMs;
     } else if (key == 'latitudee7') {
@@ -225,6 +219,15 @@ class PointParser {
     } else {
       return null;
     }
+
+    int value;
+    try {
+      value = int.parse(valueString);
+    } catch (e) {
+      return null;
+    }
+
+    _setValue(index, value);
   }
 
   /// Returns a GpsPoint representing the current internal state, if that state
@@ -239,8 +242,8 @@ class PointParser {
       return null;
     }
 
-    var p = GpsPoint(DateTime.fromMillisecondsSinceEpoch(timestampMs!),
-        latitudeE7! / 1E7, longitudeE7! / 1E7, altitude?.toDouble() ?? 0.0);
+    var p = GpsPoint(DateTime.fromMillisecondsSinceEpoch(timestampMs!).toUtc(),
+        latitudeE7! / 1E7, longitudeE7! / 1E7, altitude?.toDouble());
 
     // If we have accuracy specified, return a GpsMeasurement object that's
     // capable of storing accuracy information.
