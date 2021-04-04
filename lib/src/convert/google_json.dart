@@ -146,7 +146,7 @@ class PointParser {
   // into two groups. First group is the key (without quotes), second key the
   // value (also without quotes).
   static const String _keyValuePattern =
-      r"""(?:["']*)([a-zA-Z0-9]+)(?:["']*)\s*\:\s?(?:["']*)(-?\d+)(?:["']*)""";
+      r"""["']*([a-zA-Z0-9]+)["']*\s*\:\s*["']*(-?\d+)["']*""";
   static final _keyValueRegExp = RegExp(_keyValuePattern);
 
   /// Points are defined if the minimum required information is provided
@@ -202,8 +202,6 @@ class PointParser {
       return null;
     }
 
-    // Measured a 10% performance increase if we do a case senstivie
-    // implementation, not really worth the decrease in flexibility.
     final key = match.group(1)!.toLowerCase();
     final valueString = match.group(2)!;
 
