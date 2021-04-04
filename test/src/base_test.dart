@@ -71,6 +71,15 @@ void main() {
     testEqualityOfPoints(makePoint);
   });
 
+  /// Test correct construction of [GpsMeasurement] from [GpsPoint].
+  void testMeasurementFromPoint() {
+    test('Check correct construction from point', () {
+      final p = GpsPoint(DateTime.utc(1), 2, 3, 4);
+      final m = GpsMeasurement.fromPoint(p, 5, 6, 7, 8);
+      expect(m, GpsMeasurement(DateTime.utc(1), 2, 3, 4, 5, 6, 7, 8));
+    });
+  }
+
   group('Test GpsMeasurement', () {
     // For basic point tests we want to have all fields different values, so any
     // mistaken implementation doesn't accidentally pass a test due to the
@@ -79,6 +88,8 @@ void main() {
             double? altitude) =>
         GpsMeasurement(date, latitude, longitude, altitude, 400, 500, 600, 700);
     testBasicPoint(makeMeasurement);
+
+    testMeasurementFromPoint();
 
     // run specific tests that are not covered by the basic point test
     final m = makeMeasurement(DateTime.utc(2020), 10, 20, 30);
