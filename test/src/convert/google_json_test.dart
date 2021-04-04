@@ -38,6 +38,10 @@ void _runPointParserTest(
 void testPointParser() {
   _runPointParserTest('Nothing', [], []);
   _runPointParserTest('Empty string', [''], [null]);
+  _runPointParserTest(
+      'Arbitrary strings',
+      ['wnvoiuvh', '"aiuwhe"', '"niniwuev" : "nioj"', '"jnj9aoiue": 3298'],
+      [null, null, null, null]);
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to

@@ -133,6 +133,13 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
 ///   starts working on a new point (null is returned).
 class PointParser {
   final _values = List<int?>.filled(5, null);
+  // Match things such as:
+  // "key": "123"
+  // key: 456
+  // 'key' : '78'
+  static const String _keyValuePattern =
+      r"""(?:["']*)([a-zA-Z0-9]+)(?:["']*)\s*\:\s?(?:["']*)(\d+)(?:["']*)""";
+  static final _keyValueRegExp = RegExp(_keyValuePattern);
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -174,11 +181,39 @@ class PointParser {
   }
 
   /// Tries to update its fields based on information from the specified
-  /// [str], which should come from a JSON file and emits a new GpsPoint
-  /// if it's determined based on the new [str] that the previous information
-  /// it contained was a valid point.
-  GpsPoint? parseUpdate(String str) {
-    return null;
+  /// [line], which should come from a JSON file. Returns a new GpsPoint
+  /// if it's determined based on the new [line] that the previous information
+  /// it contained was a valid point, or [null] otherwise.
+  GpsPoint? parseUpdate(String line) {
+    final match = _keyValueRegExp.firstMatch(line);
+
+    if ((match == null) || (match.groupCount != 2)) {
+      return null;
+    }
+
+    final key = match.group(0)!.toLowerCase();
+    final valueString = match.group(1)!;
+
+    try {
+      final value = int.parse(valueString);
+    } catch (e) {
+      return null;
+    }
+
+    int? index = null;
+    if (key == 'timestampms') {
+      index = 0;
+    } else if (key == 'latitudee7') {
+      index = 1;
+    } else if (key == 'longitudee7') {
+      index = 2;
+    } else if (key == 'altitude') {
+      index = 3;
+    } else if (key == 'accuracy') {
+      index = 4;
+    } else {
+      return null;
+    }
   }
 
   GpsPoint toGpsPoint() {
