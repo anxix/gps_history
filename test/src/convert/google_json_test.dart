@@ -9,6 +9,8 @@ import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
 
+final oneDay = 24 * 3600 * 1000; // one day in milliseconds
+
 /// Tests the PointParser against the specified sequence of [lines], ensuring
 /// that it returns the correct response after each line ([expectedPoints]).
 void _testPointParser(
@@ -96,7 +98,6 @@ void testPointParser() {
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
 
   // Test resetting of internal state after incomplete initial point state.
-  final oneDay = 24 * 3600 * 1000; // start of 2 Jan 1970
   _testPointParserAllNullsAndLastState(
       'Parse single point after incomplete point',
       [
@@ -172,28 +173,10 @@ void testPointParser() {
 void testJsonToGps(
     String testName, String json, List<GpsPoint> expectedPoints) {
   test(testName, () {
-    var jsonStream = Stream.value(json);
-    var points = jsonStream.transform(GoogleJsonHistoryDecoder());
+    final jsonStream = Stream.value(json);
+    final points = jsonStream.transform(GoogleJsonHistoryDecoder());
 
-    // Check that every point comes in as expected.
-    points.listen((point) {
-      // If we've already matched all expected points, but we get another one,
-      // this is a failed test.
-      if (expectedPoints.isEmpty) {
-        fail('Parsed more points than expected');
-      }
-
-      // If the point we get is what we expected, remove it from the expected
-      // list and continue.
-      if (point == expectedPoints[0]) {
-        expectedPoints.removeAt(0);
-      }
-    });
-
-    // We've got all the points back that the parser found, if we expect even
-    // more, that's a failed test.
-    expect(expectedPoints.length, 0,
-        reason: 'Some expectedPoints were not returned');
+    expect(points, emitsInOrder(expectedPoints));
   });
 }
 
@@ -201,4 +184,14 @@ void main() {
   testPointParser();
 
   testJsonToGps('Empty string', '', List.empty());
+  testJsonToGps('Two points', '''
+    "timestampMs" : 0,
+    "latitudeE7" : 1,
+    "longitudeE7" :2,
+    "timestampMs" : $oneDay,
+    "latitudeE7" : 5,
+    "longitudeE7" : 6''', [
+    GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null),
+    GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, null)
+  ]);
 }

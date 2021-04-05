@@ -63,63 +63,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:gps_history/gps_history.dart';
 
-/// Decoder for a stream of text from a Google JSON file to a stream of
-/// GpsPoint instances.
-///
-/// Although the stream may contain information about accuracy, this is
-/// deemed insufficiently important to store in the converted data, particularly
-/// given the huge amount involved and that the rest of the GpsMeasurement
-/// fields are not present. For the purpose of this data, namely show global
-/// historic position information, the accuracy etc. should not be of great
-/// importance.
-class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
-  double? _minSecondsBetweenDataponts;
-  double? _accuracyThreshold;
-
-  /// Create the decoder with optional configuration parameters that can filter
-  /// out undesired points, reducing the amount of data.
-  ///
-  /// Specify [minSecondsBetweenDatapoints] to any non-null value to ensure that
-  /// consecutive GPS points are at least that many seconds apart. If null,
-  /// time from previous emitted point will not be a reason to skip a point.
-  /// Google's data tracks at 1 second intervals, which is rather ridiculously
-  /// granular and can generate over 5 million data points in 10 years.
-  /// An interval of 10 seconds cuts that down tremendously, at no great loss
-  /// for the purpose intended.
-  ///
-  /// Specify [accuracyThreshold] to any non-null value to skip an points
-  /// that don't have an accuracy better that the threshold. If null, the
-  /// accuracy will not be a reason to skip a point.
-  GoogleJsonHistoryDecoder(
-      {double? minSecondsBetweenDatapoints = 10,
-      double? accuracyThreshold = 100}) {
-    _minSecondsBetweenDataponts = minSecondsBetweenDatapoints;
-    _accuracyThreshold = accuracyThreshold;
-  }
-
-  @override
-  Stream<GpsPoint> bind(Stream<String> inputStream) {
-    // split the string into lines
-    final linesStream = inputStream.transform(LineSplitter());
-    return Stream.eventTransformed(
-        linesStream,
-        (EventSink<GpsPoint> outputSink) =>
-            _GpsPointParserEventSink(outputSink));
-  }
-
-  @override
-  GpsPoint convert(String line, [int start = 0, int? end]) {
-    // TODO: implement convert
-    throw UnsupportedError('Not yet implemented convert: $this');
-  }
-
-  @override
-  Sink<String> startChunkedConversion(Sink<GpsPoint> outputSink) {
-    throw UnsupportedError(
-        'This converter does not support chunked conversions: $this');
-  }
-}
-
 /// Parses successive lines and attempts to collect the complete information
 /// to represent an individual point.
 ///
@@ -266,10 +209,66 @@ class PointParser {
   }
 }
 
+/// Decoder for a stream of text from a Google JSON file to a stream of
+/// GpsPoint instances.
+///
+/// Although the stream may contain information about accuracy, this is
+/// deemed insufficiently important to store in the converted data, particularly
+/// given the huge amount involved and that the rest of the GpsMeasurement
+/// fields are not present. For the purpose of this data, namely show global
+/// historic position information, the accuracy etc. should not be of great
+/// importance.
+class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
+  double? _minSecondsBetweenDataponts;
+  double? _accuracyThreshold;
+
+  /// Create the decoder with optional configuration parameters that can filter
+  /// out undesired points, reducing the amount of data.
+  ///
+  /// Specify [minSecondsBetweenDatapoints] to any non-null value to ensure that
+  /// consecutive GPS points are at least that many seconds apart. If null,
+  /// time from previous emitted point will not be a reason to skip a point.
+  /// Google's data tracks at 1 second intervals, which is rather ridiculously
+  /// granular and can generate over 5 million data points in 10 years.
+  /// An interval of 10 seconds cuts that down tremendously, at no great loss
+  /// for the purpose intended.
+  ///
+  /// Specify [accuracyThreshold] to any non-null value to skip an points
+  /// that don't have an accuracy better that the threshold. If null, the
+  /// accuracy will not be a reason to skip a point.
+  GoogleJsonHistoryDecoder(
+      {double? minSecondsBetweenDatapoints = 10,
+      double? accuracyThreshold = 100}) {
+    _minSecondsBetweenDataponts = minSecondsBetweenDatapoints;
+    _accuracyThreshold = accuracyThreshold;
+  }
+
+  @override
+  Stream<GpsPoint> bind(Stream<String> inputStream) {
+    // split the string into lines
+    final linesStream = inputStream.transform(LineSplitter());
+    return Stream.eventTransformed(
+        linesStream,
+        (EventSink<GpsPoint> outputSink) =>
+            _GpsPointParserEventSink(outputSink));
+  }
+
+  @override
+  GpsPoint convert(String line, [int start = 0, int? end]) {
+    // TODO: implement convert
+    throw UnsupportedError('Not yet implemented convert: $this');
+  }
+
+  @override
+  Sink<String> startChunkedConversion(Sink<GpsPoint> outputSink) {
+    return _GpsPointParserSink(outputSink);
+  }
+}
+
 /// Sink for converting *entire* lines from a Google JSON file to GPS points.
 class _GpsPointParserSink extends StringConversionSinkBase {
   final Sink<GpsPoint> _outputSink;
-  final _parsedPoint = PointParser();
+  final _pointParser = PointParser();
 
   _GpsPointParserSink(this._outputSink);
 
@@ -278,7 +277,7 @@ class _GpsPointParserSink extends StringConversionSinkBase {
   void addSlice(String str, int start, int end, bool isLast) {
     // Skip invalid or empty strings while parsing.
     if (start < end) {
-      var point = _parsedPoint.parseUpdate(str.substring(start, end));
+      var point = _pointParser.parseUpdate(str.substring(start, end));
       if (point != null) {
         _outputSink.add(point);
       }
@@ -291,6 +290,12 @@ class _GpsPointParserSink extends StringConversionSinkBase {
 
   @override
   void close() {
+    // The parser probably still contains information on a last, not yet
+    // emitted point.
+    var point = _pointParser.toGpsPointAndReset();
+    if (point != null) {
+      _outputSink.add(point);
+    }
     _outputSink.close();
   }
 }
