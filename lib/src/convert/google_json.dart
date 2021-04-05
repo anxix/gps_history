@@ -86,11 +86,10 @@ class PointParser {
   // "key": "123"
   // key: -456
   // 'key' : '78'
-  // into two groups. First group is the key (without quotes), second key the
-  // value (also without quotes).
-  static const String _keyValuePattern =
-      r"""["']*([a-zA-Z0-9]+)["']*\s*\:\s*["']*(-?\d+)["']*""";
-  static final _keyValueRegExp = RegExp(_keyValuePattern);
+  static const String _keyPattern = r"""\w+""";
+  static final _keyRegExp = RegExp(_keyPattern);
+  static const String _valuePattern = r"""(-?\d+)""";
+  static final _valueRegExp = RegExp(_valuePattern);
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -139,14 +138,13 @@ class PointParser {
   /// if it's determined based on the new [line] that the previous information
   /// it contained was a valid point, or [null] otherwise.
   GpsPoint? parseUpdate(String line) {
-    final match = _keyValueRegExp.firstMatch(line);
-
-    if ((match == null) || (match.groupCount != 2)) {
+    final keyMatch = _keyRegExp.firstMatch(line);
+    if (keyMatch == null) {
       return null;
     }
 
-    final key = match.group(1)!.toLowerCase();
-    final valueString = match.group(2)!;
+    final key =
+        keyMatch.input.substring(keyMatch.start, keyMatch.end).toLowerCase();
 
     int index;
     if (key == 'timestampms') {
@@ -162,6 +160,19 @@ class PointParser {
     } else {
       return null;
     }
+
+    // Usually if the key looks valid, the value will also look valid. Therefore
+    // we only parse the value if the key is not just valid, but also is one of
+    // the keys we're interested in. There are several keys in the JSON we're
+    // not interested in, so we can save time dealing with the number part of
+    // those.
+    final valueMatch = _valueRegExp.firstMatch(line.substring(keyMatch.end));
+    if (valueMatch == null) {
+      return null;
+    }
+
+    final valueString =
+        valueMatch.input.substring(valueMatch.start, valueMatch.end);
 
     int value;
     try {
@@ -255,7 +266,8 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
 
   @override
   GpsPoint convert(String line, [int start = 0, int? end]) {
-    // TODO: implement convert
+    // There's no guarantee that inputting a line would output a GpsPoint,
+    // so this method seems rather difficult to implement.
     throw UnsupportedError('Not yet implemented convert: $this');
   }
 
