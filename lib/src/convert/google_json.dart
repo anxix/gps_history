@@ -86,9 +86,9 @@ class PointParser {
   // "key": "123"
   // key: -456
   // 'key' : '78'
-  static const String _keyPattern = r"""\w+""";
+  static const String _keyPattern = r'''\w+''';
   static final _keyRegExp = RegExp(_keyPattern);
-  static const String _valuePattern = r"""(-?\d+)""";
+  static const String _valuePattern = r'''(-?\d+)''';
   static final _valueRegExp = RegExp(_valuePattern);
 
   /// Points are defined if the minimum required information is provided
