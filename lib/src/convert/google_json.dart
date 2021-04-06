@@ -207,12 +207,9 @@ class PointParser {
     final valueString =
         valueMatch.input.substring(valueMatch.start, valueMatch.end);
 
-    int value;
-    try {
-      value = int.parse(valueString);
-    } catch (e) {
-      // Cannot really happen given the regex used to parse the string, but
-      // since it turns out not to cost any performance, keep the safety.
+    final value = int.tryParse(valueString);
+    if (value == null) {
+      // Cannot really happen given the regex used to parse the string.
       return null;
     }
 
