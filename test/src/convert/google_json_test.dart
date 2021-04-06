@@ -64,7 +64,7 @@ void _testPointParserAllNullsAndLastState(
     String testName, List<String> lines, GpsPoint? expectedPoint) {
   var expectedPoints = <GpsPoint?>[];
 
-  for (var line in lines) {
+  for (var _ in lines) {
     expectedPoints.add(null);
   }
 
@@ -101,7 +101,7 @@ void testPointParser() {
   _testPointParserAllNullsAndLastState(
       'Parse single point after incomplete point',
       [
-        '"timestampMs" : 0,',
+        '"timestampMs" : 99999,',
         '"latitudeE7" : 1,',
         '"timestampMs" : $oneDay,', // this should lead to the above two being discarded
         '"latitudeE7" : 5,',
