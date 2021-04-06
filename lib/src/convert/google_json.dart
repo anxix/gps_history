@@ -143,15 +143,14 @@ class PointParser {
       return null;
     }
 
-    final key =
-        keyMatch.input.substring(keyMatch.start, keyMatch.end).toLowerCase();
+    final key = keyMatch.input.substring(keyMatch.start, keyMatch.end);
 
     int index;
-    if (key == 'timestampms') {
+    if (key == 'timestampMs') {
       index = _indexTimestampMs;
-    } else if (key == 'latitudee7') {
+    } else if (key == 'latitudeE7') {
       index = _indexLatitudeE7;
-    } else if (key == 'longitudee7') {
+    } else if (key == 'longitudeE7') {
       index = _indexLongitudeE7;
     } else if (key == 'altitude') {
       index = _indexAltitude;
