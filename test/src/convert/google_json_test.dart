@@ -84,6 +84,10 @@ void testPointParser() {
       [null, null, null, null]);
 
   // Test simple one-point defintion.
+  _testPointParser(
+      'Parse invalid point in standard order',
+      ['"timestampMs":0,', '"latitudeE7" :-,', '"longitudeE7": 2,'],
+      [null, null, null]);
   _testPointParserAllNullsAndLastState(
       'Parse single point in standard order',
       ['"timestampMs":0,', '"latitudeE7" :1,', '"longitudeE7": 2,'],
