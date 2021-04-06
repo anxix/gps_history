@@ -228,6 +228,9 @@ class PointParser {
 
     var index;
 
+    // It looks like this could be extracted into a separate method, but
+    // attempts at this have led to a 20% drop in performance. The code is very
+    // sensitive.
     final currentChar = line.codeUnitAt(pos);
     // Deal with the "t" case.
     if (currentChar == _charLowerT && lineLength >= pos + 12) {
