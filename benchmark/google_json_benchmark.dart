@@ -63,7 +63,7 @@ void main() {
   final dt = stopwatch.elapsedMilliseconds / 1000.0;
   var nrLines = nrLoops * lines.length;
   print(
-      'BENCHMARK: $nrPointsFound points from $nrLines lines in ${dt.toString()}s ' +
-          'i.e. ${dt / (nrLines / 1000000.0)} s/1M lines ' +
-          'or ${nrLines / dt / 1000000} M lines/s');
+      'BENCHMARK: $nrPointsFound points from $nrLines lines in ${dt.toString()}s '
+      'i.e. ${dt / (nrLines / 1000000.0)} s/1M lines '
+      'or ${nrLines / dt / 1000000} M lines/s');
 }
