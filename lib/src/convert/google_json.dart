@@ -156,7 +156,8 @@ class PointParser {
   /// string.
   ///
   /// The value must be a number, possibly negative, possibly wrapped between
-  /// double quotes.
+  /// double quotes. [pos] indicates where to start looking in [line] for the
+  /// value part.
   static String? _parseValueString(String line, int lineLength, int pos) {
     // Skip ahead to digits or minus sign.
     var valueString;
