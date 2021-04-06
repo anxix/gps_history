@@ -236,8 +236,11 @@ class PointParser {
       return null;
     }
 
-    var p = GpsPoint(DateTime.fromMillisecondsSinceEpoch(timestampMs!).toUtc(),
-        latitudeE7! / 1E7, longitudeE7! / 1E7, altitude?.toDouble());
+    var p = GpsPoint(
+        DateTime.fromMillisecondsSinceEpoch(timestampMs!, isUtc: true),
+        latitudeE7! / 1E7,
+        longitudeE7! / 1E7,
+        altitude?.toDouble());
 
     // If we have accuracy specified, return a GpsMeasurement object that's
     // capable of storing accuracy information.
