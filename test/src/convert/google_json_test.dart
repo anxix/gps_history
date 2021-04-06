@@ -90,11 +90,11 @@ void testPointParser() {
       [null, null, null]);
   _testPointParserAllNullsAndLastState(
       'Parse single point in standard order',
-      ['"timestampMs":0,', '"latitudeE7" :1,', '"longitudeE7": 2,'],
+      ['"timestampMs":0,', '"latitudeE7" :1,', '"longitudeE7": 2'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
   _testPointParserAllNullsAndLastState(
       'Parse single point in nonstandard order',
-      ['"latitudeE7" : \'1\',', '"timestampMs" : "0",', '"longitudeE7" : 2'],
+      ['"latitudeE7" : \'1\',', '"timestampMs" : "0",', '"longitudeE7" : "2"'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
   _testPointParserAllNullsAndLastState(
       'Parse single point with fluff in between',
