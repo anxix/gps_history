@@ -82,14 +82,16 @@ class PointParser {
   static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
 
-  // Match things such as:
-  // "key": "123"
-  // key: -456
-  // 'key' : '78'
-  static const String _keyPattern = r'''\w+''';
-  static final _keyRegExp = RegExp(_keyPattern);
-  static const String _valuePattern = r'''(-?\d+)''';
-  static final _valueRegExp = RegExp(_valuePattern);
+  static const _charDoubleQuote = 34;
+  static const _charMinus = 45;
+  static const _char0 = 48;
+  static const _char7 = 55;
+  static const _char9 = 57;
+  static const _charLowerA = 97;
+  static const _charLowerC = 99;
+  static const _charLowerL = 108;
+  static const _charLowerS = 115;
+  static const _charLowerT = 116;
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -133,83 +135,132 @@ class PointParser {
     }
   }
 
-  /// Convert a [keyMatch] from [parseUpdate] to an index in [_values].
-  int? _keyMatchToIndex(RegExpMatch keyMatch) {
-    // All the keys used in a Google location export JSON file and their length:
-    // accuracy : 8
-    // activity : 8
-    // altitude : 8
-    // confidence : 10
-    // heading : 7
-    // latitudeE7 : 10
-    // locations : 9
-    // longitudeE7 : 11
-    // timestampMs : 11
-    // type : 4
-    // velocity : 8
-    // verticalAccuracy : 16
-
-    switch (keyMatch.end - keyMatch.start) {
-      case 11:
-        {
-          if (keyMatch.input[keyMatch.start + 9] == 'M') {
-            return _indexTimestampMs;
-          } else if (keyMatch.input[keyMatch.start + 9] == 'E') {
-            return _indexLongitudeE7;
-          }
-          break;
-        }
-      case 10:
-        {
-          if (keyMatch.input[keyMatch.start + 8] == 'E') {
-            return _indexLatitudeE7;
-          }
-          break;
-        }
-      case 8:
-        {
-          if (keyMatch.input[keyMatch.start + 6] == 'c') {
-            return _indexAccuracy;
-          } else if (keyMatch.input[keyMatch.start + 7] == 'e') {
-            return _indexAltitude;
-          }
-          break;
-        }
-    }
-  }
-
   /// Tries to update its fields based on information from the specified
   /// [line], which should come from a JSON file. Returns a new GpsPoint
   /// if it's determined based on the new [line] that the previous information
   /// it contained was a valid point, or [null] otherwise.
+  ///
+  /// Valid JSON input will have forms like:
+  /// * "key": -456
+  /// * "key": "123"
+  /// * 'key' : '78'
+  ///
+  /// All the keys used in a Google location export JSON file and their length:
+  /// * accuracy : 8
+  /// * activity : 8
+  /// * altitude : 8
+  /// * confidence : 10
+  /// * heading : 7
+  /// * latitudeE7 : 10
+  /// * locations : 9
+  /// * longitudeE7 : 11
+  /// * timestampMs : 11
+  /// * type : 4
+  /// * velocity : 8
+  /// * verticalAccuracy : 16
+  ///
+  /// The implementation is very much aimed at specifically the way the Google
+  /// location history export looks, rather than being a generic JSON parser.
+  /// This makes it possible to optimize it a lot, at the expense of legibility.
   GpsPoint? parseUpdate(String line) {
-    final keyMatch = _keyRegExp.firstMatch(line);
-    if (keyMatch == null) {
+    // Find the start of the key ("key" : "value", "key" : value). The keys
+    // we're interested in and their length:
+    // * accuracy : 8
+    // * altitude : 8
+    // * latitudeE7 : 10
+    // * longitudeE7 : 11
+    // * timestampMs : 11
+    // After the string we need enough space for the closing quote, a colon
+    // and at least one digit, so we only need to scan up to line.length-(8+3);
+
+    final lineLength = line.length;
+    var pos;
+    for (var i = 0; i < lineLength - 11; i++) {
+      final char = line.codeUnitAt(i);
+      // Interested in characters between a and t (both inclusive).
+      if (_charLowerA <= char && char <= _charLowerT) {
+        pos = i;
+        break;
+      }
+    }
+    if (pos == null) {
       return null;
     }
 
-    var index = _keyMatchToIndex(keyMatch);
+    var startpos = pos;
+    var index;
+
+    final currentChar = line.codeUnitAt(pos);
+    // Deal with the "t" case.
+    if (currentChar == _charLowerT && lineLength >= pos + 12) {
+      // If it ends in 's"', we assume we've got timestampMs.
+      if (line.codeUnitAt(pos + 10) == _charLowerS &&
+          line.codeUnitAt(pos + 11) == _charDoubleQuote) {
+        index = _indexTimestampMs;
+        pos += 12;
+      }
+    } else if (currentChar == _charLowerL) {
+      // Deal with the "l" case. Might be "latitudeE7" or "longitudeE7".
+      if (lineLength > pos + 10 &&
+          line.codeUnitAt(pos + 9) == _char7 &&
+          line.codeUnitAt(pos + 10) == _charDoubleQuote) {
+        index = _indexLatitudeE7;
+        pos += 11;
+      } else if (lineLength > pos + 11 &&
+          line.codeUnitAt(pos + 10) == _char7 &&
+          line.codeUnitAt(pos + 11) == _charDoubleQuote) {
+        index = _indexLongitudeE7;
+        pos += 12;
+      }
+    } else if (currentChar == _charLowerA) {
+      // Interested in accuracy or altitude, but activity may also occur and
+      // should be excluded by the matching.
+      if (line.length > pos + 8 &&
+          line.codeUnitAt(pos + 8) == _charDoubleQuote) {
+        // It's indeed a string of 8 characters. Find out which of the three.
+        if (line.codeUnitAt(pos + 1) == _charLowerL) {
+          index = _indexAltitude;
+          pos += 9;
+        } else if (line.codeUnitAt(pos + 2) == _charLowerC) {
+          index = _indexAccuracy;
+          pos += 9;
+        }
+      }
+    }
 
     if (index == null) {
       return null;
     }
 
-    // Usually if the key looks valid, the value will also look valid. Therefore
-    // we only parse the value if the key is not just valid, but also is one of
-    // the keys we're interested in. There are several keys in the JSON we're
-    // not interested in, so we can save time dealing with the number part of
-    // those.
-    final valueMatch = _valueRegExp.firstMatch(line.substring(keyMatch.end));
-    if (valueMatch == null) {
+    // Now skip ahead to digits or minus sign.
+    var valueString;
+    for (var i = pos; i < lineLength; i++) {
+      final cu = line.codeUnitAt(i);
+      // Interested in characters between 0 and 9 (both inclusive), or -
+      if ((_char0 <= cu && cu <= _char9) || cu == _charMinus) {
+        pos = i;
+        var endpos = pos + 1;
+        // Find the end of the number (first non-digit).
+        for (var lastDigitIndex = i + 1;
+            lastDigitIndex < lineLength;
+            lastDigitIndex++) {
+          final digitCandidate = line.codeUnitAt(lastDigitIndex);
+          if (digitCandidate < _char0 || _char9 < digitCandidate) {
+            endpos = lastDigitIndex;
+            break;
+          }
+        }
+        valueString = line.substring(pos, endpos);
+        break;
+      }
+    }
+    if (valueString == null) {
       return null;
     }
 
-    final valueString =
-        valueMatch.input.substring(valueMatch.start, valueMatch.end);
-
     final value = int.tryParse(valueString);
     if (value == null) {
-      // Cannot really happen given the regex used to parse the string.
+      // Cannot really happen given the parsing method, but just in case.
       return null;
     }
 

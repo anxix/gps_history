@@ -86,15 +86,20 @@ void testPointParser() {
   // Test simple one-point defintion.
   _testPointParserAllNullsAndLastState(
       'Parse single point in standard order',
-      ['"timestampMs" : 0,', '"latitudeE7" : 1,', '"longitudeE7:2,'],
+      ['"timestampMs":0,', '"latitudeE7" :1,', '"longitudeE7": 2,'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
   _testPointParserAllNullsAndLastState(
       'Parse single point in nonstandard order',
-      ['"latitudeE7" : \'1\',', 'timestampMs : "0",', '"longitudeE7:2,'],
+      ['"latitudeE7" : \'1\',', '"timestampMs" : "0",', '"longitudeE7" : 2'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
   _testPointParserAllNullsAndLastState(
       'Parse single point with fluff in between',
-      ['"timestampMs" : 0,', '"latitudeE7" : 1,', '"x" : 8', '"longitudeE7:2,'],
+      [
+        '"timestampMs" : 0,',
+        '"latitudeE7" : 1,',
+        '"x" : 8',
+        '"longitudeE7" : 2,'
+      ],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
 
   // Test resetting of internal state after incomplete initial point state.
@@ -125,7 +130,7 @@ void testPointParser() {
   _testPointParser('Parse two consecutive points', [
     '"timestampMs" : 0,',
     '"latitudeE7" : 1,',
-    '"longitudeE7" :2,',
+    '"longitudeE7" : 2,',
     '"timestampMs" : $oneDay,',
     '"latitudeE7" : 5,',
     '"longitudeE7" : 6,'
@@ -145,7 +150,7 @@ void testPointParser() {
       [
         '"timestampMs" : 0,',
         '"latitudeE7" : 1,',
-        '"longitudeE7" :2,',
+        '"longitudeE7" : 2,',
         '"accuracy" : 12,',
       ],
       GpsMeasurement(
@@ -187,7 +192,7 @@ void main() {
   testJsonToGps('Two points', '''
     "timestampMs" : 0,
     "latitudeE7" : 1,
-    "longitudeE7" :2,
+    "longitudeE7" : 2,
     "timestampMs" : $oneDay,
     "latitudeE7" : 5,
     "longitudeE7" : 6''', [
