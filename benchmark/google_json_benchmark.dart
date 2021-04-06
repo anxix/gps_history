@@ -5,30 +5,65 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
 
 /// Try out the performance of the point parser on huge amounts of data.
 /// The runtime of this test should not made worse with new versions.
 void main() {
-  print('Starting big parsing loop ${DateTime.now().toString()}.');
   var pp = PointParser();
+  var lines = '''}, {
+    "timestampMs" : "1542094587054",
+    "latitudeE7" : 520264968,
+    "longitudeE7" : 42965754,
+    "accuracy" : 16
+  }, {
+    "timestampMs" : "1542094707100",
+    "latitudeE7" : 520264968,
+    "longitudeE7" : 42965754,
+    "accuracy" : 16,
+    "activity" : [ {
+      "timestampMs" : "1542094717559",
+      "activity" : [ {
+        "type" : "STILL",
+        "confidence" : 100
+      } ]
+    } ]
+  }, {
+    "timestampMs" : "1542094779762",
+    "latitudeE7" : 520264884,
+    "longitudeE7" : 42966157,
+    "accuracy" : 16,
+    "altitude" : 34,
+    "verticalAccuracy" : 2
+  }, {
+    "timestampMs" : "1542094869902",
+    "latitudeE7" : 520264884,
+    "longitudeE7" : 42966157,
+    "accuracy" : 16,
+    "altitude" : 34,
+    "verticalAccuracy" : 2,
+    "activity" : [ {'''
+      .split('\n');
 
-  final nrLoops = 10000000;
+  final nrLoops = 500000;
   final stopwatch = Stopwatch()..start();
 
+  var nrPointsFound = 0;
   for (var i = 0; i < nrLoops; i++) {
-    pp.parseUpdate('"timestampMs" : 0,');
-    pp.parseUpdate('"latitudeE7" : 1,');
-    pp.parseUpdate('"longitudeE7" :2,');
-    pp.parseUpdate('"accuracy" : 12,');
-    pp.parseUpdate('}');
+    var point;
+    for (var line in lines) {
+      point = pp.parseUpdate(line);
+      if (point != null) {
+        nrPointsFound++;
+      }
+    }
   }
   stopwatch.stop();
-  print('Ended big parsing loop ${DateTime.now().toString()}.');
 
   final dt = stopwatch.elapsedMilliseconds / 1000.0;
-  print('''BENCHMARK: $nrLoops in ${dt.toString()}s
-    i.e. ${dt / (nrLoops / 1000000.0)} s/1M points
-    or ${nrLoops / dt / 1000000} M points/s''');
+  var nrLines = nrLoops * lines.length;
+  print(
+      'BENCHMARK: $nrPointsFound points from $nrLines lines in ${dt.toString()}s ' +
+          'i.e. ${dt / (nrLines / 1000000.0)} s/1M lines ' +
+          'or ${nrLines / dt / 1000000} M lines/s');
 }

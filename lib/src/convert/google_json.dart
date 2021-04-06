@@ -79,7 +79,7 @@ class PointParser {
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
   static const int _indexLongitudeE7 = 2;
-  static const int _indexAltitude = 3;
+  static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
 
   // Match things such as:
@@ -133,6 +133,51 @@ class PointParser {
     }
   }
 
+  /// Convert a [keyMatch] from [parseUpdate] to an index in [_values].
+  int? _keyMatchToIndex(RegExpMatch keyMatch) {
+    // All the keys used in a Google location export JSON file and their length:
+    // accuracy : 8
+    // activity : 8
+    // altitude : 8
+    // confidence : 10
+    // heading : 7
+    // latitudeE7 : 10
+    // locations : 9
+    // longitudeE7 : 11
+    // timestampMs : 11
+    // type : 4
+    // velocity : 8
+    // verticalAccuracy : 16
+
+    switch (keyMatch.end - keyMatch.start) {
+      case 11:
+        {
+          if (keyMatch.input[keyMatch.start + 9] == 'M') {
+            return _indexTimestampMs;
+          } else if (keyMatch.input[keyMatch.start + 9] == 'E') {
+            return _indexLongitudeE7;
+          }
+          break;
+        }
+      case 10:
+        {
+          if (keyMatch.input[keyMatch.start + 8] == 'E') {
+            return _indexLatitudeE7;
+          }
+          break;
+        }
+      case 8:
+        {
+          if (keyMatch.input[keyMatch.start + 6] == 'c') {
+            return _indexAccuracy;
+          } else if (keyMatch.input[keyMatch.start + 7] == 'e') {
+            return _indexAltitude;
+          }
+          break;
+        }
+    }
+  }
+
   /// Tries to update its fields based on information from the specified
   /// [line], which should come from a JSON file. Returns a new GpsPoint
   /// if it's determined based on the new [line] that the previous information
@@ -143,20 +188,9 @@ class PointParser {
       return null;
     }
 
-    final key = keyMatch.input.substring(keyMatch.start, keyMatch.end);
+    var index = _keyMatchToIndex(keyMatch);
 
-    int index;
-    if (key == 'timestampMs') {
-      index = _indexTimestampMs;
-    } else if (key == 'latitudeE7') {
-      index = _indexLatitudeE7;
-    } else if (key == 'longitudeE7') {
-      index = _indexLongitudeE7;
-    } else if (key == 'altitude') {
-      index = _indexAltitude;
-    } else if (key == 'accuracy') {
-      index = _indexAccuracy;
-    } else {
+    if (index == null) {
       return null;
     }
 
