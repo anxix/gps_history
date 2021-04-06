@@ -344,9 +344,9 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
   /// Specify [minSecondsBetweenDatapoints] to any non-null value to ensure that
   /// consecutive GPS points are at least that many seconds apart. If null,
   /// time from previous emitted point will not be a reason to skip a point.
-  /// Google's data tracks at 1 second intervals, which is rather ridiculously
+  /// Google's data tracks at a median of 1 minute intervals, which is rather
   /// granular and can generate over 5 million data points in 10 years.
-  /// An interval of 10 seconds cuts that down tremendously, at no great loss
+  /// An interval of 10 minutes cuts that down tremendously, at no great loss
   /// for the purpose intended.
   ///
   /// Specify [accuracyThreshold] to any non-null value to skip an points
