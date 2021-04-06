@@ -135,6 +135,53 @@ class PointParser {
     }
   }
 
+  /// Determine the position where the key identifier in the JSON line starts
+  /// ("key" : value) format - i.e. after the opening quote.
+  ///
+  /// [minLengthAfterKeyStart] indicates how many characters must at least
+  /// be left over in the [line] after the start of the key in order to
+  /// have enough space for ending quote, colon and numbers.
+  static int? _findStartOfKey(
+      String line, int lineLength, int minLengthAfterKeyStart) {
+    for (var i = 0; i < lineLength - minLengthAfterKeyStart; i++) {
+      final char = line.codeUnitAt(i);
+      // Interested in characters between a and t (both inclusive).
+      if (_charLowerA <= char && char <= _charLowerT) {
+        return i;
+      }
+    }
+  }
+
+  /// Returns the string representing the value in a JSON ("key" : value)
+  /// string.
+  ///
+  /// The value must be a number, possibly negative, possibly wrapped between
+  /// double quotes.
+  static String? _parseValueString(String line, int lineLength, int pos) {
+    // Skip ahead to digits or minus sign.
+    var valueString;
+    for (var i = pos; i < lineLength; i++) {
+      final cu = line.codeUnitAt(i);
+      // Interested in characters between 0 and 9 (both inclusive), or -
+      if ((_char0 <= cu && cu <= _char9) || cu == _charMinus) {
+        pos = i;
+        var endpos = pos + 1;
+        // Find the end of the number (first non-digit).
+        for (var digitsEnd = i + 1; digitsEnd < lineLength; digitsEnd++) {
+          final digitCandidate = line.codeUnitAt(digitsEnd);
+          if (digitCandidate < _char0 || _char9 < digitCandidate) {
+            endpos = digitsEnd;
+            break;
+          }
+        }
+        valueString = line.substring(pos, endpos);
+        break;
+      }
+    }
+
+    return valueString;
+  }
+
   /// Tries to update its fields based on information from the specified
   /// [line], which should come from a JSON file. Returns a new GpsPoint
   /// if it's determined based on the new [line] that the previous information
@@ -174,20 +221,11 @@ class PointParser {
     // and at least one digit, so we only need to scan up to line.length-(8+3);
 
     final lineLength = line.length;
-    var pos;
-    for (var i = 0; i < lineLength - 11; i++) {
-      final char = line.codeUnitAt(i);
-      // Interested in characters between a and t (both inclusive).
-      if (_charLowerA <= char && char <= _charLowerT) {
-        pos = i;
-        break;
-      }
-    }
+    var pos = _findStartOfKey(line, lineLength, 11);
     if (pos == null) {
       return null;
     }
 
-    var startpos = pos;
     var index;
 
     final currentChar = line.codeUnitAt(pos);
@@ -232,28 +270,7 @@ class PointParser {
       return null;
     }
 
-    // Now skip ahead to digits or minus sign.
-    var valueString;
-    for (var i = pos; i < lineLength; i++) {
-      final cu = line.codeUnitAt(i);
-      // Interested in characters between 0 and 9 (both inclusive), or -
-      if ((_char0 <= cu && cu <= _char9) || cu == _charMinus) {
-        pos = i;
-        var endpos = pos + 1;
-        // Find the end of the number (first non-digit).
-        for (var lastDigitIndex = i + 1;
-            lastDigitIndex < lineLength;
-            lastDigitIndex++) {
-          final digitCandidate = line.codeUnitAt(lastDigitIndex);
-          if (digitCandidate < _char0 || _char9 < digitCandidate) {
-            endpos = lastDigitIndex;
-            break;
-          }
-        }
-        valueString = line.substring(pos, endpos);
-        break;
-      }
-    }
+    final valueString = _parseValueString(line, lineLength, pos);
     if (valueString == null) {
       return null;
     }
