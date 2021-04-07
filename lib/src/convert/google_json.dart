@@ -135,6 +135,11 @@ class PointParser {
     }
   }
 
+  @override
+  String toString() {
+    return '${_values[0]}\t${_values[1]}\t${_values[2]}\t${_values[3]}\t${_values[4]}';
+  }
+
   /// Determine the position where the key identifier in the JSON line starts
   /// ("key" : value) format - i.e. after the opening quote.
   ///
