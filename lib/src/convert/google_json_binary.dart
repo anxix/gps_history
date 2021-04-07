@@ -63,6 +63,19 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:gps_history/gps_history.dart';
 
+const _charLF = 10;
+const _charCR = 13;
+const _charDoubleQuote = 34;
+const _charMinus = 45;
+const _char0 = 48;
+const _char7 = 55;
+const _char9 = 57;
+const _charLowerA = 97;
+const _charLowerC = 99;
+const _charLowerL = 108;
+const _charLowerS = 115;
+const _charLowerT = 116;
+
 /// Parses successive lines and attempts to collect the complete information
 /// to represent an individual point.
 ///
@@ -74,24 +87,13 @@ import 'package:gps_history/gps_history.dart';
 /// - otherwise it assumes that the previously provided information was not
 ///   in fact a correct point. The parser resets its internal state and
 ///   starts working on a new point (null is returned).
-class PointParser {
+class PointParserBin {
   final _values = List<int?>.filled(5, null);
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
   static const int _indexLongitudeE7 = 2;
   static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
-
-  static const _charDoubleQuote = 34;
-  static const _charMinus = 45;
-  static const _char0 = 48;
-  static const _char7 = 55;
-  static const _char9 = 57;
-  static const _charLowerA = 97;
-  static const _charLowerC = 99;
-  static const _charLowerL = 108;
-  static const _charLowerS = 115;
-  static const _charLowerT = 116;
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -142,9 +144,9 @@ class PointParser {
   /// be left over in the [line] after the start of the key in order to
   /// have enough space for ending quote, colon and numbers.
   static int? _findStartOfKey(
-      String line, int lineLength, int minLengthAfterKeyStart) {
-    for (var i = 0; i < lineLength - minLengthAfterKeyStart; i++) {
-      final char = line.codeUnitAt(i);
+      List<int> line, int start, int end, int minLengthAfterKeyStart) {
+    for (var i = start; i < end - minLengthAfterKeyStart; i++) {
+      final char = line[i];
       // Interested in characters between a and t (both inclusive).
       if (_charLowerA <= char && char <= _charLowerT) {
         return i;
@@ -158,25 +160,25 @@ class PointParser {
   /// The value must be a number, possibly negative, possibly wrapped between
   /// double quotes. [pos] indicates where to start looking in [line] for the
   /// value part.
-  static String? _parseValueString(String line, int lineLength, int pos) {
+  static String? _parseValueString(List<int> line, int end, int pos) {
     // Skip ahead to digits or minus sign.
     var valueString;
-    for (var i = pos; i < lineLength; i++) {
-      final cu = line.codeUnitAt(i);
+    for (var i = pos; i < end; i++) {
+      final cu = line[i];
       // Interested in characters between 0 and 9 (both inclusive), or -
       if ((_char0 <= cu && cu <= _char9) || cu == _charMinus) {
         pos = i;
         var endpos = pos + 1;
         // Find the end of the number (first non-digit).
-        for (var digitsEnd = i + 1; digitsEnd < lineLength; digitsEnd++) {
-          final digitCandidate = line.codeUnitAt(digitsEnd);
+        for (var digitsEnd = i + 1; digitsEnd < end; digitsEnd++) {
+          final digitCandidate = line[digitsEnd];
           if (digitCandidate < _char0 || _char9 < digitCandidate) {
             break;
           } else {
             endpos = digitsEnd + 1;
           }
         }
-        valueString = line.substring(pos, endpos);
+        valueString = String.fromCharCodes(line, pos, endpos);
         break;
       }
     }
@@ -211,7 +213,7 @@ class PointParser {
   /// The implementation is very much aimed at specifically the way the Google
   /// location history export looks, rather than being a generic JSON parser.
   /// This makes it possible to optimize it a lot, at the expense of legibility.
-  GpsPoint? parseUpdate(String line) {
+  GpsPoint? parseUpdate(List<int> line, int start, int end) {
     // Find the start of the key ("key" : "value", "key" : value). The keys
     // we're interested in and their length:
     // * accuracy : 8
@@ -222,8 +224,7 @@ class PointParser {
     // After the string we need enough space for the closing quote, a colon
     // and at least one digit, so we only need to scan up to line.length-(8+3);
 
-    final lineLength = line.length;
-    var pos = _findStartOfKey(line, lineLength, 11);
+    var pos = _findStartOfKey(line, start, end, 11);
     if (pos == null) {
       return null;
     }
@@ -233,38 +234,36 @@ class PointParser {
     // It looks like this could be extracted into a separate method, but
     // attempts at this have led to a 20% drop in performance. The code is very
     // sensitive.
-    final currentChar = line.codeUnitAt(pos);
+    final currentChar = line[pos];
     // Deal with the "t" case.
-    if (currentChar == _charLowerT && lineLength >= pos + 12) {
+    if (currentChar == _charLowerT && end >= pos + 12) {
       // If it ends in 's"', we assume we've got timestampMs.
-      if (line.codeUnitAt(pos + 10) == _charLowerS &&
-          line.codeUnitAt(pos + 11) == _charDoubleQuote) {
+      if (line[pos + 10] == _charLowerS && line[pos + 11] == _charDoubleQuote) {
         index = _indexTimestampMs;
         pos += 12;
       }
     } else if (currentChar == _charLowerL) {
       // Deal with the "l" case. Might be "latitudeE7" or "longitudeE7".
-      if (lineLength > pos + 10 &&
-          line.codeUnitAt(pos + 9) == _char7 &&
-          line.codeUnitAt(pos + 10) == _charDoubleQuote) {
+      if (end > pos + 10 &&
+          line[pos + 9] == _char7 &&
+          line[pos + 10] == _charDoubleQuote) {
         index = _indexLatitudeE7;
         pos += 11;
-      } else if (lineLength > pos + 11 &&
-          line.codeUnitAt(pos + 10) == _char7 &&
-          line.codeUnitAt(pos + 11) == _charDoubleQuote) {
+      } else if (end > pos + 11 &&
+          line[pos + 10] == _char7 &&
+          line[pos + 11] == _charDoubleQuote) {
         index = _indexLongitudeE7;
         pos += 12;
       }
     } else if (currentChar == _charLowerA) {
       // Interested in accuracy or altitude, but activity may also occur and
       // should be excluded by the matching.
-      if (line.length > pos + 8 &&
-          line.codeUnitAt(pos + 8) == _charDoubleQuote) {
+      if (end > pos + 8 && line[pos + 8] == _charDoubleQuote) {
         // It's indeed a string of 8 characters. Find out which of the three.
-        if (line.codeUnitAt(pos + 1) == _charLowerL) {
+        if (line[pos + 1] == _charLowerL) {
           index = _indexAltitude;
           pos += 9;
-        } else if (line.codeUnitAt(pos + 2) == _charLowerC) {
+        } else if (line[pos + 2] == _charLowerC) {
           index = _indexAccuracy;
           pos += 9;
         }
@@ -275,7 +274,7 @@ class PointParser {
       return null;
     }
 
-    final valueString = _parseValueString(line, lineLength, pos);
+    final valueString = _parseValueString(line, end, pos);
     if (valueString == null) {
       return null;
     }
@@ -335,7 +334,7 @@ class PointParser {
 /// fields are not present. For the purpose of this data, namely show global
 /// historic position information, the accuracy etc. should not be of great
 /// importance.
-class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
+class GoogleJsonHistoryDecoderBinary extends Converter<List<int>, GpsPoint> {
   double? _minSecondsBetweenDataponts;
   double? _accuracyThreshold;
 
@@ -353,7 +352,7 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
   /// Specify [accuracyThreshold] to any non-null value to skip an points
   /// that don't have an accuracy better that the threshold. If null, the
   /// accuracy will not be a reason to skip a point.
-  GoogleJsonHistoryDecoder(
+  GoogleJsonHistoryDecoderBinary(
       {double? minSecondsBetweenDatapoints = 10,
       double? accuracyThreshold = 100}) {
     _minSecondsBetweenDataponts = minSecondsBetweenDatapoints;
@@ -361,48 +360,106 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
   }
 
   @override
-  Stream<GpsPoint> bind(Stream<String> inputStream) {
-    // split the string into lines
-    final linesStream = inputStream.transform(LineSplitter());
+  Stream<GpsPoint> bind(Stream<List<int>> inputStream) {
     return Stream.eventTransformed(
-        linesStream,
+        inputStream,
         (EventSink<GpsPoint> outputSink) =>
-            _GpsPointParserEventSink(outputSink));
+            _GpsPointParserEventSinkBin(outputSink));
   }
 
   @override
-  GpsPoint convert(String line, [int start = 0, int? end]) {
+  GpsPoint convert(List<int> line, [int start = 0, int? end]) {
     // There's no guarantee that inputting a line would output a GpsPoint,
     // so this method seems rather difficult to implement.
     throw UnsupportedError('Not yet implemented convert: $this');
   }
 
   @override
-  Sink<String> startChunkedConversion(Sink<GpsPoint> outputSink) {
-    return _GpsPointParserSink(outputSink);
+  Sink<List<int>> startChunkedConversion(Sink<GpsPoint> outputSink) {
+    return _GpsPointParserSinkBin(outputSink);
   }
 }
 
 /// Sink for converting *entire* lines from a Google JSON file to GPS points.
-class _GpsPointParserSink extends StringConversionSinkBase {
+class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
   final Sink<GpsPoint> _outputSink;
-  final _pointParser = PointParser();
+  final _pointParser = PointParserBin();
+  final _leftoverChunk = <int>[];
+  var leftoverChunk = 0;
+  var callNr = 0;
 
-  _GpsPointParserSink(this._outputSink);
+  _GpsPointParserSinkBin(this._outputSink);
 
   /// [str] must be one single line from a Google JSON file.
   @override
-  void addSlice(String str, int start, int end, bool isLast) {
-    // Skip invalid or empty strings while parsing.
-    if (start < end) {
-      var point = _pointParser.parseUpdate(str.substring(start, end));
-      if (point != null) {
-        _outputSink.add(point);
+  void add(List<int> chunk) {
+    // Find first CR/LF character
+    callNr += 1;
+//    print('> CallNr $callNr');
+    var nextNewline;
+    for (var i = 0; i < chunk.length; i++) {
+      if (chunk[i] == _charLF || chunk[i] == _charCR) {
+        nextNewline = i;
+        break;
       }
     }
 
-    if (isLast) {
-      close();
+    // If not found, shove it in the leftovers to parse later.
+    if (nextNewline == null) {
+      _leftoverChunk.addAll(chunk);
+      return;
+    }
+    if (callNr == 13) {
+      //    print('Hm.');
+    }
+
+    // If we have something in the leftover, add to that then parse.
+    if (_leftoverChunk.isNotEmpty) {
+      leftoverChunk += 1;
+//      print('>> Leftover chunk: $leftoverChunk');
+      _leftoverChunk.addAll(chunk.getRange(0, nextNewline));
+      final point =
+          _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
+      if (point != null) {
+        _outputSink.add(point);
+      }
+      _leftoverChunk.clear();
+//      print('<< Leftover chunk: $leftoverChunk');
+    }
+
+    // Now continue parsing the incoming chunk.
+    var pos = nextNewline;
+    while (true) {
+      // Skip any starting newlines.
+      pos += 1;
+      for (var i = pos; i < chunk.length; i++) {
+        if (chunk[i] != _charCR && chunk[i] != _charLF) {
+          pos = i;
+          break;
+        }
+      }
+
+      // Look for next newline.
+      final startPos = pos; // remember where we started the line
+      var foundNewline = false;
+      for (var i = pos; i < chunk.length; i++) {
+        if (chunk[i] == _charCR || chunk[i] == _charLF) {
+          foundNewline = true;
+          pos = i;
+          break;
+        }
+      }
+      // If found one, parse up to there.
+      if (foundNewline) {
+        final point = _pointParser.parseUpdate(chunk, startPos, pos);
+        if (point != null) {
+          _outputSink.add(point);
+        }
+      } else {
+        // Didn't find newline -> leave chunk for next.
+        _leftoverChunk.addAll(chunk.getRange(startPos, chunk.length));
+        break;
+      }
     }
   }
 
@@ -410,7 +467,8 @@ class _GpsPointParserSink extends StringConversionSinkBase {
   void close() {
     // The parser probably still contains information on a last, not yet
     // emitted point.
-    var point = _pointParser.toGpsPointAndReset();
+    final point =
+        _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
     if (point != null) {
       _outputSink.add(point);
     }
@@ -418,11 +476,11 @@ class _GpsPointParserSink extends StringConversionSinkBase {
   }
 }
 
-class _GpsPointParserEventSink extends _GpsPointParserSink
-    implements EventSink<String> {
+class _GpsPointParserEventSinkBin extends _GpsPointParserSinkBin
+    implements EventSink<List<int>> {
   final EventSink<GpsPoint> _eventOutputSink;
 
-  _GpsPointParserEventSink(EventSink<GpsPoint> eventOutputSink)
+  _GpsPointParserEventSinkBin(EventSink<GpsPoint> eventOutputSink)
       : _eventOutputSink = eventOutputSink,
         super(eventOutputSink);
 
