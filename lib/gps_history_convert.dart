@@ -11,3 +11,4 @@
 library gps_history;
 
 export 'src/convert/google_json.dart';
+export 'src/convert/google_json_binary.dart';

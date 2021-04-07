@@ -296,6 +296,11 @@ class PointParserBin {
     return result;
   }
 
+  @override
+  String toString() {
+    return '${_values[0]}\t${_values[1]}\t${_values[2]}\t${_values[3]}\t${_values[4]}';
+  }
+
   /// Returns a GpsPoint representing the current internal state, if that state
   /// is sufficiently defined to represent such a point (null otherwise). The
   /// internal state is reset by this operation.
@@ -395,7 +400,6 @@ class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
   void add(List<int> chunk) {
     // Find first CR/LF character
     callNr += 1;
-//    print('> CallNr $callNr');
     var nextNewline;
     for (var i = 0; i < chunk.length; i++) {
       if (chunk[i] == _charLF || chunk[i] == _charCR) {
@@ -409,14 +413,10 @@ class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
       _leftoverChunk.addAll(chunk);
       return;
     }
-    if (callNr == 13) {
-      //    print('Hm.');
-    }
 
     // If we have something in the leftover, add to that then parse.
     if (_leftoverChunk.isNotEmpty) {
       leftoverChunk += 1;
-//      print('>> Leftover chunk: $leftoverChunk');
       _leftoverChunk.addAll(chunk.getRange(0, nextNewline));
       final point =
           _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
@@ -424,14 +424,16 @@ class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
         _outputSink.add(point);
       }
       _leftoverChunk.clear();
-//      print('<< Leftover chunk: $leftoverChunk');
+    } else {
+      // Nothing to append to previous -> start parsing from the beginning.
+      nextNewline = 0;
     }
 
     // Now continue parsing the incoming chunk.
     var pos = nextNewline;
     while (true) {
+      nextNewline = pos;
       // Skip any starting newlines.
-      pos += 1;
       for (var i = pos; i < chunk.length; i++) {
         if (chunk[i] != _charCR && chunk[i] != _charLF) {
           pos = i;
@@ -460,6 +462,10 @@ class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
         _leftoverChunk.addAll(chunk.getRange(startPos, chunk.length));
         break;
       }
+
+      if (pos == nextNewline) {
+        pos++;
+      }
     }
   }
 
@@ -467,11 +473,16 @@ class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
   void close() {
     // The parser probably still contains information on a last, not yet
     // emitted point.
-    final point =
+    var point =
         _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
     if (point != null) {
       _outputSink.add(point);
     }
+    point = _pointParser.toGpsPointAndReset();
+    if (point != null) {
+      _outputSink.add(point);
+    }
+
     _outputSink.close();
   }
 }
