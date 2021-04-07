@@ -93,6 +93,10 @@ void testPointParser() {
       ['"timestampMs":0,', '"latitudeE7" :1,', '"longitudeE7": 2'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
   _testPointParserAllNullsAndLastState(
+      'Test parsing when last character is part of number',
+      ['"timestampMs":0,', '"latitudeE7" :13', '"longitudeE7": 20'],
+      GpsPoint(DateTime.utc(1970), 1.3E-6, 2.0E-6, null));
+  _testPointParserAllNullsAndLastState(
       'Parse single point in nonstandard order',
       ['"latitudeE7" : \'1\',', '"timestampMs" : "0",', '"longitudeE7" : "2"'],
       GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null));
