@@ -95,6 +95,9 @@ class PointParserBin {
   static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
 
+  static const invalidPos = -1;
+  int pos = invalidPos;
+
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
   bool get isUndefined =>
@@ -143,13 +146,52 @@ class PointParserBin {
   /// [minLengthAfterKeyStart] indicates how many characters must at least
   /// be left over in the [line] after the start of the key in order to
   /// have enough space for ending quote, colon and numbers.
-  static int? _findStartOfKey(
+  static int _findStartOfKey(
       List<int> line, int start, int end, int minLengthAfterKeyStart) {
     for (var i = start; i < end - minLengthAfterKeyStart; i++) {
       final char = line[i];
       // Interested in characters between a and t (both inclusive).
       if (_charLowerA <= char && char <= _charLowerT) {
         return i;
+      }
+    }
+    return invalidPos;
+  }
+
+  int? _getKeyIndex(List<int> line, int end) {
+    final currentChar = line[pos];
+    // Deal with the "t" case.
+    if (currentChar == _charLowerT && end >= pos + 12) {
+      // If it ends in 's"', we assume we've got timestampMs.
+      if (line[pos + 10] == _charLowerS && line[pos + 11] == _charDoubleQuote) {
+        pos += 12;
+        return _indexTimestampMs;
+      }
+    } else if (currentChar == _charLowerL) {
+      // Deal with the "l" case. Might be "latitudeE7" or "longitudeE7".
+      if (end > pos + 10 &&
+          line[pos + 9] == _char7 &&
+          line[pos + 10] == _charDoubleQuote) {
+        pos += 11;
+        return _indexLatitudeE7;
+      } else if (end > pos + 11 &&
+          line[pos + 10] == _char7 &&
+          line[pos + 11] == _charDoubleQuote) {
+        pos += 12;
+        return _indexLongitudeE7;
+      }
+    } else if (currentChar == _charLowerA) {
+      // Interested in accuracy or altitude, but activity may also occur and
+      // should be excluded by the matching.
+      if (end > pos + 8 && line[pos + 8] == _charDoubleQuote) {
+        // It's indeed a string of 8 characters. Find out which of the three.
+        if (line[pos + 1] == _charLowerL) {
+          pos += 9;
+          return _indexAltitude;
+        } else if (line[pos + 2] == _charLowerC) {
+          pos += 9;
+          return _indexAccuracy;
+        }
       }
     }
   }
@@ -160,7 +202,7 @@ class PointParserBin {
   /// The value must be a number, possibly negative, possibly wrapped between
   /// double quotes. [pos] indicates where to start looking in [line] for the
   /// value part.
-  static String? _parseValueString(List<int> line, int end, int pos) {
+  String? _parseValueString(List<int> line, int end) {
     // Skip ahead to digits or minus sign.
     var valueString;
     for (var i = pos; i < end; i++) {
@@ -224,57 +266,18 @@ class PointParserBin {
     // After the string we need enough space for the closing quote, a colon
     // and at least one digit, so we only need to scan up to line.length-(8+3);
 
-    var pos = _findStartOfKey(line, start, end, 11);
-    if (pos == null) {
+    pos = _findStartOfKey(line, start, end, 11);
+    if (pos == invalidPos) {
       return null;
     }
 
-    var index;
-
-    // It looks like this could be extracted into a separate method, but
-    // attempts at this have led to a 20% drop in performance. The code is very
-    // sensitive.
-    final currentChar = line[pos];
-    // Deal with the "t" case.
-    if (currentChar == _charLowerT && end >= pos + 12) {
-      // If it ends in 's"', we assume we've got timestampMs.
-      if (line[pos + 10] == _charLowerS && line[pos + 11] == _charDoubleQuote) {
-        index = _indexTimestampMs;
-        pos += 12;
-      }
-    } else if (currentChar == _charLowerL) {
-      // Deal with the "l" case. Might be "latitudeE7" or "longitudeE7".
-      if (end > pos + 10 &&
-          line[pos + 9] == _char7 &&
-          line[pos + 10] == _charDoubleQuote) {
-        index = _indexLatitudeE7;
-        pos += 11;
-      } else if (end > pos + 11 &&
-          line[pos + 10] == _char7 &&
-          line[pos + 11] == _charDoubleQuote) {
-        index = _indexLongitudeE7;
-        pos += 12;
-      }
-    } else if (currentChar == _charLowerA) {
-      // Interested in accuracy or altitude, but activity may also occur and
-      // should be excluded by the matching.
-      if (end > pos + 8 && line[pos + 8] == _charDoubleQuote) {
-        // It's indeed a string of 8 characters. Find out which of the three.
-        if (line[pos + 1] == _charLowerL) {
-          index = _indexAltitude;
-          pos += 9;
-        } else if (line[pos + 2] == _charLowerC) {
-          index = _indexAccuracy;
-          pos += 9;
-        }
-      }
-    }
+    final index = _getKeyIndex(line, end);
 
     if (index == null) {
       return null;
     }
 
-    final valueString = _parseValueString(line, end, pos);
+    final valueString = _parseValueString(line, end);
     if (valueString == null) {
       return null;
     }
