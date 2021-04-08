@@ -103,6 +103,7 @@ class PointParserBin {
 
   /// The various values of points that we're interested in, as read so far.
   final _values = List<int?>.filled(5, null);
+  static const int _indexUninterestingKey = -1;
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
   static const int _indexLongitudeE7 = 2;
@@ -267,6 +268,8 @@ class PointParserBin {
         break;
       }
     }
+
+    return _indexUninterestingKey;
   }
 
   /// Returns the string representing the value in a JSON ("key" : value)
@@ -335,6 +338,13 @@ class PointParserBin {
 
       // Find first key we're interested in.
       final index = _getKeyIndex(bytes, end);
+      if (index == _indexUninterestingKey) {
+        // Even if the key is not interesting, it is correctly parsed and
+        // doesn't need to be parsed again if it happens to be towards the
+        // end of [bytes] and the next chunk will be appended.
+        posStartNextStreamChunk = pos;
+        continue;
+      }
       if (index == null) {
         continue;
       }
@@ -523,7 +533,7 @@ class _GpsPointParserBinSink extends ChunkedConversionSink<List<int>> {
     if (_leftoverChunk.isNotEmpty) {
       // Get enough bytes from the new chunk to be guaranteed to finish parsing
       // whatever was left over from previous chunk.
-      _leftoverChunk.addAll(chunk.getRange(0, min(chunk.length, 1000)));
+      _leftoverChunk.addAll(chunk.getRange(0, min(chunk.length, 500)));
       _pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
       // Because we copied part of the new chunk to the leftover, that's been
       // already parsed -> don't reparse.
