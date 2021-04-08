@@ -14,10 +14,15 @@ import 'package:gps_history/gps_history_convert.dart';
 /// Try out the performance of the string-based JSON parser versus the
 /// byte-based one. Can also be used to check that their results are the same.
 void main() async {
-  var method = 1; // use 0 for string-based, 1 for integer-based
+  // Use 0 for string-based, 1 for bytestream-based parsing.
+  final method = 1;
+  // Indicate whether all the found points should be printed at the end.
+  final printPoints = false;
+  // Location of the file to parse.
+  final filename =
+      '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
 
-  final file =
-      File('/home/me/src/gps_history/example/Locatiegeschiedenis.json');
+  final file = File(filename);
   final s = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();
 
@@ -25,7 +30,7 @@ void main() async {
 
   s.start();
 
-  Stream<GpsPoint> points = method == 0
+  var points = method == 0
       ? fileStream
           .transform(Utf8Decoder(allowMalformed: true))
           .transform(GoogleJsonHistoryDecoder())
@@ -42,11 +47,14 @@ void main() async {
 
   var diffs = <int>[];
   var sumdiffs = 0;
-  var prevp = null;
+  var prevp;
   var mindiff = 100000000;
   var maxdiff = 0;
 
   for (var p in gpsPoints) {
+    if (printPoints) {
+      print(p);
+    }
     if (prevp != null) {
       final diff = p.time.difference(prevp.time).inSeconds;
       if (diff > 0) {
