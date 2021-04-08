@@ -192,7 +192,7 @@ class PointParserString {
   /// Tries to update its fields based on information from the specified
   /// [line], which should come from a JSON file. Returns a new GpsPoint
   /// if it's determined based on the new [line] that the previous information
-  /// it contained was a valid point, or [null] otherwise.
+  /// it contained was a valid point, or null otherwise.
   ///
   /// Valid JSON input will have forms like:
   /// * "key": -456
