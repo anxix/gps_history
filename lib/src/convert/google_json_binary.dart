@@ -3,23 +3,24 @@
 ///
 /// The amount of data in the JSON may be enormous (many hundreds of megabytes,
 /// probably even into the gigabytes). This makes it unfeasible to parse it
-/// completely in memory. Instead, the parsing will rely on knowledge about
-/// the way the document is formatted and do a "dumb" linear parsing. If Google
-/// changes the export format even without changing the actual represented JSON
-/// structure, this can break the parser.
+/// completely in memory, especially when thinking about mobile devices.
+/// Instead, the parsing will rely on knowledge about the way the document is
+/// formatted as well as potential fields, and do a "dumb" linear parsing. If
+/// Google changes the export format even without changing the actual
+/// represented JSON structure, this can potentially break the parser.
 ///
 /// Here is an example chunk from the JSON file:
 ///
 /// ```javascript
 /// {
-///    "timestampMs" : "1616788980015",
-///    "latitudeE7" : 371395542,
-///    "longitudeE7" : -79377067,
+///    "timestampMs" : "1716788980015",
+///    "latitudeE7" : 361395542,
+///    "longitudeE7" : -69377067,
 ///    "accuracy" : 56,
-///    "altitude" : 402,
+///    "altitude" : 432,
 ///    "verticalAccuracy" : 3,
 ///    "activity" : [ {
-///      "timestampMs" : "1616786618030",
+///      "timestampMs" : "1716788990015",
 ///      "activity" : [ {
 ///        "type" : "STILL",
 ///        "confidence" : 100
@@ -32,14 +33,14 @@
 /// ```javascript
 /// {
 ///  "locations" : [ {
-///    "timestampMs" : "1378029160146",
-///    "latitudeE7" : 523503757,
-///    "longitudeE7" : 46482361,
+///    "timestampMs" : "1378729140146",
+///    "latitudeE7" : 514503757,
+///    "longitudeE7" : 47482361,
 ///    "accuracy" : 14
 ///  }, {
-///    "timestampMs" : "1378029161184",
-///    "latitudeE7" : 523503755,
-///    "longitudeE7" : 46482364,
+///    "timestampMs" : "1379029161184",
+///    "latitudeE7" : 523603755,
+///    "longitudeE7" : 45682364,
 ///    "accuracy" : 11
 ///  }, {
 /// ```
@@ -78,8 +79,8 @@ const _charLowerS = 115;
 const _charLowerT = 116;
 const _charLowerZ = 122;
 
-/// Parses successive lines and attempts to collect the complete information
-/// to represent an individual point.
+/// Parses a the List<int> instances emitted by a stream and attempts to collect
+/// the complete information to represent individual points.
 ///
 /// The object maintains an internal state with all information that's been
 /// parsed so far. If then information is sent that seems to indicates a new
@@ -88,10 +89,13 @@ const _charLowerZ = 122;
 ///   created and returned
 /// - otherwise it assumes that the previously provided information was not
 ///   in fact a correct point. The parser resets its internal state and
-///   starts working on a new point (null is returned).
+///   starts working on a new point. No point is returned.
 class PointParserBin {
+  /// Function called when a point has been identified (typically a [Sink.add]
+  /// accepting the points).
   final void Function(GpsPoint point) resultReporter;
 
+  /// The various values of points that we're interested in, as read so far.
   final _values = List<int?>.filled(5, null);
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
@@ -99,10 +103,20 @@ class PointParserBin {
   static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
 
+  /// Current position of the parser in the bytes list.
   int pos = 0;
+
+  /// Position up to which we've successfully parsed. This is where we should
+  /// continue parsing with the next chunk of data from a stream, if the current
+  /// chunk contained incomplete data to define a point.
   int posStartNextStreamChunk = 0;
 
   PointParserBin(this.resultReporter);
+
+  @override
+  String toString() {
+    return '${_values[0]}\t${_values[1]}\t${_values[2]}\t${_values[3]}\t${_values[4]}';
+  }
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -149,14 +163,17 @@ class PointParserBin {
   /// Determine the position where the key identifier in the JSON line starts
   /// ("key" : value) format - i.e. after the opening quote.
   ///
-  /// [minLengthAfterKeyStart] indicates how many characters must at least
-  /// be left over in the [bytes] after the start of the key in order to
-  /// have enough space for ending quote, colon and numbers.
+  /// [lastPossibleStartOfKey] indicates what the last possible position is
+  /// in [bytes] where a key may start. A key plus the required space for ending
+  /// quotes, colon and the value of the key require a certain amount of space.
+  /// If the [bytes] doesn't have enough space for that, we know for sure we
+  /// won't be able to parse a key-value pair.
   bool _findStartOfKey(List<int> bytes, int lastPossibleStartOfKey) {
     for (var i = pos; i < lastPossibleStartOfKey; i++) {
       pos = i;
       final char = bytes[i];
-      // Interested in characters between a and t (both inclusive).
+      // Interested in characters between a and t (both inclusive) due to the
+      // key names we wish to store.
       if (_charLowerA <= char && char <= _charLowerT) {
         return true;
       }
@@ -164,8 +181,8 @@ class PointParserBin {
     return false;
   }
 
-  /// Returns the index of the first found key starting at the current [pos],
-  /// or null if such key is not found.
+  /// Returns the index in [_values] corresponding to the first found key
+  /// starting at the current [pos], or null if such key is not found.
   ///
   /// All the keys used in a Google location export JSON file and their length,
   /// with the ' indicating the ones we're interested in, and " the ones that
@@ -188,23 +205,14 @@ class PointParserBin {
     final lastPossibleStartOfKey = end - 11;
 
     final foundKey = _findStartOfKey(bytes, lastPossibleStartOfKey);
-
-    // Remember the last position, because if we don't find a proper value,
-    // that may be because the stream is split at an unfortunate place (e.g.
-    // between a key and its value, or in the middle of a key or something
-    // like that), the part towards the end will need to be glued to the
-    // next chunk from the stream.
-//    posStartNextStreamChunk = pos;
-
     if (!foundKey) {
       return null;
     }
 
     final currentChar = bytes[pos];
-    // TODO: maybe test the pos-1 for being doublequote
     // Deal with the "t" case.
     if (currentChar == _charLowerT && end >= pos + 12) {
-      // If it ends in 's"', we assume we've got timestampMs.
+      // If it ends in 's"', assume we've got timestampMs.
       if (bytes[pos + 10] == _charLowerS &&
           bytes[pos + 11] == _charDoubleQuote) {
         pos += 12;
@@ -244,7 +252,7 @@ class PointParserBin {
     for (var i = pos + 1; i < lastPossibleStartOfKey; i++) {
       pos = i;
       final char = bytes[i];
-      // Identifiers are [0..9, A..Z, a..z], so skip to first character
+      // Identifiers consist of [0..9, A..Z, a..z], so skip to first character
       // after one of those.
       if (!(_char0 <= char && char <= _char9 ||
           _charUpperA <= char && char <= _charUpperZ ||
@@ -258,37 +266,35 @@ class PointParserBin {
   /// string.
   ///
   /// The value must be a number, possibly negative, possibly wrapped between
-  /// double quotes. [pos] indicates where to start looking in [line] for the
+  /// double quotes. [pos] indicates where to start looking in [bytes] for the
   /// value part.
-  String? _parseValueString(List<int> line, int end) {
+  String? _parseValueString(List<int> bytes, int end) {
     // Skip ahead to digits or minus sign.
     var valueString;
     for (var i = pos; i < end; i++) {
-      final cu = line[i];
+      final cu = bytes[i];
       // Interested in characters between 0 and 9 (both inclusive), or -
       if ((_char0 <= cu && cu <= _char9) || cu == _charMinus) {
         pos = i;
-        var endpos = pos + 1;
+        var numberEnd = pos + 1;
         // Find the end of the number (first non-digit).
-        for (var digitsEnd = i + 1; digitsEnd < end; digitsEnd++) {
-          final digitCandidate = line[digitsEnd];
+        for (var lastDigitPos = i + 1; lastDigitPos < end; lastDigitPos++) {
+          final digitCandidate = bytes[lastDigitPos];
           if (digitCandidate < _char0 || _char9 < digitCandidate) {
             break;
           } else {
-            endpos = digitsEnd + 1;
+            numberEnd = lastDigitPos + 1;
           }
         }
+
         // If the number ends at the end of the bytes, we don't know if this
-        // is truly the end of the number - possibly the enxt chunk of stream
+        // is truly the end of the number - possibly the next chunk of stream
         // will provide more digits. Therefore reject it in that case.
         // Since the JSON will contain an object, we know for sure the file
         // cannot possibly end in a digit, but rather in "}".
-        if (endpos != end) {
-          valueString = String.fromCharCodes(line, pos, endpos);
-          pos = endpos;
-          // Finished a successful key-value parse, so any continued parsing
-          // can start from the current position.
-//          posStartNextStreamChunk = pos;
+        if (numberEnd != end) {
+          valueString = String.fromCharCodes(bytes, pos, numberEnd);
+          pos = numberEnd;
         }
         break;
       }
@@ -298,9 +304,8 @@ class PointParserBin {
   }
 
   /// Tries to update its fields based on information from the specified
-  /// [bytes], which should come from a JSON file. Returns a new GpsPoint
-  /// if it's determined based on the new [bytes] that the previous information
-  /// it contained was a valid point, or [null] otherwise.
+  /// [bytes], which should come from a JSON file. Creates and sends new points
+  /// to [resultReporter] when such fully defined points are detected.
   ///
   /// Valid JSON input will have forms like:
   /// * "key": -456
@@ -309,25 +314,35 @@ class PointParserBin {
   ///
   /// The implementation is very much aimed at specifically the way the Google
   /// location history export looks, rather than being a generic JSON parser.
-  /// This makes it possible to optimize it a lot, at the expense of legibility.
+  /// This makes it possible to optimize it a lot in terms of speed and memory
+  /// usage, at the expense of legibility.
   void parseUpdate(List<int> bytes, int start, int end) {
     pos = start;
     var prevLoopStartPos = -1;
     while (pos < end) {
+      // If we're just spinning our wheels, stop.
       if (pos == prevLoopStartPos) {
         break;
       }
       prevLoopStartPos = pos;
-      // See if we find any key we're interested in.
+
+      // Find first key we're interested in.
       final index = _getKeyIndex(bytes, end);
       if (index == null) {
         continue;
       }
 
+      // Get the key's value
       final valueString = _parseValueString(bytes, end);
       if (valueString == null) {
         break;
       }
+      // Remember the position, because if we don't find a proper value in the
+      // next loop, that may be because the stream is split at an unfortunate
+      // place (e.g. between a key and its value, or in the middle of a key or
+      // something like that). The part after the current, known correct,
+      // key-value pair may need to be re-parsed including additional information
+      // from the next chunk of the stream providing our [bytes].
       posStartNextStreamChunk = pos;
 
       final value = int.tryParse(valueString);
@@ -337,7 +352,7 @@ class PointParserBin {
       }
 
       // If starting the definition of a new point and the current state looks
-      // like a fully defined point, return the current state as result.
+      // like a fully defined point, report the current state.
       if (_values[index] != null && !isUndefined) {
         toGpsPointAndReset();
       }
@@ -346,21 +361,17 @@ class PointParserBin {
     }
   }
 
-  @override
-  String toString() {
-    return '${_values[0]}\t${_values[1]}\t${_values[2]}\t${_values[3]}\t${_values[4]}';
-  }
-
-  /// Returns a GpsPoint representing the current internal state, if that state
-  /// is sufficiently defined to represent such a point (null otherwise). The
-  /// internal state is reset by this operation.
+  /// Creates and adds a point representing the current internal state to
+  /// [resultReporter], if the current state is sufficiently defined to
+  /// represent such a point. The internal state is consequently reset, whether
+  /// a point was created or not.
   ///
-  /// The returned point may be GpsPoint if no accuracy is present in the
-  /// current state, or GpsMeasurement if the accuracy is present.
+  /// The returned point may be [GpsPoint] if no accuracy is present in the
+  /// current state, or [GpsMeasurement] if the accuracy is present.
   void toGpsPointAndReset() {
     if (isUndefined) {
       reset();
-      return null;
+      return;
     }
 
     var p = GpsPoint(
@@ -380,15 +391,10 @@ class PointParserBin {
   }
 }
 
-/// Decoder for a stream of text from a Google JSON file to a stream of
-/// GpsPoint instances.
+/// Decoder for a stream of bytes from a Google location history JSON file to
+/// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
 ///
-/// Although the stream may contain information about accuracy, this is
-/// deemed insufficiently important to store in the converted data, particularly
-/// given the huge amount involved and that the rest of the GpsMeasurement
-/// fields are not present. For the purpose of this data, namely show global
-/// historic position information, the accuracy etc. should not be of great
-/// importance.
+/// Although the stream may contain information about accuracy.
 class GoogleJsonHistoryDecoderBinary extends Converter<List<int>, GpsPoint> {
   double? _minSecondsBetweenDataponts;
   double? _accuracyThreshold;
@@ -423,15 +429,55 @@ class GoogleJsonHistoryDecoderBinary extends Converter<List<int>, GpsPoint> {
   }
 
   @override
-  GpsPoint convert(List<int> line, [int start = 0, int? end]) {
+  GpsPoint convert(List<int> bytes, [int start = 0, int? end]) {
     // There's no guarantee that inputting a line would output a GpsPoint,
-    // so this method seems rather difficult to implement.
-    throw UnsupportedError('Not yet implemented convert: $this');
+    // so this method seems rather difficult to implement. We'll just
+    // return the last point that can be parsed from [bytes].
+    var result;
+    var passthroughSink = _PassthroughSink((point) {
+      result = point;
+    });
+    var parserSink = _GpsPointParserSinkBin(passthroughSink);
+
+    // Decide how far we need to parse.
+    end = end ?? bytes.length;
+    // If it's not the whole [bytes], create a new list with the relevant part.
+    if (end < bytes.length) {
+      parserSink.add(List<int>.from(bytes.getRange(start, end)));
+    } else {
+      // Whole [bytes] => pass it on directly.
+      parserSink.add(bytes);
+    }
+    parserSink.close();
+
+    if (result != null) {
+      return result;
+    } else {
+      throw Exception('Unable to parse point from specified bytes');
+    }
   }
 
   @override
   Sink<List<int>> startChunkedConversion(Sink<GpsPoint> outputSink) {
     return _GpsPointParserSinkBin(outputSink);
+  }
+}
+
+/// Simple sink to make the [GoogleJsonHistoryDecoderBinary.convert]
+/// implementation possible. Translates [add] to a call to a [_wrappedFunction].
+class _PassthroughSink extends Sink<GpsPoint> {
+  final void Function(GpsPoint point) _wrappedFunction;
+
+  _PassthroughSink(this._wrappedFunction);
+
+  @override
+  void add(GpsPoint point) {
+    _wrappedFunction(point);
+  }
+
+  @override
+  void close() {
+    // Nothing to do.
   }
 }
 
