@@ -21,6 +21,10 @@ void main() async {
   // Location of the file to parse.
   final filename =
       '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
+  // Filtering parameters that only influence the binary implementation,
+  // allowing it to not emit points taht are of low quality or too frequent.
+  final binaryMinSecondsBetweenDatapoints = null;
+  final binaryAccuracyThreshold = null;
 
   final file = File(filename);
   final s = Stopwatch();
@@ -34,7 +38,9 @@ void main() async {
       ? fileStream
           .transform(Utf8Decoder(allowMalformed: true))
           .transform(GoogleJsonHistoryDecoder())
-      : fileStream.transform(GoogleJsonHistoryDecoderBinary());
+      : fileStream.transform(GoogleJsonHistoryDecoderBinary(
+          minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
+          accuracyThreshold: binaryAccuracyThreshold));
 
   await for (var p in points) {
     gpsPoints.add(p);

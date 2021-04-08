@@ -341,30 +341,6 @@ class PointParser {
 /// historic position information, the accuracy etc. should not be of great
 /// importance.
 class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
-  double? _minSecondsBetweenDataponts;
-  double? _accuracyThreshold;
-
-  /// Create the decoder with optional configuration parameters that can filter
-  /// out undesired points, reducing the amount of data.
-  ///
-  /// Specify [minSecondsBetweenDatapoints] to any non-null value to ensure that
-  /// consecutive GPS points are at least that many seconds apart. If null,
-  /// time from previous emitted point will not be a reason to skip a point.
-  /// Google's data tracks at a median of 1 minute intervals, which is rather
-  /// granular and can generate over 5 million data points in 10 years.
-  /// An interval of 10 minutes cuts that down tremendously, at no great loss
-  /// for the purpose intended.
-  ///
-  /// Specify [accuracyThreshold] to any non-null value to skip an points
-  /// that don't have an accuracy better that the threshold. If null, the
-  /// accuracy will not be a reason to skip a point.
-  GoogleJsonHistoryDecoder(
-      {double? minSecondsBetweenDatapoints = 10,
-      double? accuracyThreshold = 100}) {
-    _minSecondsBetweenDataponts = minSecondsBetweenDatapoints;
-    _accuracyThreshold = accuracyThreshold;
-  }
-
   @override
   Stream<GpsPoint> bind(Stream<String> inputStream) {
     // split the string into lines
