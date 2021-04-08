@@ -28,7 +28,7 @@ void _testPointParser(
   }
 
   test(testName, () {
-    final parser = PointParser();
+    final parser = PointParserString();
 
     for (var line in lines) {
       final point = parser.parseUpdate(line);
@@ -187,7 +187,7 @@ void testJsonToGps(
     String testName, String json, List<GpsPoint> expectedPoints) {
   test(testName, () {
     final jsonStream = Stream.value(json);
-    final points = jsonStream.transform(GoogleJsonHistoryDecoder());
+    final points = jsonStream.transform(GoogleJsonHistoryStringDecoder());
 
     expect(points, emitsInOrder(expectedPoints));
   });

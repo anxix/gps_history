@@ -74,7 +74,7 @@ import 'package:gps_history/gps_history.dart';
 /// - otherwise it assumes that the previously provided information was not
 ///   in fact a correct point. The parser resets its internal state and
 ///   starts working on a new point (null is returned).
-class PointParser {
+class PointParserString {
   final _values = List<int?>.filled(5, null);
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
@@ -340,7 +340,7 @@ class PointParser {
 /// fields are not present. For the purpose of this data, namely show global
 /// historic position information, the accuracy etc. should not be of great
 /// importance.
-class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
+class GoogleJsonHistoryStringDecoder extends Converter<String, GpsPoint> {
   @override
   Stream<GpsPoint> bind(Stream<String> inputStream) {
     // split the string into lines
@@ -348,7 +348,7 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
     return Stream.eventTransformed(
         linesStream,
         (EventSink<GpsPoint> outputSink) =>
-            _GpsPointParserEventSink(outputSink));
+            _GpsPointParserStringEventSink(outputSink));
   }
 
   @override
@@ -360,16 +360,16 @@ class GoogleJsonHistoryDecoder extends Converter<String, GpsPoint> {
 
   @override
   Sink<String> startChunkedConversion(Sink<GpsPoint> outputSink) {
-    return _GpsPointParserSink(outputSink);
+    return _GpsPointParserStringSink(outputSink);
   }
 }
 
 /// Sink for converting *entire* lines from a Google JSON file to GPS points.
-class _GpsPointParserSink extends StringConversionSinkBase {
+class _GpsPointParserStringSink extends StringConversionSinkBase {
   final Sink<GpsPoint> _outputSink;
-  final _pointParser = PointParser();
+  final _pointParser = PointParserString();
 
-  _GpsPointParserSink(this._outputSink);
+  _GpsPointParserStringSink(this._outputSink);
 
   /// [str] must be one single line from a Google JSON file.
   @override
@@ -399,11 +399,11 @@ class _GpsPointParserSink extends StringConversionSinkBase {
   }
 }
 
-class _GpsPointParserEventSink extends _GpsPointParserSink
+class _GpsPointParserStringEventSink extends _GpsPointParserStringSink
     implements EventSink<String> {
   final EventSink<GpsPoint> _eventOutputSink;
 
-  _GpsPointParserEventSink(EventSink<GpsPoint> eventOutputSink)
+  _GpsPointParserStringEventSink(EventSink<GpsPoint> eventOutputSink)
       : _eventOutputSink = eventOutputSink,
         super(eventOutputSink);
 

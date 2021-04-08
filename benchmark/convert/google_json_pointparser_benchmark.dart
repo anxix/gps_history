@@ -10,7 +10,7 @@ import 'package:gps_history/gps_history_convert.dart';
 /// Try out the performance of the point parser on huge amounts of data.
 /// The runtime of this test should not made worse with new versions.
 void main() {
-  var pp = PointParser();
+  var pp = PointParserString();
   var lines = '''}, {
     "timestampMs" : "1542094587054",
     "latitudeE7" : 520264968,

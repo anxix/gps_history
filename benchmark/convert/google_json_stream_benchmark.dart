@@ -37,8 +37,8 @@ void main() async {
   var points = method == 0
       ? fileStream
           .transform(Utf8Decoder(allowMalformed: true))
-          .transform(GoogleJsonHistoryDecoder())
-      : fileStream.transform(GoogleJsonHistoryDecoderBinary(
+          .transform(GoogleJsonHistoryStringDecoder())
+      : fileStream.transform(GoogleJsonHistoryBinaryDecoder(
           minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
           accuracyThreshold: binaryAccuracyThreshold));
 
