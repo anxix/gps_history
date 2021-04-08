@@ -1,19 +1,3 @@
-# GPS History for Dart
-Module intended to represent histories of GPS points. Includes:
-
-  * Two types of GPS point: a lean one with just the bare minimums and one
-    with more meta information such as heading, speed, etc. that's useful for
-    GPX files for example.
-  * Different in-memory storage systems for GPS points: either simply 
-    list-based, or efficient binary representation of just 14 or 22 bytes per
-    point (at the cost of small loss of accuracy).
-  * Extremely fast and low-memory parser for Google location history JSON
-    export.
-  * Many unit tests and doc strings.
-
-## Example
-Reading a JSON file containing location history exported from Google:
-```dart
 import 'dart:io';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
@@ -55,4 +39,3 @@ void main() async {
     print('Median interval = ${intervals[intervals.length ~/ 2]} s');
   }
 }
-```
