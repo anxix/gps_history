@@ -15,7 +15,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/gps_history_convert.dart';
 
 void main() async {
   // Indicate whether all the found points should be printed at the end.
