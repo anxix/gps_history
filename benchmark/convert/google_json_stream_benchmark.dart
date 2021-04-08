@@ -22,7 +22,7 @@ void main() async {
   final filename =
       '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
   // Filtering parameters that only influence the binary implementation,
-  // allowing it to not emit points taht are of low quality or too frequent.
+  // allowing it to not emit points that are of low quality or too frequent.
   final binaryMinSecondsBetweenDatapoints = null;
   final binaryAccuracyThreshold = null;
 
