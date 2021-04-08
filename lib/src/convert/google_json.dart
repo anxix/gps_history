@@ -12,14 +12,14 @@
 ///
 /// ```javascript
 /// {
-///    "timestampMs" : "1616788980015",
-///    "latitudeE7" : 371395542,
-///    "longitudeE7" : -79377067,
+///    "timestampMs" : "1716788980015",
+///    "latitudeE7" : 361395542,
+///    "longitudeE7" : -69377067,
 ///    "accuracy" : 56,
-///    "altitude" : 402,
+///    "altitude" : 432,
 ///    "verticalAccuracy" : 3,
 ///    "activity" : [ {
-///      "timestampMs" : "1616786618030",
+///      "timestampMs" : "1716788990015",
 ///      "activity" : [ {
 ///        "type" : "STILL",
 ///        "confidence" : 100
@@ -32,14 +32,14 @@
 /// ```javascript
 /// {
 ///  "locations" : [ {
-///    "timestampMs" : "1378029160146",
-///    "latitudeE7" : 523503757,
-///    "longitudeE7" : 46482361,
+///    "timestampMs" : "1378729140146",
+///    "latitudeE7" : 514503757,
+///    "longitudeE7" : 47482361,
 ///    "accuracy" : 14
 ///  }, {
-///    "timestampMs" : "1378029161184",
-///    "latitudeE7" : 523503755,
-///    "longitudeE7" : 46482364,
+///    "timestampMs" : "1379029161184",
+///    "latitudeE7" : 523603755,
+///    "longitudeE7" : 45682364,
 ///    "accuracy" : 11
 ///  }, {
 /// ```
