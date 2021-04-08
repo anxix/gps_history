@@ -61,20 +61,22 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 
-const _charLF = 10;
-const _charCR = 13;
 const _charDoubleQuote = 34;
 const _charMinus = 45;
 const _char0 = 48;
 const _char7 = 55;
 const _char9 = 57;
+const _charUpperA = 65;
+const _charUpperZ = 90;
 const _charLowerA = 97;
 const _charLowerC = 99;
 const _charLowerL = 108;
 const _charLowerS = 115;
 const _charLowerT = 116;
+const _charLowerZ = 122;
 
 /// Parses successive lines and attempts to collect the complete information
 /// to represent an individual point.
@@ -88,6 +90,8 @@ const _charLowerT = 116;
 ///   in fact a correct point. The parser resets its internal state and
 ///   starts working on a new point (null is returned).
 class PointParserBin {
+  final void Function(GpsPoint point) resultReporter;
+
   final _values = List<int?>.filled(5, null);
   static const int _indexTimestampMs = 0;
   static const int _indexLatitudeE7 = 1;
@@ -95,8 +99,10 @@ class PointParserBin {
   static const int _indexAltitude = 3; // altitude exported since ~2018-11-13
   static const int _indexAccuracy = 4;
 
-  static const invalidPos = -1;
-  int pos = invalidPos;
+  int pos = 0;
+  int posStartNextStreamChunk = 0;
+
+  PointParserBin(this.resultReporter);
 
   /// Points are defined if the minimum required information is provided
   /// (timestamp, latitude and longitude).
@@ -144,54 +150,106 @@ class PointParserBin {
   /// ("key" : value) format - i.e. after the opening quote.
   ///
   /// [minLengthAfterKeyStart] indicates how many characters must at least
-  /// be left over in the [line] after the start of the key in order to
+  /// be left over in the [bytes] after the start of the key in order to
   /// have enough space for ending quote, colon and numbers.
-  static int _findStartOfKey(
-      List<int> line, int start, int end, int minLengthAfterKeyStart) {
-    for (var i = start; i < end - minLengthAfterKeyStart; i++) {
-      final char = line[i];
+  bool _findStartOfKey(List<int> bytes, int lastPossibleStartOfKey) {
+    for (var i = pos; i < lastPossibleStartOfKey; i++) {
+      pos = i;
+      final char = bytes[i];
       // Interested in characters between a and t (both inclusive).
       if (_charLowerA <= char && char <= _charLowerT) {
-        return i;
+        return true;
       }
     }
-    return invalidPos;
+    return false;
   }
 
-  int? _getKeyIndex(List<int> line, int end) {
-    final currentChar = line[pos];
+  /// Returns the index of the first found key starting at the current [pos],
+  /// or null if such key is not found.
+  ///
+  /// All the keys used in a Google location export JSON file and their length,
+  /// with the ' indicating the ones we're interested in, and " the ones that
+  /// are mandatory for a valid definition:
+  /// * accuracy : 8'
+  /// * activity : 8
+  /// * altitude : 8'
+  /// * confidence : 10
+  /// * heading : 7
+  /// * latitudeE7 : 10"
+  /// * locations : 9
+  /// * longitudeE7 : 11"
+  /// * timestampMs : 11"
+  /// * type : 4
+  /// * velocity : 8
+  /// * verticalAccuracy : 16
+  int? _getKeyIndex(List<int> bytes, int end) {
+    // After the string we need enough space for the closing quote, a colon
+    // and at least one digit, so we only need to scan up to end-(8+3);
+    final lastPossibleStartOfKey = end - 11;
+
+    final foundKey = _findStartOfKey(bytes, lastPossibleStartOfKey);
+
+    // Remember the last position, because if we don't find a proper value,
+    // that may be because the stream is split at an unfortunate place (e.g.
+    // between a key and its value, or in the middle of a key or something
+    // like that), the part towards the end will need to be glued to the
+    // next chunk from the stream.
+//    posStartNextStreamChunk = pos;
+
+    if (!foundKey) {
+      return null;
+    }
+
+    final currentChar = bytes[pos];
+    // TODO: maybe test the pos-1 for being doublequote
     // Deal with the "t" case.
     if (currentChar == _charLowerT && end >= pos + 12) {
       // If it ends in 's"', we assume we've got timestampMs.
-      if (line[pos + 10] == _charLowerS && line[pos + 11] == _charDoubleQuote) {
+      if (bytes[pos + 10] == _charLowerS &&
+          bytes[pos + 11] == _charDoubleQuote) {
         pos += 12;
         return _indexTimestampMs;
       }
     } else if (currentChar == _charLowerL) {
       // Deal with the "l" case. Might be "latitudeE7" or "longitudeE7".
       if (end > pos + 10 &&
-          line[pos + 9] == _char7 &&
-          line[pos + 10] == _charDoubleQuote) {
+          bytes[pos + 9] == _char7 &&
+          bytes[pos + 10] == _charDoubleQuote) {
         pos += 11;
         return _indexLatitudeE7;
       } else if (end > pos + 11 &&
-          line[pos + 10] == _char7 &&
-          line[pos + 11] == _charDoubleQuote) {
+          bytes[pos + 10] == _char7 &&
+          bytes[pos + 11] == _charDoubleQuote) {
         pos += 12;
         return _indexLongitudeE7;
       }
     } else if (currentChar == _charLowerA) {
-      // Interested in accuracy or altitude, but activity may also occur and
-      // should be excluded by the matching.
-      if (end > pos + 8 && line[pos + 8] == _charDoubleQuote) {
+      // Interested in "accuracy" or "altitude", but "activity" may also occur
+      // and should be excluded by the matching.
+      if (end > pos + 8 && bytes[pos + 8] == _charDoubleQuote) {
         // It's indeed a string of 8 characters. Find out which of the three.
-        if (line[pos + 1] == _charLowerL) {
+        if (bytes[pos + 1] == _charLowerL) {
           pos += 9;
           return _indexAltitude;
-        } else if (line[pos + 2] == _charLowerC) {
+        } else if (bytes[pos + 2] == _charLowerC) {
           pos += 9;
           return _indexAccuracy;
         }
+      }
+    }
+
+    // We are at some kind of identifier, but not one of the expected ones.
+    // In order to continue parsing, we must skip this itentifier and go to
+    // the next one.
+    for (var i = pos + 1; i < lastPossibleStartOfKey; i++) {
+      pos = i;
+      final char = bytes[i];
+      // Identifiers are [0..9, A..Z, a..z], so skip to first character
+      // after one of those.
+      if (!(_char0 <= char && char <= _char9 ||
+          _charUpperA <= char && char <= _charUpperZ ||
+          _charLowerA <= char && char <= _charLowerZ)) {
+        break;
       }
     }
   }
@@ -220,7 +278,18 @@ class PointParserBin {
             endpos = digitsEnd + 1;
           }
         }
-        valueString = String.fromCharCodes(line, pos, endpos);
+        // If the number ends at the end of the bytes, we don't know if this
+        // is truly the end of the number - possibly the enxt chunk of stream
+        // will provide more digits. Therefore reject it in that case.
+        // Since the JSON will contain an object, we know for sure the file
+        // cannot possibly end in a digit, but rather in "}".
+        if (endpos != end) {
+          valueString = String.fromCharCodes(line, pos, endpos);
+          pos = endpos;
+          // Finished a successful key-value parse, so any continued parsing
+          // can start from the current position.
+//          posStartNextStreamChunk = pos;
+        }
         break;
       }
     }
@@ -229,8 +298,8 @@ class PointParserBin {
   }
 
   /// Tries to update its fields based on information from the specified
-  /// [line], which should come from a JSON file. Returns a new GpsPoint
-  /// if it's determined based on the new [line] that the previous information
+  /// [bytes], which should come from a JSON file. Returns a new GpsPoint
+  /// if it's determined based on the new [bytes] that the previous information
   /// it contained was a valid point, or [null] otherwise.
   ///
   /// Valid JSON input will have forms like:
@@ -238,65 +307,43 @@ class PointParserBin {
   /// * "key": "123"
   /// * 'key' : '78'
   ///
-  /// All the keys used in a Google location export JSON file and their length:
-  /// * accuracy : 8
-  /// * activity : 8
-  /// * altitude : 8
-  /// * confidence : 10
-  /// * heading : 7
-  /// * latitudeE7 : 10
-  /// * locations : 9
-  /// * longitudeE7 : 11
-  /// * timestampMs : 11
-  /// * type : 4
-  /// * velocity : 8
-  /// * verticalAccuracy : 16
-  ///
   /// The implementation is very much aimed at specifically the way the Google
   /// location history export looks, rather than being a generic JSON parser.
   /// This makes it possible to optimize it a lot, at the expense of legibility.
-  GpsPoint? parseUpdate(List<int> line, int start, int end) {
-    // Find the start of the key ("key" : "value", "key" : value). The keys
-    // we're interested in and their length:
-    // * accuracy : 8
-    // * altitude : 8
-    // * latitudeE7 : 10
-    // * longitudeE7 : 11
-    // * timestampMs : 11
-    // After the string we need enough space for the closing quote, a colon
-    // and at least one digit, so we only need to scan up to line.length-(8+3);
+  void parseUpdate(List<int> bytes, int start, int end) {
+    pos = start;
+    var prevLoopStartPos = -1;
+    while (pos < end) {
+      if (pos == prevLoopStartPos) {
+        break;
+      }
+      prevLoopStartPos = pos;
+      // See if we find any key we're interested in.
+      final index = _getKeyIndex(bytes, end);
+      if (index == null) {
+        continue;
+      }
 
-    pos = _findStartOfKey(line, start, end, 11);
-    if (pos == invalidPos) {
-      return null;
+      final valueString = _parseValueString(bytes, end);
+      if (valueString == null) {
+        break;
+      }
+      posStartNextStreamChunk = pos;
+
+      final value = int.tryParse(valueString);
+      if (value == null) {
+        // Cannot really happen given the parsing method, but just in case.
+        continue;
+      }
+
+      // If starting the definition of a new point and the current state looks
+      // like a fully defined point, return the current state as result.
+      if (_values[index] != null && !isUndefined) {
+        toGpsPointAndReset();
+      }
+
+      _setValue(index, value);
     }
-
-    final index = _getKeyIndex(line, end);
-
-    if (index == null) {
-      return null;
-    }
-
-    final valueString = _parseValueString(line, end);
-    if (valueString == null) {
-      return null;
-    }
-
-    final value = int.tryParse(valueString);
-    if (value == null) {
-      // Cannot really happen given the parsing method, but just in case.
-      return null;
-    }
-
-    // If starting the definition of a new point and the current state looks
-    // like a fully defined point, return the current state as result.
-    final result = (_values[index] != null) && (!isUndefined)
-        ? toGpsPointAndReset()
-        : null;
-
-    _setValue(index, value);
-
-    return result;
   }
 
   @override
@@ -310,7 +357,7 @@ class PointParserBin {
   ///
   /// The returned point may be GpsPoint if no accuracy is present in the
   /// current state, or GpsMeasurement if the accuracy is present.
-  GpsPoint? toGpsPointAndReset() {
+  void toGpsPointAndReset() {
     if (isUndefined) {
       reset();
       return null;
@@ -329,7 +376,7 @@ class PointParserBin {
     }
 
     reset();
-    return p;
+    resultReporter(p);
   }
 }
 
@@ -391,100 +438,44 @@ class GoogleJsonHistoryDecoderBinary extends Converter<List<int>, GpsPoint> {
 /// Sink for converting *entire* lines from a Google JSON file to GPS points.
 class _GpsPointParserSinkBin extends ChunkedConversionSink<List<int>> {
   final Sink<GpsPoint> _outputSink;
-  final _pointParser = PointParserBin();
+  PointParserBin? _pointParser;
   final _leftoverChunk = <int>[];
   var leftoverChunk = 0;
   var callNr = 0;
 
-  _GpsPointParserSinkBin(this._outputSink);
+  _GpsPointParserSinkBin(this._outputSink) {
+    _pointParser = PointParserBin((GpsPoint point) => _outputSink.add(point));
+  }
 
   /// [str] must be one single line from a Google JSON file.
   @override
   void add(List<int> chunk) {
-    // Find first CR/LF character
-    callNr += 1;
-    var nextNewline;
-    for (var i = 0; i < chunk.length; i++) {
-      if (chunk[i] == _charLF || chunk[i] == _charCR) {
-        nextNewline = i;
-        break;
-      }
-    }
-
-    // If not found, shove it in the leftovers to parse later.
-    if (nextNewline == null) {
-      _leftoverChunk.addAll(chunk);
-      return;
-    }
-
-    // If we have something in the leftover, add to that then parse.
+    var pos = _leftoverChunk.length;
     if (_leftoverChunk.isNotEmpty) {
-      leftoverChunk += 1;
-      _leftoverChunk.addAll(chunk.getRange(0, nextNewline));
-      final point =
-          _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
-      if (point != null) {
-        _outputSink.add(point);
-      }
+      // Get enough bytes from the new chunk to be guaranteed to finish parsing
+      // whatever was left over from previous chunk.
+      _leftoverChunk.addAll(chunk.getRange(0, min(chunk.length, 1000)));
+      _pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
+      // Because we copied part of the new chunk to the leftover, that's been
+      // already parsed -> don't reparse.
+      pos = _pointParser!.posStartNextStreamChunk - pos;
+
       _leftoverChunk.clear();
-    } else {
-      // Nothing to append to previous -> start parsing from the beginning.
-      nextNewline = 0;
     }
 
-    // Now continue parsing the incoming chunk.
-    var pos = nextNewline;
-    while (true) {
-      nextNewline = pos;
-      // Skip any starting newlines.
-      for (var i = pos; i < chunk.length; i++) {
-        if (chunk[i] != _charCR && chunk[i] != _charLF) {
-          pos = i;
-          break;
-        }
-      }
+    _pointParser!.parseUpdate(chunk, pos, chunk.length);
 
-      // Look for next newline.
-      final startPos = pos; // remember where we started the line
-      var foundNewline = false;
-      for (var i = pos; i < chunk.length; i++) {
-        if (chunk[i] == _charCR || chunk[i] == _charLF) {
-          foundNewline = true;
-          pos = i;
-          break;
-        }
-      }
-      // If found one, parse up to there.
-      if (foundNewline) {
-        final point = _pointParser.parseUpdate(chunk, startPos, pos);
-        if (point != null) {
-          _outputSink.add(point);
-        }
-      } else {
-        // Didn't find newline -> leave chunk for next.
-        _leftoverChunk.addAll(chunk.getRange(startPos, chunk.length));
-        break;
-      }
-
-      if (pos == nextNewline) {
-        pos++;
-      }
-    }
+    _leftoverChunk.addAll(
+        chunk.getRange(_pointParser!.posStartNextStreamChunk, chunk.length));
   }
 
   @override
   void close() {
-    // The parser probably still contains information on a last, not yet
+    // Parse any leftover chunks.
+    //_pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
+    // The parser may still contain information on a last, not yet
     // emitted point.
-    var point =
-        _pointParser.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
-    if (point != null) {
-      _outputSink.add(point);
-    }
-    point = _pointParser.toGpsPointAndReset();
-    if (point != null) {
-      _outputSink.add(point);
-    }
+    _pointParser!.toGpsPointAndReset();
 
     _outputSink.close();
   }
