@@ -8,7 +8,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-library gps_history;
+library gps_history_convert;
 
 export 'src/convert/google_json_binary.dart';
 export 'src/convert/google_json_string.dart';
