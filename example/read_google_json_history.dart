@@ -19,7 +19,7 @@ void main() async {
 
   print('Read ${gpsPoints.length} points');
 
-  // Calculate with what frequencey the points have been recorded.
+  // Calculate with what frequency the points have been recorded.
   var intervals = <int>[];
   var prevPoint;
 
