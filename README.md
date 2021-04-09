@@ -26,7 +26,7 @@ void main() async {
 
   var fileStream = file.openRead();
 
-  var points = fileStream.transform(GoogleJsonHistoryBinaryDecoder(
+  var points = fileStream.transform(GoogleJsonHistoryDecoder(
       minSecondsBetweenDatapoints: 240, accuracyThreshold: 500));
 
   await for (var p in points) {
