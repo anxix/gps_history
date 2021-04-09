@@ -116,7 +116,7 @@ class PointParserBin {
   /// Position up to which we've successfully parsed. This is where we should
   /// continue parsing with the next chunk of data from a stream, if the current
   /// chunk contained incomplete data to define a point.
-  int posStartNextStreamChunk = 0;
+  int? posStartNextStreamChunk;
 
   PointParserBin(this._minSecondsBetweenDatapoints, this._accuracyThreshold,
       this.resultReporter);
@@ -328,6 +328,7 @@ class PointParserBin {
   /// usage, at the expense of legibility.
   void parseUpdate(List<int> bytes, int start, int end) {
     pos = start;
+    posStartNextStreamChunk = null; // indicates we haven't parsed anything
     var prevLoopStartPos = -1;
     while (pos < end) {
       // If we're just spinning our wheels, stop.
@@ -529,29 +530,50 @@ class _GpsPointParserBinSink extends ChunkedConversionSink<List<int>> {
 
   @override
   void add(List<int> chunk) {
-    var pos = _leftoverChunk.length;
+    var pos;
+    final originaLeftoverBytes = _leftoverChunk.length;
     if (_leftoverChunk.isNotEmpty) {
       // Get enough bytes from the new chunk to be guaranteed to finish parsing
       // whatever was left over from previous chunk.
       _leftoverChunk.addAll(chunk.getRange(0, min(chunk.length, 500)));
       _pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
-      // Because we copied part of the new chunk to the leftover, that's been
-      // already parsed -> don't reparse.
-      pos = _pointParser!.posStartNextStreamChunk - pos;
-
-      _leftoverChunk.clear();
+      if (_pointParser!.posStartNextStreamChunk != null) {
+        // Because we copied part of the new chunk to the leftover, that's been
+        // already parsed -> don't reparse.
+        pos = _pointParser!.posStartNextStreamChunk! - originaLeftoverBytes;
+        _leftoverChunk.clear();
+      } else {
+        // Pathological situation where the previous chunk is not parsed
+        // completely, but the new chunk doesn't contain enough information to
+        // finish parsing. Just add the whole chunk to the leftovers and leave
+        // it to the next run to figure it out.
+        _leftoverChunk.addAll(chunk.getRange(
+            _leftoverChunk.length - originaLeftoverBytes, chunk.length));
+        return;
+      }
+    } else {
+      pos = 0;
     }
 
     _pointParser!.parseUpdate(chunk, pos, chunk.length);
+    // If we didn't parse anything at all, regard anything starting with pos
+    // as leftover.
+    final leftOverStart = _pointParser!.posStartNextStreamChunk ?? pos;
 
-    _leftoverChunk.addAll(
-        chunk.getRange(_pointParser!.posStartNextStreamChunk, chunk.length));
+    // Store leftover.
+    if (leftOverStart <= chunk.length) {
+      _leftoverChunk.addAll(chunk.getRange(leftOverStart, chunk.length));
+    }
   }
 
   @override
   void close() {
-    // Parse any leftover chunks.
-    //_pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
+    // Parse any leftover chunks (can mainly happen in incomplete malformed
+    // JSON such as in unit tests). Make sure it doesn't stay malformed by
+    // adding a space so it knows for sure it's the end of any final number.
+    _leftoverChunk.add(32);
+    _pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
+
     // The parser may still contain information on a last, not yet
     // emitted point.
     _pointParser!.toGpsPointAndReset();
