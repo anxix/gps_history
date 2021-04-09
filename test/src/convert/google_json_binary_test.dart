@@ -187,7 +187,7 @@ void testChunkedJsonToGps(String testName, List<List<int>> jsonByteChunks,
     List<GpsPoint> expectedPoints) {
   test(testName, () {
     final chunkedIntStream = Stream.fromIterable(jsonByteChunks);
-    final points = chunkedIntStream.transform(GoogleJsonHistoryBinaryDecoder());
+    final points = chunkedIntStream.transform(GoogleJsonHistoryDecoder());
 
     expect(points, emitsInOrder(expectedPoints));
   });

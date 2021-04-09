@@ -1,3 +1,12 @@
+# 0.0.2
+
+* Public API changes:
+  * ```GoogleJsonHistoryBinaryDecoder``` renamed to ```GoogleJsonHistoryDecoder```, as the binary parser seems pretty stable
+  and is made default.
+* Fixes:
+  * Several corner cases in the Google location history JSON parsing.
+
+
 # 0.0.1
 
 * Initial public release. Includes:

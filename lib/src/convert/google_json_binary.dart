@@ -90,7 +90,7 @@ const _charLowerZ = 122;
 /// - otherwise it assumes that the previously provided information was not
 ///   in fact a correct point. The parser resets its internal state and
 ///   starts working on a new point. No point is returned.
-class PointParserBin {
+class PointParser {
   /// Function called when a point has been identified (typically a [Sink.add]
   /// accepting the points).
   final void Function(GpsPoint point) resultReporter;
@@ -118,7 +118,7 @@ class PointParserBin {
   /// chunk contained incomplete data to define a point.
   int? posStartNextStreamChunk;
 
-  PointParserBin(this._minSecondsBetweenDatapoints, this._accuracyThreshold,
+  PointParser(this._minSecondsBetweenDatapoints, this._accuracyThreshold,
       this.resultReporter);
 
   @override
@@ -426,7 +426,7 @@ class PointParserBin {
 /// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
 ///
 /// Although the stream may contain information about accuracy.
-class GoogleJsonHistoryBinaryDecoder extends Converter<List<int>, GpsPoint> {
+class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   double? _minSecondsBetweenDatapoints;
   double? _accuracyThreshold;
 
@@ -444,7 +444,7 @@ class GoogleJsonHistoryBinaryDecoder extends Converter<List<int>, GpsPoint> {
   /// Specify [accuracyThreshold] to any non-null value to skip any points
   /// that don't have an accuracy better that the threshold. If null, the
   /// accuracy will not be a reason to skip a point.
-  GoogleJsonHistoryBinaryDecoder(
+  GoogleJsonHistoryDecoder(
       {double? minSecondsBetweenDatapoints, double? accuracyThreshold}) {
     _minSecondsBetweenDatapoints = minSecondsBetweenDatapoints;
     _accuracyThreshold = accuracyThreshold;
@@ -454,7 +454,7 @@ class GoogleJsonHistoryBinaryDecoder extends Converter<List<int>, GpsPoint> {
   Stream<GpsPoint> bind(Stream<List<int>> inputStream) {
     return Stream.eventTransformed(
         inputStream,
-        (EventSink<GpsPoint> outputSink) => _GpsPointParserBinEventSink(
+        (EventSink<GpsPoint> outputSink) => _GpsPointParserEventSink(
             outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold));
   }
 
@@ -467,7 +467,7 @@ class GoogleJsonHistoryBinaryDecoder extends Converter<List<int>, GpsPoint> {
     var passthroughSink = _PassthroughSink((point) {
       result = point;
     });
-    var parserSink = _GpsPointParserBinSink(
+    var parserSink = _GpsPointParserSink(
         passthroughSink, _minSecondsBetweenDatapoints, _accuracyThreshold);
 
     // Decide how far we need to parse.
@@ -490,12 +490,12 @@ class GoogleJsonHistoryBinaryDecoder extends Converter<List<int>, GpsPoint> {
 
   @override
   Sink<List<int>> startChunkedConversion(Sink<GpsPoint> outputSink) {
-    return _GpsPointParserBinSink(
+    return _GpsPointParserSink(
         outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold);
   }
 }
 
-/// Simple sink to make the [GoogleJsonHistoryBinaryDecoder.convert]
+/// Simple sink to make the [GoogleJsonHistoryDecoder.convert]
 /// implementation possible. Translates [add] to a call to a [_wrappedFunction].
 class _PassthroughSink extends Sink<GpsPoint> {
   final void Function(GpsPoint point) _wrappedFunction;
@@ -515,17 +515,17 @@ class _PassthroughSink extends Sink<GpsPoint> {
 
 /// Sink for converting chunks of data from Google location history JSON file to
 /// GPS points.
-class _GpsPointParserBinSink extends ChunkedConversionSink<List<int>> {
+class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
   final Sink<GpsPoint> _outputSink;
 
-  PointParserBin? _pointParser;
+  PointParser? _pointParser;
 
   final _leftoverChunk = <int>[];
 
-  _GpsPointParserBinSink(this._outputSink, double? _minSecondsBetweenDatapoints,
+  _GpsPointParserSink(this._outputSink, double? _minSecondsBetweenDatapoints,
       double? _accuracyThreshold) {
-    _pointParser = PointParserBin(_minSecondsBetweenDatapoints,
-        _accuracyThreshold, (GpsPoint point) => _outputSink.add(point));
+    _pointParser = PointParser(_minSecondsBetweenDatapoints, _accuracyThreshold,
+        (GpsPoint point) => _outputSink.add(point));
   }
 
   @override
@@ -582,11 +582,11 @@ class _GpsPointParserBinSink extends ChunkedConversionSink<List<int>> {
   }
 }
 
-class _GpsPointParserBinEventSink extends _GpsPointParserBinSink
+class _GpsPointParserEventSink extends _GpsPointParserSink
     implements EventSink<List<int>> {
   final EventSink<GpsPoint> _eventOutputSink;
 
-  _GpsPointParserBinEventSink(EventSink<GpsPoint> eventOutputSink,
+  _GpsPointParserEventSink(EventSink<GpsPoint> eventOutputSink,
       double? _minSecondsBetweenDatapoints, double? _accuracyThreshold)
       : _eventOutputSink = eventOutputSink,
         super(

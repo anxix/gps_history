@@ -38,7 +38,7 @@ void main() async {
       ? fileStream
           .transform(Utf8Decoder(allowMalformed: true))
           .transform(GoogleJsonHistoryStringDecoder())
-      : fileStream.transform(GoogleJsonHistoryBinaryDecoder(
+      : fileStream.transform(GoogleJsonHistoryDecoder(
           minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
           accuracyThreshold: binaryAccuracyThreshold));
 
