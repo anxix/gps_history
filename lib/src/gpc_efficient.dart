@@ -19,9 +19,10 @@ import 'package:gps_history/src/base.dart';
 /// memory use particularly for large data sets. A test of 12.5 million
 /// points represented as a list of objects of 4 doubles each, versus 12.5
 /// million points represented as a list of [Int32x4] showed memory use drop
-/// from about 400MB to about 200MB. On mobile device in particular this could
-/// be quite a significant gain. This does come at the expense of some accuracy,
-/// as we store lower-accuracy integer subtypes rather than doubles.
+/// from about 400MB to about 200MB. On mobile devices in particular this could
+/// be quite a significant gain.
+/// This does come at the expense of some accuracy, as we store lower-accuracy
+/// integer subtypes rather than doubles.
 abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// The raw data representation of the collection (starts empty).
   var _rawData = ByteData(0);
@@ -283,6 +284,7 @@ class Conversions {
 /// - [GpsPoint.longitude]: like the latitude
 /// - [GpsPoint.altitude]: [Int16]. For details see
 ///   [Conversions.altitudeToInt16].
+///
 /// Added together it's 14 bytes per element.
 abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   static const _endian = Endian.little;
@@ -332,6 +334,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   }
 }
 
+/// Implements efficient storage for [GpsPoint] elements.
 class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   @override
   GpsPoint _readElementFromBytes(int byteIndex) {
@@ -359,6 +362,7 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
 ///   For details see [Conversions.smallDoubleToUint16].
 /// - [GpsMeasurement.speedAccuracy]: [Uint16] representation of speed accuracy.
 ///   For details see [Conversions.smallDoubleToUint16].
+///
 /// Added together it's 8 bytes per element extra compared to what's needed
 /// for the inherited [GpsPoint] properties.
 class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
