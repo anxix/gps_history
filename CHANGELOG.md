@@ -1,10 +1,18 @@
 # 0.0.2
 
 * Public API changes:
-  * ```GoogleJsonHistoryBinaryDecoder``` renamed to ```GoogleJsonHistoryDecoder```, as the binary parser seems pretty stable
-  and is made default.
+  * ```GoogleJsonHistoryBinaryDecoder``` renamed to 
+    ```GoogleJsonHistoryDecoder```, as the binary parser seems pretty stable.
+    Similar naming changes for reladed classes, but those are not typically 
+    used directly.
+  * Removed ```GoogleJsonHistoryStringDecoder``` as it's slower and less
+    flexible than the now standard binary decoder.
+
 * Fixes:
   * Several corner cases in the Google location history JSON parsing.
+  * Unit tests for ```GoogleJsonHistoryDecoder```.
+  * Added ```example.md``` file in the examples directory to convince pub.dev
+    that there are indeed examples in the release.
 
 
 # 0.0.1
