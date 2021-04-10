@@ -378,11 +378,8 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
   GpsMeasurement _readElementFromBytes(int byteIndex) {
     final point = _readGpsPointFromBytes(byteIndex);
 
-    return GpsMeasurement(
-        point.time,
-        point.latitude,
-        point.longitude,
-        point.altitude,
+    return GpsMeasurement.fromPoint(
+        point,
         Conversions.uint16ToSmallDouble(
             _getUint16(byteIndex + _offsetAccuracy)),
         Conversions.int16ToHeading(_getUint16(byteIndex + _offsetHeading)),
