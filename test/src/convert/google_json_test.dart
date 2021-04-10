@@ -79,18 +79,8 @@ void testPointParser() {
       ['"timestampMs":0,\n"latitudeE7" :-,\n"longitudeE7": 2,'], []);
   _testPointParserStrings(
       'Parse single point in standard order',
-      ['"timestampMs":0,\n"latitudeE7" :1, "longitudeE7": 2'],
+      ['"timestampMs":0,\n"latitudeE7" :1, "longitudeE7": 2,'],
       [GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null)]);
-  _testPointParser('Test parsing when last character is part of number', [
-    // Use raw stringToIntList instead of calling testPointParserStrings
-    // because we want to prevent any automatic string processing that
-    // the testPointParserStrings may do from affecting the shape of the
-    // string. In particular we don't want any space/newline to be added
-    // at the end, the last character must be a digit.
-    stringToIntList('"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20')
-  ], [
-    GpsPoint(DateTime.utc(1970), 1.3E-6, 2.0E-6, null)
-  ]);
   _testPointParserStrings(
       'Parse single point in nonstandard order',
       ['"latitudeE7" : \'1\',', '"timestampMs" : "0",', '"longitudeE7" : "2"'],
@@ -217,10 +207,10 @@ void main() {
   var onePointGpsPoint = GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null);
 
   testJsonToGps('One point', onePointJson, [onePointGpsPoint], null);
+
   testJsonToGps(
       'Two points',
-      onePointJson +
-          '\n' +
+      '$onePointJson \n' +
           '''
     "timestampMs" : $oneDay,
     "latitudeE7" : 5,
@@ -230,6 +220,12 @@ void main() {
         GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, null)
       ],
       1);
+
+  // Test that fails parsing without a specific bit of logic in the parser.
+  testJsonToGps(
+      'Test parsing when last character is part of number',
+      '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20',
+      [GpsPoint(DateTime.utc(1970), 1.3E-6, 2.0E-6, null)]);
 
   // The tests below should not take a large amount of time. They are
   // aimed at checking that feeding a large amount of garbage data doesn't
