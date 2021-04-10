@@ -13,23 +13,44 @@ import 'gpc_test_skeleton.dart';
 // static double int16ToAltitude(int value)
 
 void testConversions() {
-  test('Check degrees to Int32 conversions', () {
+  test('Check latitude to Uint32 conversions', () {
     // Check that converting back and forth gives the same value.
-    for (var i = -180 * 4; i <= 180 * 4; i++) {
+    for (var i = -90 * 4; i <= 90 * 4; i++) {
       final deg = i / 4;
-      expect(Conversions.int32ToDegrees(Conversions.degreesToInt32(deg)), deg);
+      expect(
+          Conversions.uint32ToLatitude(Conversions.latitudeToUint32(deg)), deg);
     }
 
     // Check that converting one way gives the correct value (the back and
     // forth test ensures implicitly that the other direction is correct too).
-    expect(Conversions.degreesToInt32(15.3), 153000000);
-    expect(Conversions.degreesToInt32(-179.2), -1792000000);
+    expect(Conversions.latitudeToUint32(15.3), 1053000000);
+    expect(Conversions.latitudeToUint32(-89.2), 8000000);
 
     // Check the caps
-    expect(Conversions.degreesToInt32(180.0), 1800000000);
-    expect(Conversions.degreesToInt32(-180.0), -1800000000);
-    expect(Conversions.degreesToInt32(180.00001), 1800000000);
-    expect(Conversions.degreesToInt32(-180.00001), -1800000000);
+    expect(Conversions.latitudeToUint32(90.0), 1800000000);
+    expect(Conversions.latitudeToUint32(-90.0), 0);
+    expect(Conversions.latitudeToUint32(90.00001), 1800000000);
+    expect(Conversions.latitudeToUint32(-90.00001), 0);
+  });
+
+  test('Check longitude to Uint32 conversions', () {
+    // Check that converting back and forth gives the same value.
+    for (var i = -180 * 4; i <= 180 * 4; i++) {
+      final deg = i / 4;
+      expect(Conversions.uint32ToLongitude(Conversions.longitudeToUint32(deg)),
+          deg);
+    }
+
+    // Check that converting one way gives the correct value (the back and
+    // forth test ensures implicitly that the other direction is correct too).
+    expect(Conversions.longitudeToUint32(15.3), 1953000000);
+    expect(Conversions.longitudeToUint32(-179.2), 8000000);
+
+    // Check the caps
+    expect(Conversions.longitudeToUint32(180.0), 3600000000);
+    expect(Conversions.longitudeToUint32(-180.0), 0);
+    expect(Conversions.longitudeToUint32(180.00001), 3600000000);
+    expect(Conversions.longitudeToUint32(-180.00001), 0);
   });
 
   test('Check time to Uint32 conversions', () {

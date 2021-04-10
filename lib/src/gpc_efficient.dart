@@ -169,23 +169,42 @@ class Conversions {
   static final int _extremeAltitude = 32767 ~/ 2; //int16 is -32768..32767
   static final int _maxSmallDouble = 0xffff.toUnsigned(16);
 
-  /// Convert a latitude/longitude in degrees to E7-spec, i.e.
-  /// round(degrees * 1E7).
+  /// Convert a latitude in degrees to PosE7-spec, i.e.
+  /// round((90 + degrees) * 1E7), meaning that the South Pole is stored as 0
+  /// and the North Pole as 180.
   ///
   /// The minimum distance that can be represented by this accuracy is
   /// 1E-7 degrees, which at the equator represents about 1 cm. Valid range
-  /// of degrees values is -180 <= value <= 180.
+  /// of latitude values is -90 <= value <= 90.
   /// If values outside the supported range are provided, they will be capped
   /// at the appropriate boundary (no exception will be raised).
-  static int degreesToInt32(double value) {
+  static int latitudeToUint32(double value) {
+    // Make sure the value is in the valid range of -90..90. This prevents
+    // overloading of the valid integer range.
+    final cappedValue = value.abs() <= 90.0 ? value : value.sign * 90.0;
+    return ((90 + cappedValue) * 1E7).round();
+  }
+
+  /// The opposite of [latitudeToUint32].
+  static double uint32ToLatitude(int value) => (value / 1E7) - 90.0;
+
+  /// Convert a longitude in degrees to PosE7-spec, i.e.
+  /// round((180 + degrees) * 1E7).
+  ///
+  /// The minimum distance that can be represented by this accuracy is
+  /// 1E-7 degrees, which at the equator represents about 1 cm. Valid range
+  /// of longitude values is -180 <= value <= 180.
+  /// If values outside the supported range are provided, they will be capped
+  /// at the appropriate boundary (no exception will be raised).
+  static int longitudeToUint32(double value) {
     // Make sure the value is in the valid range of -180..180. This prevents
     // overloading of the valid integer range.
     final cappedValue = value.abs() <= 180.0 ? value : value.sign * 180.0;
-    return (cappedValue * 1E7).round();
+    return ((cappedValue + 180) * 1E7).round();
   }
 
-  /// The opposite of [degreesToInt32].
-  static double int32ToDegrees(int value) => value / 1E7;
+  /// The opposite of [longitudeToInt32].
+  static double uint32ToLongitude(int value) => (value / 1E7) - 180.0;
 
   /// Convert regular DateTime object to a [Uint32] value.
   ///
@@ -297,13 +316,10 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
 
   // Various wrappers around ByteData routines to ensure uniform endianness.
   int _getInt16(int byteIndex) => _rawData.getInt16(byteIndex, _endian);
-  int _getInt32(int byteIndex) => _rawData.getInt32(byteIndex, _endian);
   int _getUint16(int byteIndex) => _rawData.getUint16(byteIndex, _endian);
   int _getUint32(int byteIndex) => _rawData.getUint32(byteIndex, _endian);
   void _setInt16(int byteIndex, int value) =>
       _rawData.setInt16(byteIndex, value, _endian);
-  void _setInt32(int byteIndex, int value) =>
-      _rawData.setInt32(byteIndex, value, _endian);
   void _setUint16(int byteIndex, int value) =>
       _rawData.setUint16(byteIndex, value, _endian);
   void _setUint32(int byteIndex, int value) =>
@@ -315,8 +331,8 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   GpsPoint _readGpsPointFromBytes(int byteIndex) {
     return GpsPoint(
         Conversions.uint32ToDateTime(_getUint32(byteIndex)),
-        Conversions.int32ToDegrees(_getInt32(byteIndex + _offsetLatitude)),
-        Conversions.int32ToDegrees(_getInt32(byteIndex + _offsetLongitude)),
+        Conversions.uint32ToLatitude(_getUint32(byteIndex + _offsetLatitude)),
+        Conversions.uint32ToLongitude(_getUint32(byteIndex + _offsetLongitude)),
         Conversions.int16ToAltitude(_getInt16(byteIndex + _offsetAltitude)));
   }
 
@@ -325,10 +341,10 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   /// Useful to use in children's [_writeElementToBytes] implmentations.
   void _writeGpsPointToBytes(T element, int byteIndex) {
     _setUint32(byteIndex, Conversions.dateTimeToUint32(element.time));
-    _setInt32(byteIndex + _offsetLatitude,
-        Conversions.degreesToInt32(element.latitude));
-    _setInt32(byteIndex + _offsetLongitude,
-        Conversions.degreesToInt32(element.longitude));
+    _setUint32(byteIndex + _offsetLatitude,
+        Conversions.latitudeToUint32(element.latitude));
+    _setUint32(byteIndex + _offsetLongitude,
+        Conversions.longitudeToUint32(element.longitude));
     _setInt16(byteIndex + _offsetAltitude,
         Conversions.altitudeToInt16(element.altitude));
   }
