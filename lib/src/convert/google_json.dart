@@ -547,7 +547,7 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
 
     int? pos;
 
-    final originaLeftoverBytes = _leftoverChunk.length;
+    final originalLeftoverBytes = _leftoverChunk.length;
     if (_leftoverChunk.isNotEmpty) {
       // Get enough bytes from the new chunk to be guaranteed to finish parsing
       // whatever was left over from previous chunk.
@@ -557,7 +557,7 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
       if (_pointParser!.posStartNextStreamChunk != null) {
         // Because we copied part of the new chunk to the leftover, that's been
         // already parsed -> don't reparse.
-        pos = _pointParser!.posStartNextStreamChunk! - originaLeftoverBytes;
+        pos = _pointParser!.posStartNextStreamChunk! - originalLeftoverBytes;
         _leftoverChunk.clear();
       } else {
         // Pathological situation where the previous chunk is not parsed
@@ -565,7 +565,7 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
         // finish parsing. Just add the whole chunk to the leftovers and leave
         // it to the next run to figure it out.
         _leftoverChunk.addAll(chunk.getRange(
-            _leftoverChunk.length - originaLeftoverBytes, chunk.length));
+            _leftoverChunk.length - originalLeftoverBytes, chunk.length));
         return;
       }
     } else {
