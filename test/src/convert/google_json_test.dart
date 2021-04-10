@@ -210,7 +210,7 @@ void main() {
 
   testJsonToGps(
       'Two points',
-      '$onePointJson \n' +
+      '$onePointJson \n'
           '''
     "timestampMs" : $oneDay,
     "latitudeE7" : 5,
