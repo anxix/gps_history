@@ -13,6 +13,7 @@
   * Unit tests for ```GoogleJsonHistoryDecoder```.
   * Added ```example.md``` file in the examples directory to convince pub.dev
     that there are indeed examples in the release.
+  * Latitude cannot be -180..180, but -90..90.
 
 
 # 0.0.1
