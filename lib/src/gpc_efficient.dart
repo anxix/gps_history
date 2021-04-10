@@ -203,7 +203,7 @@ class Conversions {
     return ((cappedValue + 180) * 1E7).round();
   }
 
-  /// The opposite of [longitudeToInt32].
+  /// The opposite of [longitudeToUint32].
   static double uint32ToLongitude(int value) => (value / 1E7) - 180.0;
 
   /// Convert regular DateTime object to a [Uint32] value.
@@ -298,9 +298,10 @@ class Conversions {
 /// all in *little endian* representation:
 /// - [GpsPoint.time]: [Uint32] representation of time. For details see
 ///   [Conversions.dateTimeToUint32].
-/// - [GpsPoint.latitude]: [Int32] in E7-spec. For details see
-///   [Conversions.degreesToInt32].
-/// - [GpsPoint.longitude]: like the latitude
+/// - [GpsPoint.latitude]: [Uint32] in PosE7-spec. For details see
+///   [Conversions.latitudeToUint32].
+/// - [GpsPoint.longitude]: [Uint32] in PosE7-spec. For details see
+///   [Conversions.longitudeToUint32].
 /// - [GpsPoint.altitude]: [Int16]. For details see
 ///   [Conversions.altitudeToInt16].
 ///
