@@ -206,9 +206,10 @@ void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
 }
 
 void main() {
-  // testPointParser();
+  testPointParser();
 
-  // testJsonToGps('Empty string', '', List.empty());
+  testJsonToGps('Empty string', '', List.empty());
+
   var onePointJson = '''
     "timestampMs" : 0,
     "latitudeE7" : 1,
