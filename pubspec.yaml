@@ -1,5 +1,15 @@
 name: gps_history
-description: Module intended to represent histories of GPS points.
+description: >
+  Module intended to represent histories of GPS points.
+
+
+  Can be used to store and query large numbers (millions) of GPS points, for 
+  example to store location history or GPS tracks, with native list-based, but 
+  also compact binary storage mechanisms. Includes a CPU and memory efficient 
+  importing of Google location history JSON files.
+
+
+  Modules are unit tested and extensively documented.
 version: 0.0.2
 homepage: https://github.com/anxix/gps_history
 
