@@ -5,7 +5,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
