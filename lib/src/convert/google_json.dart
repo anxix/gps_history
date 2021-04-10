@@ -543,12 +543,16 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
 
   @override
   void add(List<int> chunk) {
-    var pos;
+    const overlapBetweenChunks = 521;
+
+    int? pos;
+
     final originaLeftoverBytes = _leftoverChunk.length;
     if (_leftoverChunk.isNotEmpty) {
       // Get enough bytes from the new chunk to be guaranteed to finish parsing
       // whatever was left over from previous chunk.
-      _leftoverChunk.addAll(chunk.getRange(0, min(chunk.length, 500)));
+      _leftoverChunk
+          .addAll(chunk.getRange(0, min(chunk.length, overlapBetweenChunks)));
       _pointParser!.parseUpdate(_leftoverChunk, 0, _leftoverChunk.length);
       if (_pointParser!.posStartNextStreamChunk != null) {
         // Because we copied part of the new chunk to the leftover, that's been
@@ -571,11 +575,18 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
     _pointParser!.parseUpdate(chunk, pos, chunk.length);
     // If we didn't parse anything at all, regard anything starting with pos
     // as leftover.
-    final leftOverStart = _pointParser!.posStartNextStreamChunk ?? pos;
+    var leftoverStart = _pointParser!.posStartNextStreamChunk ?? pos;
+    // There are pathological cases that can force huge repeated copies with
+    // ever increasing memory use. An example would be streaming in huge strings
+    // of only spaces. In that case the leftover could grow and grow. Prevent
+    // this by cutting off how much we're willing to copy at each run. This
+    // may hurt correct parsing of very weirdly formatted JSON, but that's a
+    // price we'll pay for not having this attack vector.
+    leftoverStart = max(leftoverStart, chunk.length - overlapBetweenChunks);
 
     // Store leftover.
-    if (leftOverStart <= chunk.length) {
-      _leftoverChunk.addAll(chunk.getRange(leftOverStart, chunk.length));
+    if (leftoverStart <= chunk.length) {
+      _leftoverChunk.addAll(chunk.getRange(leftoverStart, chunk.length));
     }
   }
 

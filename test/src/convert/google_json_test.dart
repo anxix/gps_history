@@ -68,7 +68,7 @@ void _testPointParserStrings(
 void testPointParser() {
   // Test the empty cases.
   _testPointParserStrings('Nothing', [], []);
-  _testPointParserStrings('Empty string', [''], [null]);
+  _testPointParserStrings('Empty string', [''], []);
 
   // Test arbitrary junk data.
   _testPointParserStrings('Arbitrary strings',
@@ -179,10 +179,13 @@ void testChunkedJsonToGps(String testName, List<List<int>> jsonByteChunks,
 }
 
 /// Runs a conversion test of the specified [json] checks if it is parsed to
-/// the [expectedPoints]. Can also try all possible 2-chunk splits for the
-/// specified [json], by setting [testAllChunkingPairs] to true.
+/// the [expectedPoints]. Can also try the 2-chunk splits for the specified
+/// [json], by setting [chunkingPairSizeInc] to a non-null value indicating
+/// with what size the chunks should be increased (e.g. 100 characters with
+/// [chunkingPairSizeInc]==2 would test chunk pairs of lengths (0, 100),
+/// (2, 98), (4, 96), etc.).
 void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
-    [bool testAllChunkingPairs = false]) {
+    [int? chunkingPairSizeInc]) {
   final stringAsIntList = stringToIntList(json);
 
   final chunkedList = [stringAsIntList];
@@ -190,8 +193,8 @@ void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
 
   // Test every possible split into two chunks for the specified JSON. All of
   // them should parse to the same result.
-  if (testAllChunkingPairs) {
-    for (var i = 0; i < stringAsIntList.length; i++) {
+  if (chunkingPairSizeInc != null) {
+    for (var i = 0; i < stringAsIntList.length; i += chunkingPairSizeInc) {
       final chunkA = List<int>.from(stringAsIntList.getRange(0, i));
       final chunkB =
           List<int>.from(stringAsIntList.getRange(i, stringAsIntList.length));
@@ -205,19 +208,39 @@ void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
 void main() {
   // testPointParser();
 
-  testJsonToGps('Empty string', '', List.empty());
-  testJsonToGps(
-      'Two points',
-      '''
+  // testJsonToGps('Empty string', '', List.empty());
+  var onePointJson = '''
     "timestampMs" : 0,
     "latitudeE7" : 1,
-    "longitudeE7" : 2,
+    "longitudeE7" : 2,''';
+  var onePointGpsPoint = GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null);
+
+  testJsonToGps('One point', onePointJson, [onePointGpsPoint], null);
+  testJsonToGps(
+      'Two points',
+      onePointJson +
+          '\n' +
+          '''
     "timestampMs" : $oneDay,
     "latitudeE7" : 5,
     "longitudeE7" : 6''',
       [
-        GpsPoint(DateTime.utc(1970), 1.0E-7, 2.0E-7, null),
+        onePointGpsPoint,
         GpsPoint(DateTime.utc(1970, 1, 2), 5.0E-7, 6.0E-7, null)
       ],
-      true);
+      1);
+
+  // The tests below should not take a large amount of time. They are
+  // aimed at checking that feeding a large amount of garbage data doesn't
+  // trip up the parser.
+  testJsonToGps(
+      'Long character data ("jjjjjj...")',
+      String.fromCharCodes(List<int>.filled(2000000, 106)) + ' ' + onePointJson,
+      [onePointGpsPoint],
+      35000);
+  testJsonToGps(
+      'Long space data before point ("      ...")',
+      String.fromCharCodes(List<int>.filled(2000000, 32)) + onePointJson,
+      [onePointGpsPoint],
+      35000);
 }
