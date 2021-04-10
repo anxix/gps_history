@@ -14,8 +14,6 @@ import 'package:gps_history/gps_history_convert.dart';
 /// Try out the performance of the string-based JSON parser versus the
 /// byte-based one. Can also be used to check that their results are the same.
 void main() async {
-  // Use 0 for string-based, 1 for bytestream-based parsing.
-  final method = 1;
   // Indicate whether all the found points should be printed at the end.
   final printPoints = false;
   // Location of the file to parse.
@@ -27,27 +25,23 @@ void main() async {
   final binaryAccuracyThreshold = null;
 
   final file = File(filename);
-  final s = Stopwatch();
+  final stopwatch = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();
 
   var fileStream = file.openRead();
 
-  s.start();
+  stopwatch.start();
 
-  var points = method == 0
-      ? fileStream
-          .transform(Utf8Decoder(allowMalformed: true))
-          .transform(GoogleJsonHistoryStringDecoder())
-      : fileStream.transform(GoogleJsonHistoryDecoder(
-          minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
-          accuracyThreshold: binaryAccuracyThreshold));
+  var points = fileStream.transform(GoogleJsonHistoryDecoder(
+      minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
+      accuracyThreshold: binaryAccuracyThreshold));
 
   await for (var p in points) {
     gpsPoints.add(p);
   }
 
-  s.stop();
-  final dt = s.elapsedMilliseconds / 1000;
+  stopwatch.stop();
+  final dt = stopwatch.elapsedMilliseconds / 1000;
   print(
       'Read ${gpsPoints.length} in $dt s: ${gpsPoints.length / 1000000 / dt} Mpoints/s or ${dt / (gpsPoints.length / 1000000)} s/Mpoint');
 

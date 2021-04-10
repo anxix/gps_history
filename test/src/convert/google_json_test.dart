@@ -11,19 +11,6 @@ import 'package:gps_history/gps_history_convert.dart';
 
 final oneDay = 24 * 3600 * 1000; // one day in milliseconds
 
-/// Converts [string] to a list of integers being the code units of its
-/// characters.
-List<int> stringToIntList(String string) {
-  final result = List<int>.filled(string.length, 0);
-
-  // Test as single chunk.
-  for (var i = 0; i < string.length; i++) {
-    result[i] = string.codeUnitAt(i);
-  }
-
-  return result;
-}
-
 /// Tests the PointParser against the specified sequence of [chunks], ensuring
 /// that it returns the correct response after parsing ([expectedPoints]).
 void _testPointParser(

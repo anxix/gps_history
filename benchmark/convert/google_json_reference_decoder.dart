@@ -23,12 +23,12 @@ void main() async {
   final filename =
       '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
 
-  final s = Stopwatch();
+  final stopwatch = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();
   final file = File(filename);
   var fileStream = file.openRead();
 
-  s.start();
+  stopwatch.start();
   var pointsJson = fileStream
       .transform(Utf8Decoder(allowMalformed: true))
       .transform(JsonDecoder());
@@ -53,8 +53,8 @@ void main() async {
       gpsPoints.add(p);
     }
 
-    s.stop();
-    final dt = s.elapsedMilliseconds / 1000;
+    stopwatch.stop();
+    final dt = stopwatch.elapsedMilliseconds / 1000;
     print(
         'Read ${gpsPoints.length} in $dt s: ${gpsPoints.length / 1000000 / dt} Mpoints/s or ${dt / (gpsPoints.length / 1000000)} s/Mpoint');
 

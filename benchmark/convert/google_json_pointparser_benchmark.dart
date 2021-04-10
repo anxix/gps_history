@@ -5,12 +5,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'package:gps_history/src/base.dart';
 import 'package:gps_history/gps_history_convert.dart';
 
 /// Try out the performance of the point parser on huge amounts of data.
 /// The runtime of this test should not made worse with new versions.
 void main() {
-  var pp = PointParserString();
+  var nrPointsFound = 0;
+
+  var pointParser = PointParser(null, null, (GpsPoint point) {
+    nrPointsFound++;
+  });
   var lines = '''}, {
     "timestampMs" : "1542094587054",
     "latitudeE7" : 520264968,
@@ -48,14 +53,10 @@ void main() {
   final nrLoops = 500000;
   final stopwatch = Stopwatch()..start();
 
-  var nrPointsFound = 0;
   for (var i = 0; i < nrLoops; i++) {
-    var point;
     for (var line in lines) {
-      point = pp.parseUpdate(line);
-      if (point != null) {
-        nrPointsFound++;
-      }
+      final bytes = stringToIntList(line);
+      pointParser.parseUpdate(bytes, 0, bytes.length);
     }
   }
   stopwatch.stop();
