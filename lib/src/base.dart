@@ -12,6 +12,20 @@ import 'dart:collection';
 
 import 'package:gps_history/src/hash.dart';
 
+/// [Exception] class that can act as ancestor for exceptions raised by
+/// this package.
+class GpsHistoryException implements Exception {
+  final String? _message;
+
+  GpsHistoryException([this._message]);
+
+  @override
+  String toString() {
+    final extraText = (_message != null) ? ': $_message' : '';
+    return '${runtimeType.toString()}$extraText';
+  }
+}
+
 /// Represents the most basic GPS location.
 ///
 /// This excludes heading and accuracy information that is typically provided
@@ -154,6 +168,9 @@ abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
 
   T operator [](int index);
 
+  /// Indicate if the view is read-only and cannot be modified.
+  bool get isReadonly => true;
+
   // Other
 //  GpsPointsView<T> selectInBoundingBox(double minLatitude, double minLongitude,
 //      double maxLatitude, double maxLongitude);
@@ -168,7 +185,11 @@ abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
-  // List-like wriet operations.
+  // List-like write operations.
   void add(T element);
   void addAll(Iterable<T> iterable);
+
+  /// Collections are typically not read-only.
+  @override
+  bool get isReadonly => false;
 }

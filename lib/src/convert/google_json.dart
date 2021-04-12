@@ -435,6 +435,11 @@ class PointParser {
   }
 }
 
+/// An exception thrown if the JSON parsing goes wrong in an unrecoverable way.
+class JsonParseException extends GpsHistoryException {
+  JsonParseException([String? message]) : super(message);
+}
+
 /// Decoder for a stream of bytes from a Google location history JSON file to
 /// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
 ///
@@ -471,11 +476,14 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
             outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold));
   }
 
+  /// Override [Converter.convert] that returns the last point that is fully
+  /// defined by the [bytes].
+  ///
+  /// There's no guarantee that inputting a stream will indeed contain at least
+  /// one [GpsPoint]. If no point is found, the method will raise a
+  /// [JsonParseException], since the interface disallows returning a nullable.
   @override
   GpsPoint convert(List<int> bytes, [int start = 0, int? end]) {
-    // There's no guarantee that inputting a line would output a GpsPoint,
-    // so this method seems rather difficult to implement. We'll just
-    // return the last point that can be parsed from [bytes].
     var result;
     var passthroughSink = _PassthroughSink((point) {
       result = point;
@@ -497,7 +505,7 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
     if (result != null) {
       return result;
     } else {
-      throw Exception('Unable to parse point from specified bytes');
+      throw JsonParseException('Unable to parse point from specified bytes');
     }
   }
 
