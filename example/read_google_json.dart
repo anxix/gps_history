@@ -31,8 +31,6 @@ void main() async {
   var prevPoint;
 
   for (var p in gpsPoints) {
-    print(p);
-
     if (prevPoint != null) {
       final diff = p.time.difference(prevPoint.time).inSeconds;
       intervals.add(diff);
