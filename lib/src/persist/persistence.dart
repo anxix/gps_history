@@ -9,6 +9,8 @@
  */
 
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 import 'package:gps_history/gps_history.dart';
 
 /// An exception raised if no persister is found for a particular object.
@@ -33,7 +35,20 @@ class NewerVersionException extends GpsHistoryException {
   NewerVersionException([String? message]) : super(message);
 }
 
-/// Represent the signature and version data of [Persistence] and [_Persister].
+/// Returns, if any, the index of the first non-ASCII character in the string.
+/// If the string is either empty or all-ASCII, null is returned.
+int? getFirstNonAsciiCharIndex(String string) {
+  for (var i = 0; i < string.length; i++) {
+    final c = string.codeUnitAt(i);
+    // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
+    if (c < 32 && 126 < c) {
+      return i;
+    }
+  }
+  return null;
+}
+
+/// Represents the signature and version data of [Persistence] and [_Persister].
 class SignatureAndVersion {
   /// Indicates the exact required length of signatures (in bytes/ASCII chars).
   static const RequiredSignatureLength = 20;
@@ -68,20 +83,17 @@ class SignatureAndVersion {
   /// Checks that the specified signature is valid, meaning valid ASCII subset
   /// only and of correct length. Throws [InvalidSignatureException] if that
   /// is not the case.
-  void _checkValidSignature(String value, int requiredLength) {
-    if (value.length != requiredLength) {
+  void _checkValidSignature(String string, int requiredLength) {
+    if (string.length != requiredLength) {
       throw InvalidSignatureException(
-          'Specified signature "$value" has length of ${value.length}, '
+          'Specified signature "$string" has length of ${string.length}, '
           'but must be of length $requiredLength.');
     }
 
-    for (var i = 0; i < value.length; i++) {
-      final c = value.codeUnitAt(i);
-      // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
-      if (c < 32 && 126 < c) {
-        throw InvalidSignatureException('Specified signature "$value" contains '
-            'invalid character $c at position $i.');
-      }
+    final invalidCharIndex = getFirstNonAsciiCharIndex(string);
+    if (invalidCharIndex != null) {
+      throw InvalidSignatureException('Specified signature "$string" contains '
+          'invalid character ${string.codeUnitAt(invalidCharIndex)} at position $invalidCharIndex.');
     }
   }
 }
@@ -103,19 +115,75 @@ class StreamReaderState {
 
   StreamReaderState(this._stream);
 
-  // Reads an ASCII string of [length] bytes from the stream, if possible,
-  // or null otherwise (e.g. the stream doesn't contain [length] bytes).
-  Future<String?> readString(int length) {
-    throw Exception('Not implemented!');
-
+  /// Reads a list of bytes of [length] bytes from the stream, if possible,
+  /// or null otherwise (e.g. the stream doesn't contain [length] bytes).
+  List<int>? readBytes(int length) {
+    throw Exception('Not yet implemented!');
     _bytesRead += length;
   }
 
-  // Like [readString], but reads a [Uint16] and returns it as int.
-  Future<int?> readUint16() {
-    throw Exception('Not implemented!');
+  /// Like [readBytes], but returns an ASCII string.
+  String? readString(int length) {
+    final bytes = readBytes(length);
 
-    _bytesRead += 2;
+    if (bytes != null) {
+      return String.fromCharCodes(bytes);
+    } else {
+      return null;
+    }
+  }
+
+  /// Like [readBytes], but reads a [Uint16] and returns it as int.
+  int? readUint16() {
+    final bytes = readBytes(2);
+    if (bytes == null) {
+      return null;
+    }
+
+    final bytesBuilder = BytesBuilder()..add(bytes);
+    final byteData = ByteData.sublistView(bytesBuilder.takeBytes());
+    return byteData.getInt16(0, Endian.little);
+  }
+}
+
+class StreamSinkWriter {
+  /// The sink all data will be written to.
+  final Sink<List<int>> _targetSink;
+
+  /// Keeps track of how many bytes have been written so far.
+  int _bytesWritten = 0;
+
+  StreamSinkWriter(this._targetSink);
+
+  /// Writes the bytes in [data] to the sink.
+  void writeBytes(List<int> data) {
+    _targetSink.add(data);
+    _bytesWritten += data.length;
+  }
+
+  /// Writes ASCII [string] to the sink, replacing any non-ASCII characters
+  /// with whitespace.
+  void writeString(String string) {
+    writeBytes(List<int>.generate(string.length, (index) {
+      var cu = string.codeUnitAt(index);
+      if (cu < 32 || 126 < cu) {
+        cu = 32;
+      }
+      return cu;
+    }));
+  }
+
+  /// Writes [number] as [Uint16] to the sink. If the number is outside valid
+  /// [Uint16] range, it is capped at the appropriate boundary before writing.
+  void writeUint16(int number) {
+    // Trim the number at Uint16 boundaries.
+    var n = max<int>(0, number.sign * min<int>(number.abs(), (1 << 16) - 1));
+
+    // Write the trimmed number to the sink.
+    final byteData = ByteData(2);
+    byteData.setUint16(0, n, Endian.little);
+    writeBytes(List<int>.generate(
+        byteData.lengthInBytes, (index) => byteData.getUint8(index)));
   }
 }
 
@@ -189,7 +257,7 @@ abstract class Persistence {
   /// match.
   static Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
-    final loadedSignature = await state.readString(expectedSignature.length);
+    final loadedSignature = state.readString(expectedSignature.length);
     if (loadedSignature != _signatureAndVersion.getSignature()) {
       throw InvalidSignatureException(
           'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
@@ -202,7 +270,7 @@ abstract class Persistence {
   /// if the read version is newer and hence incompatible.
   static Future<int> _readValidateVersion(StreamReaderState state,
       int maximumCompatibleVersion, String objectName) async {
-    final loadedVersion = await state.readUint16();
+    final loadedVersion = state.readUint16();
     if ((loadedVersion ?? 1 << 31) > maximumCompatibleVersion) {
       throw NewerVersionException(
           'Found $objectName stored with version "$loadedVersion", '
@@ -253,6 +321,18 @@ abstract class Persistence {
   /// Writes [view] to [targetSink] in binary format.
   static void write(GpsPointsView view, StreamSink<List<int>> targetSink) {
     final persister = _getPersister(view);
+
+    final sink = StreamSinkWriter(targetSink);
+
+    // Write the signature and version of [Persistance]
+    sink.writeString(_signatureAndVersion.getSignature());
+    sink.writeUint16(_signatureAndVersion.version);
+
+    // Write the signature and version of [_Persister];
+    sink.writeString(persister.signatureAndVersion.getSignature());
+    sink.writeUint16(persister.signatureAndVersion.version);
+
+    throw Exception('Implement the streaming of the view!');
     targetSink.addStream(persister._writeStreamFromView(view));
   }
 }
