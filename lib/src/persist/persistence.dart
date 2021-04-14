@@ -1,9 +1,4 @@
-import 'dart:async';
-
-import 'package:gps_history/src/base.dart';
-
-/// Abstract interface io implementation just so that the package can be
-/// used in environments that don't have io.
+/// Facilities for reading/writing GPS history data from/to streams.
 
 /*
  * Copyright (c)
@@ -13,6 +8,7 @@ import 'package:gps_history/src/base.dart';
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:async';
 import 'package:gps_history/gps_history.dart';
 
 /// An exception raised if no persister is found for a particular object.
@@ -32,9 +28,62 @@ class InvalidSignatureException extends GpsHistoryException {
 }
 
 /// An exception raised if trying to read data from a stream written with a
-/// newer streaming method version.
-class NewerStreamingMethodError extends GpsHistoryException {
-  NewerStreamingMethodError([String? message]) : super(message);
+/// newer version of the streaming method or of the persister.
+class NewerVersionException extends GpsHistoryException {
+  NewerVersionException([String? message]) : super(message);
+}
+
+/// Represent the signature and version data of [Persistence] and [_Persister].
+class SignatureAndVersion {
+  /// Indicates the exact required length of signatures (in bytes/ASCII chars).
+  static const RequiredSignatureLength = 20;
+
+  /// The signature of the entity, must have a length of [RequiredSignatureLength].
+  var _signature =
+      String.fromCharCodes(List<int>.filled(RequiredSignatureLength, 32));
+
+  /// The version of the entity.
+  var version = 0;
+
+  SignatureAndVersion(this._signature, this.version) {
+    if (_signature.length != RequiredSignatureLength) {
+      throw InvalidSignatureException(
+          'Specified signature "$_signature" has the wrong length: ${_signature.length}');
+    }
+  }
+
+  /// Returns the currently configured signature.
+  String getSignature() => _signature;
+
+  /// Allow users of this class to override the default signature, as long
+  /// as it's of correct length and contents.
+  ///
+  /// Throws [InvalidSignatureException] if the new signature is not good.
+  void setSignature(String value) {
+    _checkValidSignature(value, _signature.length);
+
+    _signature = value;
+  }
+
+  /// Checks that the specified signature is valid, meaning valid ASCII subset
+  /// only and of correct length. Throws [InvalidSignatureException] if that
+  /// is not the case.
+  void _checkValidSignature(String value, int requiredLength) {
+    if (value.length != requiredLength) {
+      throw InvalidSignatureException(
+          'Specified signature "$value" has length of ${value.length}, '
+          'but must be of length $requiredLength.');
+    }
+
+    for (var i = 0; i < value.length; i++) {
+      final c = value.codeUnitAt(i);
+      // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
+      if (c < 32 && 126 < c) {
+        throw InvalidSignatureException('Specified signature "$value" contains '
+            'invalid character $c at position $i.');
+      }
+    }
+  }
 }
 
 /// As the [Persistence] class is itself stateless, it uses the
@@ -110,48 +159,14 @@ class StreamReaderState {
 /// without fully parsing it, by simply looking at the total file size minus
 /// the header and dividing the outcome by the storage size per point.
 abstract class Persistence {
-  /// Indicates the version of the streaming mechanism used by the current
-  /// implementation of [Persistence].
-  /// Only increase if the streaming method (not the contents!) is changed such
-  /// that earlier versions cannot possibly support it. An example would be if
-  /// the persistence starts compressing all streams.
-  static const _streamingMethodVersion = 1;
-
-  /// The signature at the start of the file. Must have a length of 20.
-  static var _signature = 'AnqsGpsHistoryFile--';
-
-  /// Returns the currently configured signature.
-  static String getSignature() => _signature;
-
-  /// Allow users of this class to override the default signature, as long
-  /// as it's of correct length.
-  ///
-  /// Throws [InvalidSignatureException] if the new signature is not good.
-  static void setSignature(String value) {
-    _checkValidSignature(value, _signature.length);
-
-    _signature = value;
-  }
-
-  /// Checks that the specified signature is valid, meaning valid ASCII subset
-  /// only and of correct length. Throws [InvalidSignatureException] if that
-  /// is not the case.
-  static void _checkValidSignature(String value, int requiredLength) {
-    if (value.length != requiredLength) {
-      throw InvalidSignatureException(
-          'Specified signature "$value" has length of ${value.length}, '
-          'but must be of length $requiredLength.');
-    }
-
-    for (var i = 0; i < value.length; i++) {
-      final c = value.codeUnitAt(i);
-      // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
-      if (c < 32 && 126 < c) {
-        throw InvalidSignatureException('Specified signature "$value" contains '
-            'invalid character $c at position $i.');
-      }
-    }
-  }
+  /// The signature and version at the start of the file.
+  /// The version indicates the version of the streaming mechanism used by the
+  /// current implementation of [Persistence].
+  /// Only increase the version if the streaming method (not the contents!) is
+  /// changed such that earlier versions cannot possibly support it. An example
+  /// would be if the persistence starts compressing all streams.
+  static final _signatureAndVersion =
+      SignatureAndVersion('AnqsGpsHistoryFile--', 1);
 
   static const _knownPersisters = <Type, _Persister>{};
 
@@ -169,43 +184,68 @@ abstract class Persistence {
     _knownPersisters[viewType] = persister;
   }
 
+  /// Reads a signature from [state], validates it against the
+  /// [expectedSignature] and throws [InvalidSignatureError] if they don't
+  /// match.
+  static Future<void> _readValidateSignature(
+      StreamReaderState state, String expectedSignature) async {
+    final loadedSignature = await state.readString(expectedSignature.length);
+    if (loadedSignature != _signatureAndVersion.getSignature()) {
+      throw InvalidSignatureException(
+          'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
+          'while "$expectedSignature" was expected.');
+    }
+  }
+
+  /// Reads a version number for [objectName] from [state], validates it
+  /// against the [maximumCompatibleVersion] and throws [NewerVersionException]
+  /// if the read version is newer and hence incompatible.
+  static Future<int> _readValidateVersion(StreamReaderState state,
+      int maximumCompatibleVersion, String objectName) async {
+    final loadedVersion = await state.readUint16();
+    if ((loadedVersion ?? 1 << 31) > maximumCompatibleVersion) {
+      throw NewerVersionException(
+          'Found $objectName stored with version "$loadedVersion", '
+          'which is newer than supported version "($maximumCompatibleVersion)".');
+    }
+    return Future.value(loadedVersion);
+  }
+
   /// Overwrites the contents of [view] with data read from [sourceStream].
   ///
   /// Throws [ReadonlyException] if [view.isReadonly]==```true```, as the
   /// contents of a readonly view cannot be overwritten.
   /// Throws [InvalidSignatureError] if the stream contains an invalid
   /// signature at either [Persistance] level or [_Persister] level.
+  /// Throws [NewerVersionError] if the stream contains a newer version at
+  /// either [Persistance] level or [_Persister] level.
   static void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
     if (view.isReadonly) {
       throw ReadonlyException();
     }
 
-    final persister = _getPersister(view);
-
     final state = StreamReaderState(sourceStream);
 
     // Read the header signature and stop if it's unrecognized.
-    var loadedSignature = await state.readString(getSignature().length);
-    if (loadedSignature != getSignature()) {
-      throw InvalidSignatureException(
-          'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
-          'while ${getSignature()} was expected.');
-    }
+    await _readValidateSignature(state, _signatureAndVersion.getSignature());
 
     // Read the streaming method version and stop if it's newer than what
     // we support internally.
-    var loadedVersion = await state.readUint16();
-    if ((loadedVersion ?? 1 << 31) > _streamingMethodVersion) {
-      throw NewerStreamingMethodError(
-          'Stream is stored with method version "$loadedVersion", '
-          'which is newer than supported version "($_streamingMethodVersion)".');
-    }
+    await _readValidateVersion(state, _signatureAndVersion.version, 'stream');
+
+    final persister = _getPersister(view);
 
     // Read the persister signature and validate against the persister that's
     // supposed to read the specified view.
+    await _readValidateSignature(
+        state, persister.signatureAndVersion.getSignature());
 
     // Read the persister version number and meta information and stop if it's
     // newer than what the persister writes natively.
+    final loadedPersisterVersion = await _readValidateVersion(
+        state,
+        persister.signatureAndVersion.version,
+        'persister ${persister.runtimeType.toString()}');
 
     // Have the persister read and interpret the actual data.
   }
@@ -220,15 +260,41 @@ abstract class Persistence {
 /// Children of [_Persister] implement the actual reading and writing of
 /// particular types of [GpsPointsView] descendants.
 abstract class _Persister {
-  /// Indicates the version of the persistence method. Should be increased
-  /// if for example new fields get persisted. In that case, the reader must
-  /// contain compatibility code for reading older versions.
-  var dataVersion = 1;
+  final signatureAndVersion = SignatureAndVersion(getSignature(), getVersion());
 
-  Type get _supportedType;
+  /// Indicates what object type this [_Persister] can persist, to be overridden
+  /// in child classes.
+  static Type? getSupportedType() {
+    return null;
+  }
 
   _Persister() {
-    Persistence._registerPersister(_supportedType, this);
+    Persistence._registerPersister(getSupportedType()!, this);
+  }
+
+  /// Indicates the version of the persistence method. Should be increased
+  /// if for example new fields get persisted. In that case, the reader must
+  /// contain compatibility code for reading older versions. Child classes
+  /// should override as needed.
+  static int getVersion() {
+    return 1;
+  }
+
+  /// Returns the signature string for this [_Persister]. Method to be
+  /// overridden in subclasses.
+  static String getSignature() {
+    if (getSupportedType() == null) {
+      throw GpsHistoryException(
+          'No supported type found for a specific persister!');
+    }
+
+    var sig = getSupportedType().toString();
+    // Ensure the sig is not too short...
+    sig = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
+    // ...nor too long.
+    sig = sig.substring(0, SignatureAndVersion.RequiredSignatureLength);
+
+    return sig;
   }
 
   /// Converts [view] to a [Stream] of bytes. Override in children.
