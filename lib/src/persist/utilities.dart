@@ -108,8 +108,10 @@ class SignatureAndVersion {
 class StreamReaderState {
   final Stream<List<int>> _stream;
 
-  /// Keeps track of how many bytes have been read so far.
   int _bytesRead = 0;
+
+  /// Keeps track of how many bytes have been read so far.
+  int get bytesRead => _bytesRead;
 
   /// Remembers whether the stream has finished providing data.
   var _streamFinished = false;
@@ -121,7 +123,7 @@ class StreamReaderState {
   var _positionInFrontList = 0;
 
   StreamReaderState(this._stream) {
-    _streamSubscription = this._stream.listen((event) {
+    _streamSubscription = _stream.listen((event) {
       _addAndPause(event);
     }, onDone: () {
       _streamFinished = true;
@@ -223,8 +225,10 @@ class StreamSinkWriter {
   /// The sink all data will be written to.
   final Sink<List<int>> _targetSink;
 
-  /// Keeps track of how many bytes have been written so far.
   int _bytesWritten = 0;
+
+  /// Keeps track of how many bytes have been written so far.
+  int get bytesWritten => _bytesWritten;
 
   StreamSinkWriter(this._targetSink);
 
