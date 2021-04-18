@@ -9,6 +9,7 @@
  */
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:gps_history/gps_history.dart';
@@ -110,16 +111,88 @@ class StreamReaderState {
   /// Keeps track of how many bytes have been read so far.
   int _bytesRead = 0;
 
-  /// Manages leftover data from previous stream chunks.
-  final _leftoverCache = List<int>.empty(growable: true);
+  /// Remembers whether the stream has finished providing data.
+  var _streamFinished = false;
 
-  StreamReaderState(this._stream);
+  /// Keep track of the lists that have come in from the stream. They're in
+  /// order, so once the first list is processed, it can be discarded.
+  final _streamedLists = DoubleLinkedQueue<List<int>>();
+  StreamSubscription? _streamSubscription;
+  var _positionInFrontList = 0;
 
-  /// Reads a list of bytes of [length] bytes from the stream, if possible,
-  /// or null otherwise (e.g. the stream doesn't contain [length] bytes).
-  List<int>? readBytes(int length) {
-    throw Exception('Not yet implemented!');
-    _bytesRead += length;
+  StreamReaderState(this._stream) {
+    _streamSubscription = this._stream.listen((event) {
+      _addAndPause(event);
+    }, onDone: () {
+      _streamFinished = true;
+    })
+      ..pause();
+  }
+
+  void _addAndPause(List<int> list) {
+    // Make sure we get just one list at a time, so we cache as little as
+    // possible in memory.
+    _streamedLists.add(list);
+    if (!_streamFinished) {
+      _streamSubscription!.pause();
+    }
+  }
+
+  /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if possible,
+  /// or null otherwise (e.g. the stream doesn't contain [nrBytesToRead] bytes).
+  List<int>? readBytes(int nrBytesToRead) {
+    // See if we have enough data.
+    var foundBytes = 0;
+    if (_streamedLists.isNotEmpty) {
+      foundBytes = _streamedLists.first.length - _positionInFrontList;
+      for (var element in _streamedLists.skip(1)) {
+        foundBytes += element.length;
+        if (foundBytes >= nrBytesToRead) {
+          break;
+        }
+      }
+    }
+
+    // Didn't have enough data -> try to read more from the stream until we
+    // do have enough or the stream is finished..
+    while (foundBytes < nrBytesToRead && !_streamFinished) {
+      _streamSubscription!.resume();
+      foundBytes += _streamedLists.last.length;
+    }
+
+    // If we still don't have enough bytes, stop.
+    if (foundBytes < nrBytesToRead) {
+      return null;
+    }
+
+    // Have enough bytes -> return them.
+    final result = List<int>.filled(nrBytesToRead, 0);
+    _bytesRead += nrBytesToRead;
+    do {
+      final firstList = _streamedLists.first;
+      // Determine how many items we can take from the first list.
+      final nrItemsFromFirstList =
+          min(nrBytesToRead, firstList.length - _positionInFrontList);
+
+      // Get those items to the result.
+      final srcRange = firstList.getRange(
+          _positionInFrontList, _positionInFrontList + nrItemsFromFirstList);
+      result.setRange(0, nrItemsFromFirstList, srcRange);
+
+      // Remove the first list if it's fully consumed.
+      _positionInFrontList += nrItemsFromFirstList;
+      if (_positionInFrontList == firstList.length) {
+        _streamedLists.removeFirst();
+        _positionInFrontList = 0;
+      }
+
+      // Calculate how many bytes we still need to read.
+      nrBytesToRead -= nrItemsFromFirstList;
+
+      // Continue until we've read all we needed to.
+    } while (nrBytesToRead == 0);
+
+    return result;
   }
 
   /// Like [readBytes], but returns an ASCII string.
