@@ -55,27 +55,27 @@ class SignatureAndVersion {
   static const RequiredSignatureLength = 20;
 
   /// The signature of the entity, must have a length of [RequiredSignatureLength].
-  var _signature =
-      String.fromCharCodes(List<int>.filled(RequiredSignatureLength, 32));
+  var _signature = getEmptySignature();
 
   /// The version of the entity.
   var version = 0;
 
   SignatureAndVersion(this._signature, this.version) {
-    if (_signature.length != RequiredSignatureLength) {
-      throw InvalidSignatureException(
-          'Specified signature "$_signature" has the wrong length: ${_signature.length}');
-    }
+    _checkValidSignature(this._signature, RequiredSignatureLength);
   }
 
+  /// Returns a valid, but empty (all-space) signature.
+  static String getEmptySignature() =>
+      String.fromCharCodes(List<int>.filled(RequiredSignatureLength, 32));
+
   /// Returns the currently configured signature.
-  String getSignature() => _signature;
+  String get signature => _signature;
 
   /// Allow users of this class to override the default signature, as long
   /// as it's of correct length and contents.
   ///
   /// Throws [InvalidSignatureException] if the new signature is not good.
-  void setSignature(String value) {
+  void set signature(String value) {
     _checkValidSignature(value, _signature.length);
 
     _signature = value;
