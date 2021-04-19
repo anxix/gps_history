@@ -42,7 +42,7 @@ int? getFirstNonAsciiCharIndex(String string) {
   for (var i = 0; i < string.length; i++) {
     final c = string.codeUnitAt(i);
     // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
-    if (c < 32 && 126 < c) {
+    if (c < 32 || 126 < c) {
       return i;
     }
   }
