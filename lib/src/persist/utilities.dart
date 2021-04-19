@@ -61,7 +61,7 @@ class SignatureAndVersion {
   var version = 0;
 
   SignatureAndVersion(this._signature, this.version) {
-    _checkValidSignature(this._signature, RequiredSignatureLength);
+    _checkValidSignature(_signature, RequiredSignatureLength);
   }
 
   /// Returns a valid, but empty (all-space) signature.
@@ -75,7 +75,7 @@ class SignatureAndVersion {
   /// as it's of correct length and contents.
   ///
   /// Throws [InvalidSignatureException] if the new signature is not good.
-  void set signature(String value) {
+  set signature(String value) {
     _checkValidSignature(value, _signature.length);
 
     _signature = value;
