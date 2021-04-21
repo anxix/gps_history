@@ -36,13 +36,15 @@ class NewerVersionException extends GpsHistoryException {
   NewerVersionException([String? message]) : super(message);
 }
 
+/// Determines if [codeUnit] is between SPACE (ASCII 32) and ~ (ASCII 126).
+bool isValidAsciiChar(int codeUnit) => 32 <= codeUnit && codeUnit <= 126;
+
 /// Returns, if any, the index of the first non-ASCII character in the string.
 /// If the string is either empty or all-ASCII, null is returned.
 int? getFirstNonAsciiCharIndex(String string) {
   for (var i = 0; i < string.length; i++) {
     final c = string.codeUnitAt(i);
-    // Accept characters between SPACE (ASCII 32) and ~ (ASCII 126).
-    if (c < 32 || 126 < c) {
+    if (!isValidAsciiChar(c)) {
       return i;
     }
   }
@@ -221,6 +223,7 @@ class StreamReaderState {
   }
 }
 
+/// Utility class for writing various data types to a [Sink].
 class StreamSinkWriter {
   /// The sink all data will be written to.
   final Sink<List<int>> _targetSink;
@@ -241,13 +244,16 @@ class StreamSinkWriter {
   /// Writes ASCII [string] to the sink, replacing any non-ASCII characters
   /// with whitespace.
   void writeString(String string) {
-    writeBytes(List<int>.generate(string.length, (index) {
-      var cu = string.codeUnitAt(index);
-      if (cu < 32 || 126 < cu) {
-        cu = 32;
+    final intAtIndex = (int index) {
+      var c = string.codeUnitAt(index);
+      if (isValidAsciiChar(c)) {
+        return c;
+      } else {
+        return 32;
       }
-      return cu;
-    }));
+    };
+
+    writeBytes(List<int>.generate(string.length, intAtIndex));
   }
 
   /// Writes [number] as [Uint16] to the sink. If the number is outside valid
