@@ -141,13 +141,12 @@ class StreamReaderState {
   }
 
   /// Retrieves, if possible, the next list from the stream.
-  Future<List<int>?> _getNextListFromStream() async {
+  Future<List<int>?> _cacheNextListFromStream() async {
     if (_streamFinished) {
-      return Future.value(null);
+      return null;
     }
 
     final completer = Completer<List<int>>();
-    final future = completer.future;
 
     // Replace the current subscription with a new one that works
     // asynchronously.
@@ -164,9 +163,11 @@ class StreamReaderState {
 
     _streamSubscription!.resume();
 
-    return future;
+    return completer.future;
   }
 
+  /// Makes sure (by retrieving more data from the stream if necessary) that
+  /// there are at least [nrBytesToRead] bytes present in the cache.
   Future<int> _ensureEnoughBytesInCache(int nrBytesToRead) async {
     var cachedBytes = 0;
     if (_cachedLists.isNotEmpty) {
@@ -182,7 +183,7 @@ class StreamReaderState {
     // If didn't have enough data -> try to read more from the stream until we
     // do have enough or the stream is finished.
     while (cachedBytes < nrBytesToRead && !_streamFinished) {
-      final nextList = await _getNextListFromStream();
+      final nextList = await _cacheNextListFromStream();
       if (nextList != null) {
         cachedBytes += nextList.length;
       } else {
@@ -190,7 +191,7 @@ class StreamReaderState {
       }
     }
 
-    return Future.value(cachedBytes);
+    return cachedBytes;
   }
 
   /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if
@@ -202,7 +203,7 @@ class StreamReaderState {
 
     // If we still don't have enough bytes, stop.
     if (cachedBytes < nrBytesToRead) {
-      return Future.value(null);
+      return null;
     }
 
     // Have enough bytes -> return them.
@@ -232,7 +233,7 @@ class StreamReaderState {
       // Continue until we've read all we needed to.
     } while (nrBytesToRead != 0);
 
-    return Future.value(result);
+    return result;
   }
 
   /// Like [readBytes], but returns an ASCII string.
@@ -240,9 +241,9 @@ class StreamReaderState {
     final bytes = await readBytes(length);
 
     if (bytes != null) {
-      return Future.value(String.fromCharCodes(bytes));
+      return String.fromCharCodes(bytes);
     } else {
-      return Future.value(null);
+      return null;
     }
   }
 
