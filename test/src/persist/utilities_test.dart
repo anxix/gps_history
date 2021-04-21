@@ -104,8 +104,8 @@ void testSignatureAndVersion() {
 
 /// Test the behaviours of the StreamReaderState object.
 void testStreamReaderState() {
-  final _runTest = (List<int> bytes, List<int?> expecteds) async {
-    var sr = StreamReaderState(Stream<List<int>>.value(bytes));
+  final _runTest = (List<List<int>> bytes, List<int?> expecteds) async {
+    var sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
     var valueNr = 0;
     for (var expected in expecteds) {
       var value = await sr.readUint16();
@@ -114,25 +114,29 @@ void testStreamReaderState() {
     }
   };
 
+  final listOfList = (List<int> list) {
+    return List<List<int>>.filled(1, list);
+  };
+
   group('readUint16', () {
     test('valid single value', () async {
-      await _runTest(<int>[0, 0], <int>[0]);
-      await _runTest(<int>[1, 0], <int>[1]);
-      await _runTest(<int>[0, 1], <int>[256]);
-      await _runTest(<int>[255, 255], <int>[65535]);
+      await _runTest(listOfList([0, 0]), []);
+      await _runTest(listOfList([1, 0]), [1]);
+      await _runTest(listOfList([0, 1]), [256]);
+      await _runTest(listOfList([255, 255]), [65535]);
     });
 
     test('insufficient data', () async {
-      await _runTest(<int>[], <int?>[null]);
-      await _runTest(<int>[0], <int?>[null]);
-      await _runTest(<int>[1, 0, 2], <int?>[1, null]);
+      await _runTest([[]], [null]);
+      await _runTest(listOfList([0]), [null]);
+      await _runTest(listOfList([1, 0, 2]), [1, null]);
     });
 
     test('valid multiple values', () async {
-      await _runTest(<int>[0, 0, 1, 0], <int>[0, 1]);
-      await _runTest(<int>[0, 1, 1, 0], <int>[256, 1]);
-      await _runTest(<int>[255, 255, 0, 0], <int>[65535, 0]);
-      await _runTest(<int>[0, 0, 255, 255], <int>[0, 65535]);
+      await _runTest(listOfList([0, 0, 1, 0]), [0, 1]);
+      await _runTest(listOfList([0, 1, 1, 0]), [256, 1]);
+      await _runTest(listOfList([255, 255, 0, 0]), [65535, 0]);
+      await _runTest(listOfList([0, 0, 255, 255]), [0, 65535]);
     });
   });
 }
