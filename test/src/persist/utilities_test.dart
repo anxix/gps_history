@@ -102,41 +102,72 @@ void testSignatureAndVersion() {
   });
 }
 
+Future<void> _runReaderTest(List<List<int>> bytes, List<int?> expecteds) async {
+  var sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
+  var valueNr = 0;
+  for (var expected in expecteds) {
+    var value = await sr.readUint16();
+    expect(value, expected, reason: 'at position $valueNr');
+    valueNr += 1;
+  }
+}
+
+/// Tests for all possible ways of grouping the values in [srcList] whether
+/// they return the same [expecteds] when calling [_runtTest].
+Future<void> _testAllGroups<T>(List<int> srcList, List<int?> expecteds,
+    [List<List<int>>? testList]) async {
+  testList ??= List<List<int>>.empty(growable: true);
+
+  if (srcList.isEmpty) {
+    await _runReaderTest(testList, expecteds);
+    return;
+  }
+
+  for (var i = 1; i <= srcList.length; i++) {
+    final testListCopy = List<List<int>>.from(testList, growable: true);
+    testListCopy.add(List<int>.from(srcList.take(i)));
+    final subList = srcList.sublist(i);
+    await _testAllGroups(subList, expecteds, testListCopy);
+  }
+}
+
 /// Test the behaviours of the StreamReaderState object.
 void testStreamReaderState() {
-  final _runTest = (List<List<int>> bytes, List<int?> expecteds) async {
-    var sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
-    var valueNr = 0;
-    for (var expected in expecteds) {
-      var value = await sr.readUint16();
-      expect(value, expected, reason: 'at position $valueNr');
-      valueNr += 1;
-    }
-  };
-
   final listOfList = (List<int> list) {
     return List<List<int>>.filled(1, list);
   };
 
   group('readUint16', () {
     test('valid single value', () async {
-      await _runTest(listOfList([0, 0]), []);
-      await _runTest(listOfList([1, 0]), [1]);
-      await _runTest(listOfList([0, 1]), [256]);
-      await _runTest(listOfList([255, 255]), [65535]);
+      await _runReaderTest(listOfList([0, 0]), []);
+      await _runReaderTest(listOfList([1, 0]), [1]);
+      await _runReaderTest(listOfList([0, 1]), [256]);
+      await _runReaderTest(listOfList([255, 255]), [65535]);
     });
 
     test('insufficient data', () async {
-      await _runTest([[]], [null]);
-      await _runTest(listOfList([0]), [null]);
-      await _runTest(listOfList([1, 0, 2]), [1, null]);
+      await _runReaderTest([[]], [null]);
+      await _runReaderTest(listOfList([0]), [null]);
+      await _runReaderTest(listOfList([1, 0, 2]), [1, null]);
     });
 
     test('valid multiple values', () async {
-      await _runTest(listOfList([0, 0, 1, 0]), [0, 1]);
-      await _runTest(listOfList([0, 1, 1, 0]), [256, 1]);
-      await _runTest(listOfList([255, 255, 0, 0]), [65535, 0]);
-      await _runTest(listOfList([0, 0, 255, 255]), [0, 65535]);
+      await _runReaderTest(listOfList([0, 0, 1, 0]), [0, 1]);
+      await _runReaderTest(listOfList([0, 1, 1, 0]), [256, 1]);
+      await _runReaderTest(listOfList([255, 255, 0, 0]), [65535, 0]);
+      await _runReaderTest(listOfList([0, 0, 255, 255]), [0, 65535]);
+      await _runReaderTest(listOfList([1, 2, 3, 4, 5, 8]), [513, 1027, 2053]);
+    });
+
+    test('various streaming conditions', () async {
+      var bytes = [1, 2];
+      await _testAllGroups(bytes, [513]);
+
+      bytes = [0, 0, 1, 0];
+      await _testAllGroups(bytes, [0, 1]);
+
+      bytes = [1, 2, 3, 4, 5, 8];
+      await _testAllGroups(bytes, [513, 1027, 2053]);
     });
   });
 }

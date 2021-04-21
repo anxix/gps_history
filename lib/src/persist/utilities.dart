@@ -216,7 +216,10 @@ class StreamReaderState {
       // Get those items to the result.
       final srcRange = firstList.getRange(
           _positionInFrontList, _positionInFrontList + nrBytesFromFirstList);
-      result.setRange(0, nrBytesFromFirstList, srcRange);
+      // We need to start setting bytes to result after the ones we've already
+      // set in previous loops.
+      final targetPos = result.length - nrBytesToRead;
+      result.setRange(targetPos, targetPos + nrBytesFromFirstList, srcRange);
 
       // Remove the first list if it's fully consumed.
       _positionInFrontList += nrBytesFromFirstList;
