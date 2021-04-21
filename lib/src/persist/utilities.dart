@@ -125,9 +125,7 @@ class StreamReaderState {
   var _positionInFrontList = 0;
 
   StreamReaderState(this._stream) {
-    _streamSubscription = _stream.listen((event) {
-      _addAndPause(event);
-    }, onDone: () {
+    _streamSubscription = _stream.listen(_addAndPause, onDone: () {
       _streamFinished = true;
     })
       ..pause();
@@ -136,16 +134,40 @@ class StreamReaderState {
   void _addAndPause(List<int> list) {
     // Make sure we get just one list at a time, so we cache as little as
     // possible in memory.
-    _streamedLists.add(list);
     if (!_streamFinished) {
       _streamSubscription!.pause();
     }
+    _streamedLists.add(list);
   }
 
-  /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if possible,
-  /// or null otherwise (e.g. the stream doesn't contain [nrBytesToRead] bytes).
-  List<int>? readBytes(int nrBytesToRead) {
-    // See if we have enough data.
+  /// Retrieves, if possible, the next list from the stream.
+  Future<List<int>?> _getNextListFromStream() async {
+    if (_streamFinished) {
+      return Future.value(null);
+    }
+
+    final completer = Completer<List<int>>();
+    final future = completer.future;
+
+    // Replace the current subscription with a new one that works
+    // asynchronously.
+    _streamSubscription!
+      ..onData((list) {
+        _addAndPause(list);
+        completer.complete(list);
+        // Put the original onData back.
+        _streamSubscription!.onData((list) {
+          _addAndPause;
+        });
+      })
+      ..onError((error) => completer.completeError(error));
+
+    _streamSubscription!.resume();
+
+    return future;
+  }
+
+  Future<int> _ensureEnoughBytesInCache(int nrBytesToRead) async {
     var foundBytes = 0;
     if (_streamedLists.isNotEmpty) {
       foundBytes = _streamedLists.first.length - _positionInFrontList;
@@ -157,16 +179,29 @@ class StreamReaderState {
       }
     }
 
-    // Didn't have enough data -> try to read more from the stream until we
-    // do have enough or the stream is finished..
+    // If didn't have enough data -> try to read more from the stream until we
+    // do have enough or the stream is finished.
     while (foundBytes < nrBytesToRead && !_streamFinished) {
-      _streamSubscription!.resume();
-      foundBytes += _streamedLists.last.length;
+      final nextList = await _getNextListFromStream();
+      if (nextList != null) {
+        foundBytes += nextList.length;
+      } else {
+        break;
+      }
     }
+
+    return Future.value(foundBytes);
+  }
+
+  /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if possible,
+  /// or null otherwise (e.g. the stream doesn't contain [nrBytesToRead] bytes).
+  Future<List<int>?> readBytes(int nrBytesToRead) async {
+    // Try to get enough data in the cache.
+    var foundBytes = await _ensureEnoughBytesInCache(nrBytesToRead);
 
     // If we still don't have enough bytes, stop.
     if (foundBytes < nrBytesToRead) {
-      return null;
+      return Future.value(null);
     }
 
     // Have enough bytes -> return them.
@@ -194,32 +229,32 @@ class StreamReaderState {
       nrBytesToRead -= nrItemsFromFirstList;
 
       // Continue until we've read all we needed to.
-    } while (nrBytesToRead == 0);
+    } while (nrBytesToRead != 0);
 
-    return result;
+    return Future.value(result);
   }
 
   /// Like [readBytes], but returns an ASCII string.
-  String? readString(int length) {
-    final bytes = readBytes(length);
+  Future<String?> readString(int length) async {
+    final bytes = await readBytes(length);
 
     if (bytes != null) {
-      return String.fromCharCodes(bytes);
+      return Future.value(String.fromCharCodes(bytes));
     } else {
-      return null;
+      return Future.value(null);
     }
   }
 
   /// Like [readBytes], but reads a [Uint16] and returns it as int.
-  int? readUint16() {
-    final bytes = readBytes(2);
+  Future<int?> readUint16() async {
+    final bytes = await readBytes(2);
     if (bytes == null) {
       return null;
     }
 
     final bytesBuilder = BytesBuilder()..add(bytes);
     final byteData = ByteData.sublistView(bytesBuilder.takeBytes());
-    return byteData.getInt16(0, Endian.little);
+    return byteData.getUint16(0, Endian.little);
   }
 }
 

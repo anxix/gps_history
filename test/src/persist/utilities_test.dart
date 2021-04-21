@@ -102,8 +102,27 @@ void testSignatureAndVersion() {
   });
 }
 
+/// Test the behaviours of the StreamReaderState object.
+void testStreamReaderState() {
+  group('readUint16', () {
+    test('valid single value', () async {
+      final _runTest = (List<int> bytes, int expected) async {
+        var sr = StreamReaderState(Stream<List<int>>.value(bytes));
+        var value = await sr.readUint16();
+        expect(value, expected);
+      };
+      await _runTest(<int>[0, 0], 0);
+      await _runTest(<int>[1, 0], 1);
+      await _runTest(<int>[0, 1], 256);
+      await _runTest(<int>[255, 255], 65535);
+    });
+  });
+}
+
 void main() {
   testGetFirstNonAsciiCharIndex();
 
   testSignatureAndVersion();
+
+  testStreamReaderState();
 }

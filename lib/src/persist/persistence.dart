@@ -82,7 +82,7 @@ abstract class Persistence {
   /// match.
   static Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
-    final loadedSignature = state.readString(expectedSignature.length);
+    final loadedSignature = await state.readString(expectedSignature.length);
     if (loadedSignature != _signatureAndVersion.signature) {
       throw InvalidSignatureException(
           'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
@@ -95,7 +95,7 @@ abstract class Persistence {
   /// if the read version is newer and hence incompatible.
   static Future<int> _readValidateVersion(StreamReaderState state,
       int maximumCompatibleVersion, String objectName) async {
-    final loadedVersion = state.readUint16();
+    final loadedVersion = await state.readUint16();
     if ((loadedVersion ?? 1 << 31) > maximumCompatibleVersion) {
       throw NewerVersionException(
           'Found $objectName stored with version "$loadedVersion", '
