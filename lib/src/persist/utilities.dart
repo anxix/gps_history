@@ -120,7 +120,7 @@ class StreamReaderState {
 
   /// Keep track of the lists that have come in from the stream. They're in
   /// order, so once the first list is processed, it can be discarded.
-  final _streamedLists = DoubleLinkedQueue<List<int>>();
+  final _cachedLists = DoubleLinkedQueue<List<int>>();
   StreamSubscription? _streamSubscription;
   var _positionInFrontList = 0;
 
@@ -137,7 +137,7 @@ class StreamReaderState {
     if (!_streamFinished) {
       _streamSubscription!.pause();
     }
-    _streamedLists.add(list);
+    _cachedLists.add(list);
   }
 
   /// Retrieves, if possible, the next list from the stream.
@@ -168,12 +168,12 @@ class StreamReaderState {
   }
 
   Future<int> _ensureEnoughBytesInCache(int nrBytesToRead) async {
-    var foundBytes = 0;
-    if (_streamedLists.isNotEmpty) {
-      foundBytes = _streamedLists.first.length - _positionInFrontList;
-      for (var element in _streamedLists.skip(1)) {
-        foundBytes += element.length;
-        if (foundBytes >= nrBytesToRead) {
+    var cachedBytes = 0;
+    if (_cachedLists.isNotEmpty) {
+      cachedBytes = _cachedLists.first.length - _positionInFrontList;
+      for (var element in _cachedLists.skip(1)) {
+        cachedBytes += element.length;
+        if (cachedBytes >= nrBytesToRead) {
           break;
         }
       }
@@ -181,26 +181,27 @@ class StreamReaderState {
 
     // If didn't have enough data -> try to read more from the stream until we
     // do have enough or the stream is finished.
-    while (foundBytes < nrBytesToRead && !_streamFinished) {
+    while (cachedBytes < nrBytesToRead && !_streamFinished) {
       final nextList = await _getNextListFromStream();
       if (nextList != null) {
-        foundBytes += nextList.length;
+        cachedBytes += nextList.length;
       } else {
         break;
       }
     }
 
-    return Future.value(foundBytes);
+    return Future.value(cachedBytes);
   }
 
-  /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if possible,
-  /// or null otherwise (e.g. the stream doesn't contain [nrBytesToRead] bytes).
+  /// Reads a list of bytes of [nrBytesToRead] bytes from the stream, if
+  /// possible, or null otherwise (e.g. the stream doesn't contain
+  /// [nrBytesToRead] bytes).
   Future<List<int>?> readBytes(int nrBytesToRead) async {
     // Try to get enough data in the cache.
-    var foundBytes = await _ensureEnoughBytesInCache(nrBytesToRead);
+    var cachedBytes = await _ensureEnoughBytesInCache(nrBytesToRead);
 
     // If we still don't have enough bytes, stop.
-    if (foundBytes < nrBytesToRead) {
+    if (cachedBytes < nrBytesToRead) {
       return Future.value(null);
     }
 
@@ -208,25 +209,25 @@ class StreamReaderState {
     final result = List<int>.filled(nrBytesToRead, 0);
     _bytesRead += nrBytesToRead;
     do {
-      final firstList = _streamedLists.first;
+      final firstList = _cachedLists.first;
       // Determine how many items we can take from the first list.
-      final nrItemsFromFirstList =
+      final nrBytesFromFirstList =
           min(nrBytesToRead, firstList.length - _positionInFrontList);
 
       // Get those items to the result.
       final srcRange = firstList.getRange(
-          _positionInFrontList, _positionInFrontList + nrItemsFromFirstList);
-      result.setRange(0, nrItemsFromFirstList, srcRange);
+          _positionInFrontList, _positionInFrontList + nrBytesFromFirstList);
+      result.setRange(0, nrBytesFromFirstList, srcRange);
 
       // Remove the first list if it's fully consumed.
-      _positionInFrontList += nrItemsFromFirstList;
+      _positionInFrontList += nrBytesFromFirstList;
       if (_positionInFrontList == firstList.length) {
-        _streamedLists.removeFirst();
+        _cachedLists.removeFirst();
         _positionInFrontList = 0;
       }
 
       // Calculate how many bytes we still need to read.
-      nrBytesToRead -= nrItemsFromFirstList;
+      nrBytesToRead -= nrBytesFromFirstList;
 
       // Continue until we've read all we needed to.
     } while (nrBytesToRead != 0);
