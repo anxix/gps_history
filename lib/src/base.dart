@@ -15,13 +15,13 @@ import 'package:gps_history/src/hash.dart';
 /// [Exception] class that can act as ancestor for exceptions raised by
 /// this package.
 class GpsHistoryException implements Exception {
-  final String? _message;
+  final String? message;
 
-  GpsHistoryException([this._message]);
+  GpsHistoryException([this.message]);
 
   @override
   String toString() {
-    final extraText = (_message != null) ? ': $_message' : '';
+    final extraText = (message != null) ? ': $message' : '';
     return '${runtimeType.toString()}$extraText';
   }
 }

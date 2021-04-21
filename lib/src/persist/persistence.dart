@@ -83,7 +83,7 @@ abstract class Persistence {
   static Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
     final loadedSignature = state.readString(expectedSignature.length);
-    if (loadedSignature != _signatureAndVersion.getSignature()) {
+    if (loadedSignature != _signatureAndVersion.signature) {
       throw InvalidSignatureException(
           'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
           'while "$expectedSignature" was expected.');
@@ -120,7 +120,7 @@ abstract class Persistence {
     final state = StreamReaderState(sourceStream);
 
     // Read the header signature and stop if it's unrecognized.
-    await _readValidateSignature(state, _signatureAndVersion.getSignature());
+    await _readValidateSignature(state, _signatureAndVersion.signature);
 
     // Read the streaming method version and stop if it's newer than what
     // we support internally.
@@ -131,7 +131,7 @@ abstract class Persistence {
     // Read the persister signature and validate against the persister that's
     // supposed to read the specified view.
     await _readValidateSignature(
-        state, persister.signatureAndVersion.getSignature());
+        state, persister.signatureAndVersion.signature);
 
     // Read the persister version number and meta information and stop if it's
     // newer than what the persister writes natively.
@@ -150,11 +150,11 @@ abstract class Persistence {
     final sink = StreamSinkWriter(targetSink);
 
     // Write the signature and version of [Persistance]
-    sink.writeString(_signatureAndVersion.getSignature());
+    sink.writeString(_signatureAndVersion.signature);
     sink.writeUint16(_signatureAndVersion.version);
 
     // Write the signature and version of [_Persister];
-    sink.writeString(persister.signatureAndVersion.getSignature());
+    sink.writeString(persister.signatureAndVersion.signature);
     sink.writeUint16(persister.signatureAndVersion.version);
 
     throw Exception('Implement the streaming of the view!');
