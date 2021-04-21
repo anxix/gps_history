@@ -124,12 +124,7 @@ class StreamReaderState {
   StreamSubscription? _streamSubscription;
   var _positionInFrontList = 0;
 
-  StreamReaderState(this._stream) {
-    _streamSubscription = _stream.listen(_addAndPause, onDone: () {
-      _streamFinished = true;
-    })
-      ..pause();
-  }
+  StreamReaderState(this._stream);
 
   void _addAndPause(List<int> list) {
     // Make sure we get just one list at a time, so we cache as little as
@@ -146,7 +141,10 @@ class StreamReaderState {
       return null;
     }
 
-    final completer = Completer<List<int>>();
+    // Set up the strem subscription if we don't have it yet.
+    _streamSubscription ??= _stream.listen(null)..pause();
+
+    final completer = Completer<List<int>?>();
 
     // Replace the current subscription with a new one that works
     // asynchronously.
@@ -154,10 +152,10 @@ class StreamReaderState {
       ..onData((list) {
         _addAndPause(list);
         completer.complete(list);
-        // Put the original onData back.
-        _streamSubscription!.onData((list) {
-          _addAndPause;
-        });
+      })
+      ..onDone(() {
+        _streamFinished = true;
+        completer.complete(null);
       })
       ..onError((error) => completer.completeError(error));
 
