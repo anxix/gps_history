@@ -9,6 +9,7 @@
  */
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_persist.dart';
 
@@ -45,7 +46,9 @@ import 'package:gps_history/gps_history_persist.dart';
 ///     persisted data version newer than the one supported by the relevant
 ///     registered [_Persister]. Again, this ensures old versions don't try
 ///     to read new data and do so badly.
-///   * 56 bytes: reserved for any kind of meta information a particular
+///   * 1 byte: the number of bytes to be read from the following metadata
+///     sub-stream
+///   * 55 bytes: reserved for any kind of metadata a particular
 ///     [_Persister] may require.
 /// * unknown number of bytes: the streamed data.
 /// By having a fixed header size, we can determine numbers of points in a file
@@ -60,6 +63,9 @@ abstract class Persistence {
   /// would be if the persistence starts compressing all streams.
   static final _signatureAndVersion =
       SignatureAndVersion('AnqsGpsHistoryFile--', 1);
+
+  /// The maximum number of bytes allowed for the  metadata of a [_Persister].
+  static final maxMetadataLength = 55;
 
   static const _knownPersisters = <Type, _Persister>{};
 
@@ -133,31 +139,66 @@ abstract class Persistence {
     await _readValidateSignature(
         state, persister.signatureAndVersion.signature);
 
-    // Read the persister version number and meta information and stop if it's
-    // newer than what the persister writes natively.
+    // Read the persister version number and stop if it's newer than what the
+    // persister writes natively.
     final loadedPersisterVersion = await _readValidateVersion(
         state,
         persister.signatureAndVersion.version,
         'persister ${persister.runtimeType.toString()}');
 
+    // Read the metadata.
+    final metadataLength = await state.readUint8();
+    if (metadataLength == null || metadataLength > maxMetadataLength) {
+      throw (InvalidMetadataException(
+          'Expected to read metadata with max length $maxMetadataLength, '
+          'but found length $metadataLength.'));
+    }
+    // Always read entire metadata because it's fixed-length, will trim it
+    // afterwards to reflect the actual length read above.
+    final metadataList = await state.readBytes(maxMetadataLength);
+    if (metadataList == null) {
+      throw (InvalidMetadataException(
+          'Failed reading metadata, probably the stream is corrupted '
+          '(too short)'));
+    }
+    final metadata = ByteData(metadataLength);
+    metadata.buffer.asUint8List().setRange(0, metadataLength, metadataList);
+
     // Have the persister read and interpret the actual data.
+    persister._readViewFromStream(
+        view, state, loadedPersisterVersion, metadata);
   }
 
   /// Writes [view] to [targetSink] in binary format.
   static void write(GpsPointsView view, StreamSink<List<int>> targetSink) {
-    final persister = _getPersister(view);
-
     final sink = StreamSinkWriter(targetSink);
 
-    // Write the signature and version of [Persistance]
+    // Write the signature and version of [Persistance].
     sink.writeString(_signatureAndVersion.signature);
     sink.writeUint16(_signatureAndVersion.version);
 
-    // Write the signature and version of [_Persister];
+    final persister = _getPersister(view);
+
+    // Write the signature and version information of [_Persister].
     sink.writeString(persister.signatureAndVersion.signature);
     sink.writeUint16(persister.signatureAndVersion.version);
 
-    throw Exception('Implement the streaming of the view!');
+    // Write the metadata of [_Persister].
+    final metadata = persister.getMetadata(view) ?? ByteData(0);
+    if (metadata.lengthInBytes > maxMetadataLength) {
+      throw (InvalidMetadataException(
+          'Incorrect meta information length. Expected max $maxMetadataLength '
+          'but provided with ${metadata.lengthInBytes} bytes.'));
+    }
+    // First the size of the metadata...
+    sink.writeUint8(metadata.lengthInBytes);
+    // ...then the metadata...
+    sink.writeBytes(metadata.buffer.asUint8List());
+    // ...and finally any necessary all-zero padding.
+    sink.writeBytes(
+        List<int>.filled(maxMetadataLength - metadata.lengthInBytes, 0));
+
+    // Write the view.
     targetSink.addStream(persister._writeStreamFromView(view));
   }
 }
@@ -202,11 +243,17 @@ abstract class _Persister {
     return sig;
   }
 
+  /// Allows writing up to [Persistance.maxMetadataLength] bytes of extra
+  /// information in the file header. Override in children if needed.
+  ByteData? getMetadata(GpsPointsView view) => null;
+
   /// Converts [view] to a [Stream] of bytes. Override in children.
   Stream<List<int>> _writeStreamFromView(GpsPointsView view);
 
   /// Overwrites the contents of [view] (if it is not read-only) with
-  /// the information fom the [sourceStream].
-  void _readViewFromStream(GpsPointsView view, Stream<List<int>> sourceStream,
-      String metaInformation, int version);
+  /// the information fom the [source]. [version] and [metadata] indicate
+  /// the additional information that was read from the block header in
+  /// the file, and may be used to e.g. convert old formats to new.
+  void _readViewFromStream(GpsPointsView view, StreamReaderState source,
+      int version, ByteData metadata);
 }
