@@ -298,10 +298,111 @@ void testStreamReaderState() {
   });
 }
 
+/// Sink for testing purposes that collects all data it receives into a list.
+class TestSink implements Sink<List<int>> {
+  final receivedData = List<int>.empty(growable: true);
+  var isClosed = false;
+
+  @override
+  void add(List<int> data) {
+    receivedData.addAll(data);
+  }
+
+  @override
+  void close() {
+    isClosed = true;
+  }
+}
+
+/// Writes [dataList] to a sink using [writeFunction] and checks that the sink
+/// contents afterwards match [expected].
+void _runWriterTest<T>(List<T> dataList, List<int> expected,
+    void Function(StreamSinkWriter writer, T data) writeFunction) {
+  final sink = TestSink();
+  final writer = StreamSinkWriter(sink);
+  for (var data in dataList) {
+    writeFunction(writer, data);
+  }
+
+  expect(sink.receivedData, expected);
+
+  expect(writer.bytesWritten, expected.length);
+}
+
+/// Wrapper for [_runWriterTest] specialized in Uint16.
+void _runWriterTestUint16(List<int> dataList, List<int> expected) {
+  return _runWriterTest<int>(
+      dataList, expected, (writer, data) => writer.writeUint16(data));
+}
+
+/// Wrapper for [_runWriterTest] specialized in String.
+void _runWriterTestString(List<String> dataList, List<int> expected) {
+  return _runWriterTest<String>(
+      dataList, expected, (writer, data) => writer.writeString(data));
+}
+
+/// Wrapper for [_runWriterTest] specialized in bytes.
+void _runWriterTestBytes(List<List<int>> dataList, List<int> expected) {
+  return _runWriterTest<List<int>>(
+      dataList, expected, (writer, data) => writer.writeBytes(data));
+}
+
+void testStreamSinkWriter() {
+  group('writeUint16', () {
+    test('simple', () {
+      _runWriterTestUint16([], []);
+
+      _runWriterTestUint16([0], [0, 0]);
+      _runWriterTestUint16([1], [1, 0]);
+      _runWriterTestUint16([65535], [255, 255]);
+    });
+
+    test('value capping', () {
+      _runWriterTestUint16([-1], [0, 0]);
+      _runWriterTestUint16([65536], [255, 255]);
+    });
+  });
+
+  group('writeString', () {
+    test('simple', () {
+      _runWriterTestString(['a', 'bc'], [97, 98, 99]);
+    });
+
+    test('invalid ASCII character replacement', () {
+      _runWriterTestString(['A\nB\rC'], [65, 32, 66, 32, 67]);
+    });
+  });
+
+  group('writeBytes', () {
+    test('simple', () {
+      _runWriterTestBytes([
+        [1, 2]
+      ], [
+        1,
+        2
+      ]);
+
+      _runWriterTestBytes([
+        [1, 2],
+        [3],
+        [4, 5]
+      ], [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]);
+    });
+  });
+}
+
 void main() {
   testGetFirstNonAsciiCharIndex();
 
   testSignatureAndVersion();
 
   testStreamReaderState();
+
+  testStreamSinkWriter();
 }
