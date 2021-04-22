@@ -102,6 +102,8 @@ void testSignatureAndVersion() {
   });
 }
 
+/// Runs a test on the specified lists of [bytes] and checks that calling
+/// [readFunction] returns the correct [expecteds].
 Future<void> _runReaderTest<T>(
     List<List<int>> bytes,
     List<T?> expecteds,
@@ -116,12 +118,14 @@ Future<void> _runReaderTest<T>(
   }
 }
 
+/// Wrapper for [_runReaderTest] specialized in Uint16.
 Future<void> _runReaderTestUint16(
     List<List<int>> bytes, List<int?> expecteds) async {
   return _runReaderTest<int>(
       bytes, expecteds, (state, expected) => state.readUint16());
 }
 
+/// Wrapper for [_runReaderTest] specialized in String.
 Future<void> _runReaderTestString(
     List<List<int>> bytes, List<String?> expecteds) async {
   return _runReaderTest<String>(
@@ -132,14 +136,20 @@ Future<void> _runReaderTestString(
 }
 
 /// Tests for all possible ways of grouping the values in [srcList] whether
-/// they return the same [expecteds] when calling [_runtTest].
-Future<void> _testAllGroups<T>(List<int> srcList, List<T?> expecteds,
-    Future<T?> Function(StreamReaderState state, T? expected) readFunction,
+/// they return the same [expecteds] when calling the specified
+/// [readerTestRunner]. This function recurses for purposes of generating
+/// all the groupings, using the [testList] argument to pass around information
+/// during the recursion.
+Future<void> _testAllGroups<T>(
+    List<int> srcList,
+    List<T?> expecteds,
+    Future<void> Function(List<List<int>> bytes, List<T?> expecteds)
+        readerTestRunner,
     [List<List<int>>? testList]) async {
   testList ??= List<List<int>>.empty(growable: true);
 
   if (srcList.isEmpty) {
-    await _runReaderTest(testList, expecteds, readFunction);
+    await readerTestRunner(testList, expecteds);
     return;
   }
 
@@ -147,7 +157,7 @@ Future<void> _testAllGroups<T>(List<int> srcList, List<T?> expecteds,
     final testListCopy = List<List<int>>.from(testList, growable: true);
     testListCopy.add(List<int>.from(srcList.take(i)));
     final subList = srcList.sublist(i);
-    await _testAllGroups(subList, expecteds, readFunction, testListCopy);
+    await _testAllGroups(subList, expecteds, readerTestRunner, testListCopy);
   }
 }
 
@@ -182,16 +192,13 @@ void testStreamReaderState() {
 
     test('various streaming conditions', () async {
       var bytes = [1, 2];
-      await _testAllGroups<int>(
-          bytes, [513], (state, expected) => state.readUint16());
+      await _testAllGroups<int>(bytes, [513], _runReaderTestUint16);
 
       bytes = [0, 0, 1, 0];
-      await _testAllGroups<int>(
-          bytes, [0, 1], (state, expected) => state.readUint16());
+      await _testAllGroups<int>(bytes, [0, 1], _runReaderTestUint16);
 
       bytes = [1, 2, 3, 4, 5, 8];
-      await _testAllGroups<int>(
-          bytes, [513, 1027, 2053], (state, expected) => state.readUint16());
+      await _testAllGroups<int>(bytes, [513, 1027, 2053], _runReaderTestUint16);
     });
   });
 
@@ -207,10 +214,7 @@ void testStreamReaderState() {
     test('multiple strings', () async {
       await _runReaderTestString(listOfList([90, 97, 98, 99]), ['Z', 'abc']);
       await _testAllGroups<String>(
-          [89, 90, 100, 97, 98, 99],
-          ['YZ', 'd', 'abc'],
-          (state, expected) =>
-              state.readString((expected == null) ? 0 : expected.length));
+          [89, 90, 100, 97, 98, 99], ['YZ', 'd', 'abc'], _runReaderTestString);
     });
   });
 }
