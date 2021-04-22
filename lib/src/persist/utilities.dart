@@ -126,7 +126,7 @@ class StreamReaderState {
 
   StreamReaderState(this._stream);
 
-  void _addAndPause(List<int> list) {
+  void _addToCacheAndPause(List<int> list) {
     // Make sure we get just one list at a time, so we cache as little as
     // possible in memory.
     if (!_streamFinished) {
@@ -150,7 +150,7 @@ class StreamReaderState {
     // asynchronously.
     _streamSubscription!
       ..onData((list) {
-        _addAndPause(list);
+        _addToCacheAndPause(list);
         completer.complete(list);
       })
       ..onDone(() {
