@@ -135,6 +135,16 @@ Future<void> _runReaderTestString(
           state.readString((expected == null) ? 0 : expected.length));
 }
 
+/// Wrapper for [_runReaderTest] specialized in bytes.
+Future<void> _runReaderTestBytes(
+    List<List<int>> bytes, List<List<int>?> expecteds) async {
+  return _runReaderTest<List<int>?>(
+      bytes,
+      expecteds,
+      (state, expected) =>
+          state.readBytes((expected == null) ? 0 : expected.length));
+}
+
 /// Tests for all possible ways of grouping the values in [srcList] whether
 /// they return the same [expecteds] when calling the specified
 /// [readerTestRunner]. This function recurses for purposes of generating
@@ -215,6 +225,36 @@ void testStreamReaderState() {
       await _runReaderTestString(listOfList([90, 97, 98, 99]), ['Z', 'abc']);
       await _testAllGroups<String>(
           [89, 90, 100, 97, 98, 99], ['YZ', 'd', 'abc'], _runReaderTestString);
+    });
+  });
+
+  group('readBytes', () {
+    test('valid single bytes list', () async {
+      await _runReaderTestBytes(
+          listOfList([10, 11, 12]), listOfList([10, 11, 12]));
+    });
+
+    test('empty data', () async {
+      await _runReaderTestBytes(listOfList([]), [null]);
+    });
+
+    test('multiple bytes lists', () async {
+      await _runReaderTestBytes(listOfList([90, 97, 98, 99]), [
+        [90],
+        [97, 98, 99]
+      ]);
+      await _testAllGroups<List<int>?>([
+        89,
+        90,
+        100,
+        97,
+        98,
+        99
+      ], [
+        [89, 90],
+        [100],
+        [97, 98, 99]
+      ], _runReaderTestBytes);
     });
   });
 }
