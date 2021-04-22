@@ -118,6 +118,13 @@ Future<void> _runReaderTest<T>(
   }
 }
 
+/// Wrapper for [_runReaderTest] specialized in Uint8.
+Future<void> _runReaderTestUint8(
+    List<List<int>> bytes, List<int?> expecteds) async {
+  return _runReaderTest<int>(
+      bytes, expecteds, (state, expected) => state.readUint8());
+}
+
 /// Wrapper for [_runReaderTest] specialized in Uint16.
 Future<void> _runReaderTestUint16(
     List<List<int>> bytes, List<int?> expecteds) async {
@@ -176,6 +183,23 @@ void testStreamReaderState() {
   final listOfList = (List<int> list) {
     return List<List<int>>.filled(1, list);
   };
+
+  group('readUint8', () {
+    test('valid single value', () async {
+      await _runReaderTestUint8(listOfList([0]), [0]);
+      await _runReaderTestUint8(listOfList([128]), [128]);
+      await _runReaderTestUint8(listOfList([255]), [255]);
+    });
+
+    test('valid multiple values', () async {
+      await _runReaderTestUint8(listOfList([1, 2, 3]), [1, 2, 3]);
+    });
+
+    test('various streaming conditions', () async {
+      final bytes = [1, 2, 123, 224];
+      await _testAllGroups<int>(bytes, bytes, _runReaderTestUint8);
+    });
+  });
 
   group('readUint16', () {
     test('valid single value', () async {
@@ -329,6 +353,12 @@ void _runWriterTest<T>(List<T> dataList, List<int> expected,
   expect(writer.bytesWritten, expected.length);
 }
 
+/// Wrapper for [_runWriterTest] specialized in Uint8.
+void _runWriterTestUint8(List<int> dataList, List<int> expected) {
+  return _runWriterTest<int>(
+      dataList, expected, (writer, data) => writer.writeUint8(data));
+}
+
 /// Wrapper for [_runWriterTest] specialized in Uint16.
 void _runWriterTestUint16(List<int> dataList, List<int> expected) {
   return _runWriterTest<int>(
@@ -348,6 +378,21 @@ void _runWriterTestBytes(List<List<int>> dataList, List<int> expected) {
 }
 
 void testStreamSinkWriter() {
+  group('writeUint8', () {
+    test('simple', () {
+      _runWriterTestUint8([], []);
+
+      _runWriterTestUint8([0], [0]);
+      _runWriterTestUint8([1], [1]);
+      _runWriterTestUint8([255], [255]);
+    });
+
+    test('value capping', () {
+      _runWriterTestUint8([-1], [0]);
+      _runWriterTestUint8([256], [255]);
+    });
+  });
+
   group('writeUint16', () {
     test('simple', () {
       _runWriterTestUint16([], []);

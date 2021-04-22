@@ -36,6 +36,12 @@ class NewerVersionException extends GpsHistoryException {
   NewerVersionException([String? message]) : super(message);
 }
 
+/// An exception raised if trying to set an invalid metadata (e.g incorrect
+/// length).
+class InvalidMetadataException extends GpsHistoryException {
+  InvalidMetadataException([String? message]) : super(message);
+}
+
 /// Determines if [codeUnit] is between SPACE (ASCII 32) and ~ (ASCII 126).
 bool isValidAsciiChar(int codeUnit) => 32 <= codeUnit && codeUnit <= 126;
 
@@ -242,15 +248,10 @@ class StreamReaderState {
     return result;
   }
 
-  /// Like [readBytes], but returns an ASCII string.
-  Future<String?> readString(int length) async {
-    final bytes = await readBytes(length);
-
-    if (bytes != null) {
-      return String.fromCharCodes(bytes);
-    } else {
-      return null;
-    }
+  /// Like [readBytes], but reads a single [Uint8] and returns it as int.
+  Future<int?> readUint8() async {
+    final bytes = await readBytes(1);
+    return (bytes != null) ? bytes[0] : null;
   }
 
   /// Like [readBytes], but reads a [Uint16] and returns it as int.
@@ -263,6 +264,17 @@ class StreamReaderState {
     final bytesBuilder = BytesBuilder()..add(bytes);
     final byteData = ByteData.sublistView(bytesBuilder.takeBytes());
     return byteData.getUint16(0, Endian.little);
+  }
+
+  /// Like [readBytes], but returns an ASCII string.
+  Future<String?> readString(int length) async {
+    final bytes = await readBytes(length);
+
+    if (bytes != null) {
+      return String.fromCharCodes(bytes);
+    } else {
+      return null;
+    }
   }
 }
 
@@ -284,19 +296,14 @@ class StreamSinkWriter {
     _bytesWritten += data.length;
   }
 
-  /// Writes ASCII [string] to the sink, replacing any non-ASCII characters
-  /// with whitespace.
-  void writeString(String string) {
-    final intAtIndex = (int index) {
-      var c = string.codeUnitAt(index);
-      if (isValidAsciiChar(c)) {
-        return c;
-      } else {
-        return 32;
-      }
-    };
+  /// Writes [number] as [Uint8] to the sink. If the number is outside valid
+  /// [Uint8] range, it is capped at the appropriate boundary before writing.
+  void writeUint8(int number) {
+    // Trim the number at Uint8 boundaries.
+    var n = max<int>(0, number.sign * min<int>(number.abs(), (1 << 8) - 1));
 
-    writeBytes(List<int>.generate(string.length, intAtIndex));
+    // Write the trimmed number to the sink.
+    writeBytes([n]);
   }
 
   /// Writes [number] as [Uint16] to the sink. If the number is outside valid
@@ -310,5 +317,20 @@ class StreamSinkWriter {
     byteData.setUint16(0, n, Endian.little);
     writeBytes(List<int>.generate(
         byteData.lengthInBytes, (index) => byteData.getUint8(index)));
+  }
+
+  /// Writes ASCII [string] to the sink, replacing any non-ASCII characters
+  /// with whitespace.
+  void writeString(String string) {
+    final intAtIndex = (int index) {
+      var c = string.codeUnitAt(index);
+      if (isValidAsciiChar(c)) {
+        return c;
+      } else {
+        return 32;
+      }
+    };
+
+    writeBytes(List<int>.generate(string.length, intAtIndex));
   }
 }
