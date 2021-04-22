@@ -109,7 +109,7 @@ Future<void> _runReaderTest<T>(
     List<T?> expecteds,
     Future<T?> Function(StreamReaderState state, T? expected)
         readFunction) async {
-  var sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
+  final sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
   var valueNr = 0;
   for (var expected in expecteds) {
     var value = await readFunction(sr, expected);
@@ -255,6 +255,45 @@ void testStreamReaderState() {
         [100],
         [97, 98, 99]
       ], _runReaderTestBytes);
+    });
+  });
+
+  group('bytesRead', () {
+    test('simple', () async {
+      final sr = StreamReaderState(Stream<List<int>>.value([1, 2, 3, 4]));
+
+      expect(sr.bytesRead, 0, reason: 'start out with zero bytes read');
+
+      await sr.readUint16();
+      expect(sr.bytesRead, 2, reason: 'should have read 16 bits');
+
+      await sr.readUint16();
+      expect(sr.bytesRead, 4, reason: 'should have read 16 bits again');
+
+      final value = await sr.readUint16();
+      expect(value, null, reason: 'stream should be finished');
+      expect(sr.bytesRead, 4, reason: 'should not read beyond stream end');
+    });
+
+    test('chunked plus leftover bytes', () async {
+      // Ensure the counter works properly over chunk boundaries.
+      final bytes = Stream<List<int>>.fromIterable([
+        [1],
+        [2, 3],
+        [4, 5, 6, 7],
+      ]);
+      final sr = StreamReaderState(bytes);
+
+      await sr.readUint16();
+      await sr.readUint16();
+      await sr.readUint16();
+      expect(sr.bytesRead, 6, reason: 'should have read 3x16 bits');
+
+      final value = await sr.readUint16();
+      expect(value, null,
+          reason: 'there should be insufficient bytes in stream');
+      expect(sr.bytesRead, 6,
+          reason: 'should not be able to read 16 bits anymore');
     });
   });
 }
