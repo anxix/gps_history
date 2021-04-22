@@ -102,24 +102,44 @@ void testSignatureAndVersion() {
   });
 }
 
-Future<void> _runReaderTest(List<List<int>> bytes, List<int?> expecteds) async {
+Future<void> _runReaderTest<T>(
+    List<List<int>> bytes,
+    List<T?> expecteds,
+    Future<T?> Function(StreamReaderState state, T? expected)
+        readFunction) async {
   var sr = StreamReaderState(Stream<List<int>>.fromIterable(bytes));
   var valueNr = 0;
   for (var expected in expecteds) {
-    var value = await sr.readUint16();
+    var value = await readFunction(sr, expected);
     expect(value, expected, reason: 'at position $valueNr');
     valueNr += 1;
   }
 }
 
+Future<void> _runReaderTestUint16(
+    List<List<int>> bytes, List<int?> expecteds) async {
+  return _runReaderTest<int>(
+      bytes, expecteds, (state, expected) => state.readUint16());
+}
+
+Future<void> _runReaderTestString(
+    List<List<int>> bytes, List<String?> expecteds) async {
+  return _runReaderTest<String>(
+      bytes,
+      expecteds,
+      (state, expected) =>
+          state.readString((expected == null) ? 0 : expected.length));
+}
+
 /// Tests for all possible ways of grouping the values in [srcList] whether
 /// they return the same [expecteds] when calling [_runtTest].
-Future<void> _testAllGroups<T>(List<int> srcList, List<int?> expecteds,
+Future<void> _testAllGroups<T>(List<int> srcList, List<T?> expecteds,
+    Future<T?> Function(StreamReaderState state, T? expected) readFunction,
     [List<List<int>>? testList]) async {
   testList ??= List<List<int>>.empty(growable: true);
 
   if (srcList.isEmpty) {
-    await _runReaderTest(testList, expecteds);
+    await _runReaderTest(testList, expecteds, readFunction);
     return;
   }
 
@@ -127,7 +147,7 @@ Future<void> _testAllGroups<T>(List<int> srcList, List<int?> expecteds,
     final testListCopy = List<List<int>>.from(testList, growable: true);
     testListCopy.add(List<int>.from(srcList.take(i)));
     final subList = srcList.sublist(i);
-    await _testAllGroups(subList, expecteds, testListCopy);
+    await _testAllGroups(subList, expecteds, readFunction, testListCopy);
   }
 }
 
@@ -139,35 +159,58 @@ void testStreamReaderState() {
 
   group('readUint16', () {
     test('valid single value', () async {
-      await _runReaderTest(listOfList([0, 0]), []);
-      await _runReaderTest(listOfList([1, 0]), [1]);
-      await _runReaderTest(listOfList([0, 1]), [256]);
-      await _runReaderTest(listOfList([255, 255]), [65535]);
+      await _runReaderTestUint16(listOfList([0, 0]), [0]);
+      await _runReaderTestUint16(listOfList([1, 0]), [1]);
+      await _runReaderTestUint16(listOfList([0, 1]), [256]);
+      await _runReaderTestUint16(listOfList([255, 255]), [65535]);
     });
 
     test('insufficient data', () async {
-      await _runReaderTest([[]], [null]);
-      await _runReaderTest(listOfList([0]), [null]);
-      await _runReaderTest(listOfList([1, 0, 2]), [1, null]);
+      await _runReaderTestUint16([[]], [null]);
+      await _runReaderTestUint16(listOfList([0]), [null]);
+      await _runReaderTestUint16(listOfList([1, 0, 2]), [1, null]);
     });
 
     test('valid multiple values', () async {
-      await _runReaderTest(listOfList([0, 0, 1, 0]), [0, 1]);
-      await _runReaderTest(listOfList([0, 1, 1, 0]), [256, 1]);
-      await _runReaderTest(listOfList([255, 255, 0, 0]), [65535, 0]);
-      await _runReaderTest(listOfList([0, 0, 255, 255]), [0, 65535]);
-      await _runReaderTest(listOfList([1, 2, 3, 4, 5, 8]), [513, 1027, 2053]);
+      await _runReaderTestUint16(listOfList([0, 0, 1, 0]), [0, 1]);
+      await _runReaderTestUint16(listOfList([0, 1, 1, 0]), [256, 1]);
+      await _runReaderTestUint16(listOfList([255, 255, 0, 0]), [65535, 0]);
+      await _runReaderTestUint16(listOfList([0, 0, 255, 255]), [0, 65535]);
+      await _runReaderTestUint16(
+          listOfList([1, 2, 3, 4, 5, 8]), [513, 1027, 2053]);
     });
 
     test('various streaming conditions', () async {
       var bytes = [1, 2];
-      await _testAllGroups(bytes, [513]);
+      await _testAllGroups<int>(
+          bytes, [513], (state, expected) => state.readUint16());
 
       bytes = [0, 0, 1, 0];
-      await _testAllGroups(bytes, [0, 1]);
+      await _testAllGroups<int>(
+          bytes, [0, 1], (state, expected) => state.readUint16());
 
       bytes = [1, 2, 3, 4, 5, 8];
-      await _testAllGroups(bytes, [513, 1027, 2053]);
+      await _testAllGroups<int>(
+          bytes, [513, 1027, 2053], (state, expected) => state.readUint16());
+    });
+  });
+
+  group('readString', () {
+    test('valid single string', () async {
+      await _runReaderTestString(listOfList([97, 98, 99]), ['abc']);
+    });
+
+    test('empty data', () async {
+      await _runReaderTestString(listOfList([]), [null]);
+    });
+
+    test('multiple strings', () async {
+      await _runReaderTestString(listOfList([90, 97, 98, 99]), ['Z', 'abc']);
+      await _testAllGroups<String>(
+          [89, 90, 100, 97, 98, 99],
+          ['YZ', 'd', 'abc'],
+          (state, expected) =>
+              state.readString((expected == null) ? 0 : expected.length));
     });
   });
 }

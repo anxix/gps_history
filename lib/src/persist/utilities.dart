@@ -196,6 +196,11 @@ class StreamReaderState {
   /// possible, or null otherwise (e.g. the stream doesn't contain
   /// [nrBytesToRead] bytes).
   Future<List<int>?> readBytes(int nrBytesToRead) async {
+    // If we don't want to read anything, stop immediately.
+    if (nrBytesToRead == 0) {
+      return null;
+    }
+
     // Try to get enough data in the cache.
     var cachedBytes = await _ensureEnoughBytesInCache(nrBytesToRead);
 
