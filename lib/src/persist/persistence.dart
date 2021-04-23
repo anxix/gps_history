@@ -65,6 +65,8 @@ abstract class Persistence {
       SignatureAndVersion('AnqsGpsHistoryFile--', 1);
 
   /// The maximum number of bytes allowed for the  metadata of a [_Persister].
+  /// Changing this requires changing the version number of the [Persistence] as
+  /// well as compatibility/conversion code for reading older versions.
   static final maxMetadataLength = 55;
 
   static const _knownPersisters = <Type, _Persister>{};
@@ -80,6 +82,7 @@ abstract class Persistence {
   }
 
   static void _registerPersister(Type viewType, _Persister persister) {
+    // TODO: Check there are not duplicate signatures.
     _knownPersisters[viewType] = persister;
   }
 
