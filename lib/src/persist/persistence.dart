@@ -13,7 +13,7 @@ import 'dart:typed_data';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_persist.dart';
 
-/// The Persistence abstract class can write and potentially read
+/// The Persistence class is a singleton that can write and potentially read
 /// [GpsPointsView] instances to [StreamSink] respectively from [Stream]
 /// instances. Reading from streams requires the view to be modifiable, which
 /// not all views are.
@@ -54,24 +54,34 @@ import 'package:gps_history/gps_history_persist.dart';
 /// By having a fixed header size, we can determine numbers of points in a file
 /// without fully parsing it, by simply looking at the total file size minus
 /// the header and dividing the outcome by the storage size per point.
-abstract class Persistence {
+class Persistence {
+  static var _singletonInstance;
+
+  /// Factory that returns the singleton instance.
+  factory Persistence() {
+    _singletonInstance ??= Persistence._internal();
+    return _singletonInstance;
+  }
+
+  /// Internal constructor for use in singleteon behaviour.
+  Persistence._internal();
+
   /// The signature and version at the start of the file.
   /// The version indicates the version of the streaming mechanism used by the
   /// current implementation of [Persistence].
   /// Only increase the version if the streaming method (not the contents!) is
   /// changed such that earlier versions cannot possibly support it. An example
   /// would be if the persistence starts compressing all streams.
-  static final _signatureAndVersion =
-      SignatureAndVersion('AnqsGpsHistoryFile--', 1);
+  final _signatureAndVersion = SignatureAndVersion('AnqsGpsHistoryFile--', 1);
 
   /// The maximum number of bytes allowed for the  metadata of a [_Persister].
   /// Changing this requires changing the version number of the [Persistence] as
   /// well as compatibility/conversion code for reading older versions.
-  static final maxMetadataLength = 55;
+  final maxMetadataLength = 55;
 
-  static const _knownPersisters = <Type, _Persister>{};
+  final _knownPersisters = <Type, _Persister>{};
 
-  static _Persister _getPersister(GpsPointsView view) {
+  _Persister _getPersister(GpsPointsView view) {
     final result = _knownPersisters[view.runtimeType];
     if (result == null) {
       throw NoPersisterException(
@@ -81,7 +91,7 @@ abstract class Persistence {
     }
   }
 
-  static void _registerPersister(Type viewType, _Persister persister) {
+  void _registerPersister(Type viewType, _Persister persister) {
     // TODO: Check there are not duplicate signatures.
     _knownPersisters[viewType] = persister;
   }
@@ -89,7 +99,7 @@ abstract class Persistence {
   /// Reads a signature from [state], validates it against the
   /// [expectedSignature] and throws [InvalidSignatureError] if they don't
   /// match.
-  static Future<void> _readValidateSignature(
+  Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
     final loadedSignature = await state.readString(expectedSignature.length);
     if (loadedSignature != _signatureAndVersion.signature) {
@@ -102,7 +112,7 @@ abstract class Persistence {
   /// Reads a version number for [objectName] from [state], validates it
   /// against the [maximumCompatibleVersion] and throws [NewerVersionException]
   /// if the read version is newer and hence incompatible.
-  static Future<int> _readValidateVersion(StreamReaderState state,
+  Future<int> _readValidateVersion(StreamReaderState state,
       int maximumCompatibleVersion, String objectName) async {
     final loadedVersion = await state.readUint16();
     if ((loadedVersion ?? 1 << 31) > maximumCompatibleVersion) {
@@ -121,7 +131,7 @@ abstract class Persistence {
   /// signature at either [Persistance] level or [_Persister] level.
   /// Throws [NewerVersionError] if the stream contains a newer version at
   /// either [Persistance] level or [_Persister] level.
-  static void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
+  void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
     if (view.isReadonly) {
       throw ReadonlyException();
     }
@@ -173,7 +183,7 @@ abstract class Persistence {
   }
 
   /// Writes [view] to [targetSink] in binary format.
-  static void write(GpsPointsView view, StreamSink<List<int>> targetSink) {
+  void write(GpsPointsView view, StreamSink<List<int>> targetSink) {
     final sink = StreamSinkWriter(targetSink);
 
     // Write the signature and version of [Persistance].
@@ -217,8 +227,8 @@ abstract class _Persister {
     return null;
   }
 
-  _Persister() {
-    Persistence._registerPersister(getSupportedType()!, this);
+  _Persister(Persistence persistence) {
+    persistence._registerPersister(getSupportedType()!, this);
   }
 
   /// Indicates the version of the persistence method. Should be increased
