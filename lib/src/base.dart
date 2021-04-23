@@ -185,8 +185,10 @@ abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
-  // List-like write operations.
+  /// Add a single [element] to the collection.
   void add(T element);
+
+  /// Add all the elements from [iterable] to the collection.
   void addAll(Iterable<T> iterable);
 
   /// Collections are typically not read-only.
