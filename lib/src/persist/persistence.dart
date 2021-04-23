@@ -18,14 +18,14 @@ import 'package:gps_history/gps_history_persist.dart';
 /// instances. Reading from streams requires the view to be modifiable, which
 /// not all views are.
 ///
-/// The class relies on [_Persister] subclasses, that are registered with it
+/// The class relies on [Persister] subclasses, that are registered with it
 /// as supporting particular subclasses of [GpsPointsView], to do the actual
-/// streaming conversions. These [_Persister] instances must therefore be
+/// streaming conversions. These [Persister] instances must therefore be
 /// registered by the users of this library at runtime before trying to
 /// load/store data.
 ///
 /// Throws a [NoPersisterException] if called upon to operate on a view type
-/// for which no [_Persister] has been registered.
+/// for which no [Persister] has been registered.
 ///
 /// The persisted format is structured as follows:
 /// * 100 bytes: Header, consisting of:
@@ -36,7 +36,7 @@ import 'package:gps_history/gps_history_persist.dart';
 ///     [Persistence] will not read files that have a streaming method version
 ///     newer than its own, thus ensuring that older versions don't crash
 ///     or read incorrectly files that are written in a newer format.
-///   * 20 bytes: [_Persister] signature header to recognize data type.
+///   * 20 bytes: [Persister] signature header to recognize data type.
 ///     Each registered [_Persister] instance must have a unique signature.
 ///     This will be validated at reading time against the [_Persister]
 ///     registered for the data currently being read.
@@ -58,13 +58,16 @@ class Persistence {
   static var _singletonInstance;
 
   /// Factory that returns the singleton instance.
-  factory Persistence() {
+  factory Persistence.get() {
     _singletonInstance ??= Persistence._internal();
     return _singletonInstance;
   }
 
-  /// Internal constructor for use in singleteon behaviour.
+  /// Internal constructor for use in singleton behaviour.
   Persistence._internal();
+
+  /// Do not call this constructor directly (needed for unit tests).
+  Persistence();
 
   /// The signature and version at the start of the file.
   /// The version indicates the version of the streaming mechanism used by the
@@ -74,25 +77,36 @@ class Persistence {
   /// would be if the persistence starts compressing all streams.
   final _signatureAndVersion = SignatureAndVersion('AnqsGpsHistoryFile--', 1);
 
-  /// The maximum number of bytes allowed for the  metadata of a [_Persister].
+  /// The maximum number of bytes allowed for the metadata of a [Persister].
   /// Changing this requires changing the version number of the [Persistence] as
   /// well as compatibility/conversion code for reading older versions.
   final maxMetadataLength = 55;
 
-  final _knownPersisters = <Type, _Persister>{};
+  final _knownPersisters = <Type, Persister>{};
 
-  _Persister _getPersister(GpsPointsView view) {
+  /// Returns the [Persister] registered to handled objects of the type of
+  /// [view] or raises [NoPersisterException] if not found.
+  Persister getPersister(GpsPointsView view) {
     final result = _knownPersisters[view.runtimeType];
     if (result == null) {
       throw NoPersisterException(
-          'No persister found for type ${view.runtimeType.toString()}');
+          'No persister found for type ${view.runtimeType}');
     } else {
       return result;
     }
   }
 
-  void _registerPersister(Type viewType, _Persister persister) {
-    // TODO: Check there are not duplicate signatures.
+  void _registerPersister(Type viewType, Persister persister) {
+    // Check for duplicate singature.
+    for (var value in _knownPersisters.values) {
+      if (value.signature.toLowerCase() == persister.signature.toLowerCase()) {
+        throw ConflictingPersisterException(
+            'Trying to register persister ${persister.runtimeType} with '
+            'signature "${persister.signature}", but existing persister '
+            '${value.runtimeType} already has that signature.');
+      }
+    }
+
     _knownPersisters[viewType] = persister;
   }
 
@@ -145,19 +159,16 @@ class Persistence {
     // we support internally.
     await _readValidateVersion(state, _signatureAndVersion.version, 'stream');
 
-    final persister = _getPersister(view);
+    final persister = getPersister(view);
 
     // Read the persister signature and validate against the persister that's
     // supposed to read the specified view.
-    await _readValidateSignature(
-        state, persister.signatureAndVersion.signature);
+    await _readValidateSignature(state, persister.signature);
 
     // Read the persister version number and stop if it's newer than what the
     // persister writes natively.
     final loadedPersisterVersion = await _readValidateVersion(
-        state,
-        persister.signatureAndVersion.version,
-        'persister ${persister.runtimeType.toString()}');
+        state, persister.version, 'persister ${persister.runtimeType}');
 
     // Read the metadata.
     final metadataLength = await state.readUint8();
@@ -190,11 +201,11 @@ class Persistence {
     sink.writeString(_signatureAndVersion.signature);
     sink.writeUint16(_signatureAndVersion.version);
 
-    final persister = _getPersister(view);
+    final persister = getPersister(view);
 
     // Write the signature and version information of [_Persister].
-    sink.writeString(persister.signatureAndVersion.signature);
-    sink.writeUint16(persister.signatureAndVersion.version);
+    sink.writeString(persister.signature);
+    sink.writeUint16(persister.version);
 
     // Write the metadata of [_Persister].
     final metadata = persister.getMetadata(view) ?? ByteData(0);
@@ -216,38 +227,47 @@ class Persistence {
   }
 }
 
-/// Children of [_Persister] implement the actual reading and writing of
+/// Children of [Persister] implement the actual reading and writing of
 /// particular types of [GpsPointsView] descendants.
-abstract class _Persister {
-  final signatureAndVersion = SignatureAndVersion(getSignature(), getVersion());
+abstract class Persister {
+  /// Store this data in a [SignatureAndVersion] class for its validation
+  /// facilities.
+  var _signatureAndVersion;
 
-  /// Indicates what object type this [_Persister] can persist, to be overridden
+  /// Creates the [Persister] and registers it to the specified [persistence]
+  /// manager class.
+  Persister(Persistence persistence) {
+    _signatureAndVersion = initializeSignatureAndVersion();
+    persistence._registerPersister(supportedType, this);
+  }
+
+  /// Indicates what object type this [Persister] can persist, to be overridden
   /// in child classes.
-  static Type? getSupportedType() {
-    return null;
+  Type get supportedType;
+
+  /// Returns the signature string for this [Persister].
+  String get signature {
+    return _signatureAndVersion!.signature;
   }
 
-  _Persister(Persistence persistence) {
-    persistence._registerPersister(getSupportedType()!, this);
-  }
+  /// Indicates the version of the persistence method.
+  int get version => _signatureAndVersion!.version;
 
-  /// Indicates the version of the persistence method. Should be increased
+  /// Override in children to indicate the signature of this class (used
+  /// to recognize when reading a file which persister to initialize)
+  /// and which version is written. The version should be increased
   /// if for example new fields get persisted. In that case, the reader must
-  /// contain compatibility code for reading older versions. Child classes
-  /// should override as needed.
-  static int getVersion() {
-    return 1;
-  }
+  /// contain compatibility code for reading older versions.
+  ///
+  /// [signatureFromType] can be used to generate a standard signature from
+  /// the [supportedType].
+  SignatureAndVersion initializeSignatureAndVersion();
 
-  /// Returns the signature string for this [_Persister]. Method to be
-  /// overridden in subclasses.
-  static String getSignature() {
-    if (getSupportedType() == null) {
-      throw GpsHistoryException(
-          'No supported type found for a specific persister!');
-    }
-
-    var sig = getSupportedType().toString();
+  /// Creates a default signature from the type. This should be used carefully,
+  /// since changing the name of the [supportedType] class in a refactoring can
+  /// lead to stored files becoming incompatible.
+  String signatureFromType() {
+    var sig = supportedType.toString();
     // Ensure the sig is not too short...
     sig = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
     // ...nor too long.

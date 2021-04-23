@@ -19,6 +19,12 @@ class NoPersisterException extends GpsHistoryException {
   NoPersisterException([String? message]) : super(message);
 }
 
+/// An exception raised if there is an attempt to register conflicting
+/// persisters (e.g. multiple of them with the same signature).
+class ConflictingPersisterException extends GpsHistoryException {
+  ConflictingPersisterException([String? message]) : super(message);
+}
+
 /// An exception raised if trying to read data into a readonly object.
 class ReadonlyException extends GpsHistoryException {
   ReadonlyException([String? message]) : super(message);
