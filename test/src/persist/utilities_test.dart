@@ -420,6 +420,8 @@ void testStreamSinkWriter() {
 
   group('writeBytes', () {
     test('simple', () {
+      _runWriterTestBytes([], []);
+      
       _runWriterTestBytes([
         [1, 2]
       ], [
