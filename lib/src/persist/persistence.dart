@@ -142,9 +142,9 @@ class Persistence {
   /// Throws [ReadonlyException] if [view.isReadonly]==```true```, as the
   /// contents of a readonly view cannot be overwritten.
   /// Throws [InvalidSignatureException] if the stream contains an invalid
-  /// signature at either [Persistance] level or [Persister] level.
+  /// signature at either [Persistence] level or [Persister] level.
   /// Throws [NewerVersionException] if the stream contains a newer version at
-  /// either [Persistance] level or [Persister] level.
+  /// either [Persistence] level or [Persister] level.
   void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
     if (view.isReadonly) {
       throw ReadonlyException();
@@ -276,7 +276,7 @@ abstract class Persister {
     return sig;
   }
 
-  /// Allows writing up to [Persistance.maxMetadataLength] bytes of extra
+  /// Allows writing up to [Persistence.maxMetadataLength] bytes of extra
   /// information in the file header. Override in children if needed.
   ByteData? getMetadata(GpsPointsView view) => null;
 
