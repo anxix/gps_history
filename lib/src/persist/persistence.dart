@@ -13,10 +13,10 @@ import 'dart:typed_data';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_persist.dart';
 
-/// The Persistence class is a singleton that can write and potentially read
-/// [GpsPointsView] instances to [StreamSink] respectively from [Stream]
-/// instances. Reading from streams requires the view to be modifiable, which
-/// not all views are.
+/// The Persistence class should be used as a singleton (call [Persistence.get])
+/// that can write and potentially read [GpsPointsView] instances to
+/// [StreamSink] respectively from [Stream] instances. Reading from streams
+/// requires the view to be modifiable, which not all views are.
 ///
 /// The class relies on [Persister] subclasses, that are registered with it
 /// as supporting particular subclasses of [GpsPointsView], to do the actual
