@@ -65,19 +65,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 
-/// Converts [string] to a list of integers being the code units of its
-/// characters.
-List<int> stringToIntList(String string) {
-  final result = List<int>.filled(string.length, 0);
-
-  // Test as single chunk.
-  for (var i = 0; i < string.length; i++) {
-    result[i] = string.codeUnitAt(i);
-  }
-
-  return result;
-}
-
 const _charDoubleQuote = 34;
 const _charMinus = 45;
 const _char0 = 48;

@@ -55,7 +55,7 @@ void main() {
 
   for (var i = 0; i < nrLoops; i++) {
     for (var line in lines) {
-      final bytes = stringToIntList(line);
+      final bytes = line.codeUnits;
       pointParser.parseUpdate(bytes, 0, bytes.length);
     }
   }

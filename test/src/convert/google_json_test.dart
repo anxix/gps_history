@@ -58,7 +58,7 @@ void _testPointParserStrings(
     String testName, List<String> strings, List<GpsPoint?> expectedPoints) {
   final chunks = List<List<int>>.filled(0, [], growable: true);
   for (var string in strings) {
-    chunks.add(stringToIntList(string));
+    chunks.add(string.codeUnits);
   }
 
   _testPointParser(testName, chunks, expectedPoints);
@@ -176,7 +176,7 @@ void testChunkedJsonToGps(String testName, List<List<int>> jsonByteChunks,
 /// (2, 98), (4, 96), etc.).
 void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
     [int? chunkingPairSizeInc]) {
-  final stringAsIntList = stringToIntList(json);
+  final stringAsIntList = json.codeUnits;
 
   final chunkedList = [stringAsIntList];
   testChunkedJsonToGps(testName, chunkedList, expectedPoints);
