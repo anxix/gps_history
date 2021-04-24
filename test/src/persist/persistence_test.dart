@@ -5,6 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
@@ -181,20 +182,47 @@ void testReadWrite() {
   PersisterDummy? persister;
   GpcDummy? gpc;
   TestStreamSink? sink;
+  // Make sure all the variables below are reset in tearDown().
   var sigList = <int>[];
   var versionList = <int>[];
   var persisterSigList = <int>[];
   var persisterVersionList = <int>[];
-  var metadataLength = <int>[];
-  var metadata = <int>[];
+
+  final getMetadata = () => persister?.metadataToWrite?.buffer.asUint8List();
+  final setMetadata = (List<int>? data) {
+    if (data == null) {
+      persister!.metadataToWrite = null;
+      return;
+    }
+    final bytedata = ByteData(data.length);
+    for (var i = 0; i < data.length; i++) {
+      bytedata.setUint8(i, data[i]);
+    }
+    persister!.metadataToWrite = bytedata;
+  };
 
   final getHeader = () {
+    // The metadata in the header requires some processing if it's null or
+    // of shorter length than the maximum supported.
+
+    // null gets translated to zero length.
+    final metadataLength = getMetadata()?.length ?? 0;
+
+    // Ensure correct length (right-pad with zeroes if necessary).
+    var metadata =
+        getMetadata() ?? List<int>.filled(persistence!.maxMetadataLength, 0);
+    metadata = [
+      ...metadata,
+      ...List<int>.filled(
+          max(0, persistence!.maxMetadataLength - metadata.length), 0)
+    ];
+
     return [
       ...sigList,
       ...versionList,
       ...persisterSigList,
       ...persisterVersionList,
-      ...metadataLength,
+      ...[metadataLength],
       ...metadata
     ];
   };
@@ -212,13 +240,18 @@ void testReadWrite() {
     persisterSigList = List<int>.filled(
         SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0));
     persisterVersionList = [13, 0];
-    metadataLength = [0];
-    metadata = List<int>.filled(55, 0);
+    setMetadata(List<int>.filled(55, 0));
   });
 
   tearDown(() {
     persistence = null;
     gpc = null;
+
+    sigList = <int>[];
+    versionList = <int>[];
+    persisterSigList = <int>[];
+    persisterVersionList = <int>[];
+    setMetadata(null);
   });
 
   group('Test writing', () {
@@ -226,15 +259,11 @@ void testReadWrite() {
       persistence!.write(gpc!, sink!);
 
       expect(sink!.receivedData.length, 100, reason: 'incorrect data');
-
       expect(sink!.receivedData, getHeader());
     });
 
     test('Custom metadata', () {
-      persister!.metadataToWrite = ByteData(20);
-      for (var i = 0; i < persister!.metadataToWrite!.lengthInBytes; i++) {
-        persister!.metadataToWrite!.setUint8(i, 10 * (1 + i));
-      }
+      setMetadata(List<int>.generate(20, (index) => 10 * (1 + index)));
       persistence!.write(gpc!, sink!);
 
       expect(sink!.receivedData.sublist(44, sink!.receivedData.length), [
@@ -244,7 +273,7 @@ void testReadWrite() {
     });
 
     test('Too much metadata', () {
-      persister!.metadataToWrite = ByteData(56);
+      setMetadata(List<int>.filled(56, 0));
       expect(
           () => persistence!.write(gpc!, sink!),
           throwsA(isA<InvalidMetadataException>()
@@ -265,6 +294,7 @@ void testReadWrite() {
 
   group('Test reading', () {
     test('Check basic headers', () async {
+      setMetadata(null);
       await persistence!.read(gpc!, Stream.value(getHeader()));
 
       expect(persister!.readViewVersion, 13,
@@ -272,6 +302,29 @@ void testReadWrite() {
 
       expect(persister!.readViewMetadata!.lengthInBytes, 0,
           reason: 'incorrect metadata');
+    });
+
+    test('Check reading metadata', () async {
+      setMetadata(<int>[20, 21, 22]);
+      await persistence!.read(gpc!, Stream.value(getHeader()));
+
+      expect(persister!.readViewMetadata!.lengthInBytes, 3,
+          reason: 'wrong amount of metadata read');
+      for (var i = 0; i < 3; i++) {
+        expect(persister!.readViewMetadata!.getUint8(i), i + 20,
+            reason: 'wrong metadata at position $i');
+      }
+    });
+
+    test('Check reading values', () async {
+      await persistence!.read(
+          gpc!,
+          Stream.value([
+            ...getHeader(),
+            ...[0, 1, 2]
+          ]));
+
+      expect(gpc!.length, 3, reason: 'wrong number of items read');
     });
   });
 }
