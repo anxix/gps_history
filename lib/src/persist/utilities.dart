@@ -63,7 +63,7 @@ int? getFirstNonAsciiCharIndex(String string) {
   return null;
 }
 
-/// Represents the signature and version data of [Persistence] and [_Persister].
+/// Represents the signature and version data of [Persistence] and [Persister].
 class SignatureAndVersion {
   /// Indicates the exact required length of signatures (in bytes/ASCII chars).
   static const RequiredSignatureLength = 20;
