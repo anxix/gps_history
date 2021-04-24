@@ -255,14 +255,14 @@ void testReadWrite() {
   });
 
   group('Test writing', () {
-    test('Check headers', () {
+    test('headers', () {
       persistence!.write(gpc!, sink!);
 
       expect(sink!.receivedData.length, 100, reason: 'incorrect data');
       expect(sink!.receivedData, getHeader());
     });
 
-    test('Custom metadata', () {
+    test('custom metadata', () {
       setMetadata(List<int>.generate(20, (index) => 10 * (1 + index)));
       persistence!.write(gpc!, sink!);
 
@@ -272,7 +272,7 @@ void testReadWrite() {
       ]);
     });
 
-    test('Too much metadata', () {
+    test('too much metadata', () {
       setMetadata(List<int>.filled(56, 0));
       expect(
           () => persistence!.write(gpc!, sink!),
@@ -280,7 +280,7 @@ void testReadWrite() {
               .having((e) => e.message, 'message', contains('56'))));
     });
 
-    test('Some dummy points', () async {
+    test('some dummy points', () async {
       final point = GpsPoint(DateTime.utc(1970), 0, 0, 0);
       gpc!.add(point);
       gpc!.add(point);
@@ -293,7 +293,7 @@ void testReadWrite() {
   });
 
   group('Test reading', () {
-    test('Check basic headers', () async {
+    test('basic headers', () async {
       setMetadata(null);
       await persistence!.read(gpc!, Stream.value(getHeader()));
 
@@ -304,7 +304,7 @@ void testReadWrite() {
           reason: 'incorrect metadata');
     });
 
-    test('Check reading metadata', () async {
+    test('metadata', () async {
       setMetadata(<int>[20, 21, 22]);
       await persistence!.read(gpc!, Stream.value(getHeader()));
 
@@ -316,7 +316,7 @@ void testReadWrite() {
       }
     });
 
-    test('Check reading values', () async {
+    test('values', () async {
       await persistence!.read(
           gpc!,
           Stream.value([
@@ -327,7 +327,7 @@ void testReadWrite() {
       expect(gpc!.length, 3, reason: 'wrong number of items read');
     });
 
-    test('Invalid signature', () async {
+    test('invalid signature', () async {
       expect(() async => await persistence!.read(gpc!, Stream.value([10, 30])),
           throwsA(isA<InvalidSignatureException>()),
           reason: 'too short signature');
@@ -341,7 +341,7 @@ void testReadWrite() {
           reason: 'wrong signature');
     });
 
-    test('Version too new', () async {
+    test('version too new', () async {
       expect(
         () async => await persistence!.read(
             gpc!,
@@ -351,6 +351,58 @@ void testReadWrite() {
             ])),
         throwsA(isA<NewerVersionException>()),
       );
+    });
+
+    test('persister signature wrong', () async {
+      persisterSigList =
+          List<int>.from(persisterSigList.map((value) => value + 1));
+      final header = getHeader();
+      expect(
+        () async => await persistence!.read(gpc!, Stream.value(header)),
+        throwsA(isA<InvalidSignatureException>().having((e) => e.message,
+            'signature', contains(String.fromCharCodes(persisterSigList)))),
+      );
+    });
+
+    test('persister version too new', () async {
+      persisterVersionList = [255, 255];
+      final header = getHeader();
+      expect(
+        () async => await persistence!.read(gpc!, Stream.value(header)),
+        throwsA(isA<NewerVersionException>()
+            .having((e) => e.message, 'found version', contains('65535'))),
+      );
+    });
+
+    test('bad metadata', () async {
+      // Try with a header that doesn't contain enough metadata.
+      expect(
+          () async => await persistence!.read(
+              gpc!,
+              Stream.value([
+                ...sigList,
+                ...versionList,
+                ...persisterSigList,
+                ...persisterVersionList,
+                ...[1],
+                ...[2, 3]
+              ])),
+          throwsA(isA<InvalidMetadataException>()));
+
+      // Try with a header that claims to contain more metadata than is allowed.
+      final invalidMetadataSize = persistence!.maxMetadataLength + 1;
+      expect(
+          () async => await persistence!.read(
+              gpc!,
+              Stream.value([
+                ...sigList,
+                ...versionList,
+                ...persisterSigList,
+                ...persisterVersionList,
+                ...[invalidMetadataSize],
+                ...List<int>.filled(persistence!.maxMetadataLength, 0)
+              ])),
+          throwsA(isA<InvalidMetadataException>()));
     });
   });
 }
