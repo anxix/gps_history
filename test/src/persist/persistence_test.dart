@@ -166,7 +166,7 @@ void testPersistence() {
       PersisterDummy(persistence);
 
       // Register a second persister supporting GpsDummy. This shoud
-      // owverwite the previous persister for that type.
+      // overwite the previous persister for that type.
       final overwritingPersister = PersisterDummyDupeSupportedType(persistence);
       expect(
           identical(persistence.getPersister(GpcDummy()), overwritingPersister),
@@ -325,6 +325,32 @@ void testReadWrite() {
           ]));
 
       expect(gpc!.length, 3, reason: 'wrong number of items read');
+    });
+
+    test('Invalid signature', () async {
+      expect(() async => await persistence!.read(gpc!, Stream.value([10, 30])),
+          throwsA(isA<InvalidSignatureException>()),
+          reason: 'too short signature');
+
+      final badSig = List<int>.filled(
+          SignatureAndVersion.RequiredSignatureLength, '-'.codeUnitAt(0));
+      expect(
+          () async => await persistence!.read(gpc!, Stream.value(badSig)),
+          throwsA(isA<InvalidSignatureException>().having((e) => e.message,
+              'message', contains(String.fromCharCodes(badSig)))),
+          reason: 'wrong signature');
+    });
+
+    test('Version too new', () async {
+      expect(
+        () async => await persistence!.read(
+            gpc!,
+            Stream.value([
+              ...sigList,
+              ...[255, 255]
+            ])),
+        throwsA(isA<NewerVersionException>()),
+      );
     });
   });
 }
