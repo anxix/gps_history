@@ -40,9 +40,11 @@ class TestStreamSink extends TestSink implements StreamSink<List<int>> {
 
   @override
   Future addStream(Stream<List<int>> stream) async {
-    await for (var list in stream) {
-      add(list);
-    }
+    return Future.sync(() async {
+      await for (var list in stream) {
+        add(list);
+      }
+    });
   }
 
   @override

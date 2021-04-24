@@ -25,10 +25,13 @@ class PersistenceDummy extends Persistence {
 /// Class for testing purposes.
 class PersisterDummy extends Persister {
   /// Remember if readViewFromStream was called, what the version was.
-  var readViewVersion;
+  int? readViewVersion;
 
   /// Remember if readViewFromStream was called, what the metadata was.
-  var readViewMetadata;
+  ByteData? readViewMetadata;
+
+  /// Custom metadata to write to stream.
+  ByteData? metadataToWrite;
 
   PersisterDummy(Persistence persistence) : super(persistence);
 
@@ -42,6 +45,9 @@ class PersisterDummy extends Persister {
 
   @override
   Type get supportedType => GpcDummy;
+
+  @override
+  ByteData? getMetadata(GpsPointsView view) => metadataToWrite;
 
   /// Keeps track of which parameters it was called with (in [readViewVersion]
   /// and [redViewMetadata], and instantiates a point for every byte found
@@ -65,12 +71,12 @@ class PersisterDummy extends Persister {
   }
 
   /// Writes one byte for every item in the [view], with the byte being the
-  /// index (capped of course at byte value boundary if more than 255 items
+  /// index + 1 (capped of course at byte value boundary if more than 255 items
   /// are in the list).
   @override
   Stream<List<int>> writeViewToStream(GpsPointsView view) {
     return Stream<List<int>>.value(
-        List<int>.generate(view.length, (index) => index));
+        List<int>.generate(view.length, (index) => index + 1));
   }
 }
 
@@ -169,12 +175,13 @@ void testPersistence() {
 void testWrite() {
   group('Test writing', () {
     PersistenceDummy? persistence;
+    PersisterDummy? persister;
     GpcDummy? gpc;
     TestStreamSink? sink;
 
     setUp(() {
       persistence = PersistenceDummy.get();
-      PersisterDummy(persistence!);
+      persister = PersisterDummy(persistence!);
 
       gpc = GpcDummy();
 
@@ -186,7 +193,7 @@ void testWrite() {
       gpc = null;
     });
 
-    test('Write empty list', () {
+    test('Check headers', () {
       persistence!.write(gpc!, sink!);
 
       final sig = 'AnqsGpsHistoryFile--';
@@ -207,6 +214,38 @@ void testWrite() {
         ...metadataLength,
         ...metadata
       ]);
+    });
+
+    test('Custom metadata', () {
+      persister!.metadataToWrite = ByteData(20);
+      for (var i = 0; i < persister!.metadataToWrite!.lengthInBytes; i++) {
+        persister!.metadataToWrite!.setUint8(i, 10 * (1 + i));
+      }
+      persistence!.write(gpc!, sink!);
+
+      expect(sink!.receivedData.sublist(44, sink!.receivedData.length), [
+        ...[20],
+        ...List<int>.generate(55, (index) => index < 20 ? 10 * (1 + index) : 0)
+      ]);
+    });
+
+    test('Too much metadata', () {
+      persister!.metadataToWrite = ByteData(56);
+      expect(
+          () => persistence!.write(gpc!, sink!),
+          throwsA(isA<InvalidMetadataException>()
+              .having((e) => e.message, 'message', contains('56'))));
+    });
+
+    test('Some dummy points', () async {
+      final point = GpsPoint(DateTime.utc(1970), 0, 0, 0);
+      gpc!.add(point);
+      gpc!.add(point);
+
+      await persistence!.write(gpc!, sink!);
+
+      expect(
+          sink!.receivedData.sublist(100, sink!.receivedData.length), [1, 2]);
     });
   });
 }

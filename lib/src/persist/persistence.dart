@@ -193,7 +193,8 @@ class Persistence {
   }
 
   /// Writes [view] to [targetSink] in binary format.
-  void write(GpsPointsView view, StreamSink<List<int>> targetSink) {
+  Future<void> write(
+      GpsPointsView view, StreamSink<List<int>> targetSink) async {
     final sink = StreamSinkWriter(targetSink);
 
     // Write the signature and version of [Persistance].
@@ -222,7 +223,7 @@ class Persistence {
         List<int>.filled(maxMetadataLength - metadata.lengthInBytes, 0));
 
     // Write the view.
-    targetSink.addStream(persister.writeViewToStream(view));
+    return targetSink.addStream(persister.writeViewToStream(view));
   }
 }
 
