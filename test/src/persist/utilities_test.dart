@@ -8,6 +8,8 @@
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history_persist.dart';
 
+import 'persist_test_helpers.dart';
+
 /// Tests the [getFirstNonAsciiCharIndex] function.
 void testGetFirstNonAsciiCharIndex() {
   test('getFirstNonAsciiCharIndex', () {
@@ -322,22 +324,6 @@ void testStreamReaderState() {
   });
 }
 
-/// Sink for testing purposes that collects all data it receives into a list.
-class TestSink implements Sink<List<int>> {
-  final receivedData = List<int>.empty(growable: true);
-  var isClosed = false;
-
-  @override
-  void add(List<int> data) {
-    receivedData.addAll(data);
-  }
-
-  @override
-  void close() {
-    isClosed = true;
-  }
-}
-
 /// Writes [dataList] to a sink using [writeFunction] and checks that the sink
 /// contents afterwards match [expected].
 void _runWriterTest<T>(List<T> dataList, List<int> expected,
@@ -421,7 +407,7 @@ void testStreamSinkWriter() {
   group('writeBytes', () {
     test('simple', () {
       _runWriterTestBytes([], []);
-      
+
       _runWriterTestBytes([
         [1, 2]
       ], [

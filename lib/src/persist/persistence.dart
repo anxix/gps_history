@@ -189,8 +189,7 @@ class Persistence {
     metadata.buffer.asUint8List().setRange(0, metadataLength, metadataList);
 
     // Have the persister read and interpret the actual data.
-    persister._readViewFromStream(
-        view, state, loadedPersisterVersion, metadata);
+    persister.readViewFromStream(view, state, loadedPersisterVersion, metadata);
   }
 
   /// Writes [view] to [targetSink] in binary format.
@@ -223,7 +222,7 @@ class Persistence {
         List<int>.filled(maxMetadataLength - metadata.lengthInBytes, 0));
 
     // Write the view.
-    targetSink.addStream(persister._writeStreamFromView(view));
+    targetSink.addStream(persister.writeViewToStream(view));
   }
 }
 
@@ -280,13 +279,13 @@ abstract class Persister {
   /// information in the file header. Override in children if needed.
   ByteData? getMetadata(GpsPointsView view) => null;
 
-  /// Converts [view] to a [Stream] of bytes. Override in children.
-  Stream<List<int>> _writeStreamFromView(GpsPointsView view);
-
   /// Overwrites the contents of [view] (if it is not read-only) with
   /// the information fom the [source]. [version] and [metadata] indicate
   /// the additional information that was read from the block header in
   /// the file, and may be used to e.g. convert old formats to new.
-  void _readViewFromStream(GpsPointsView view, StreamReaderState source,
+  void readViewFromStream(GpsPointsView view, StreamReaderState source,
       int version, ByteData metadata);
+
+  /// Converts [view] to a [Stream] of bytes. Override in children.
+  Stream<List<int>> writeViewToStream(GpsPointsView view);
 }
