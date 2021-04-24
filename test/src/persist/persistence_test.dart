@@ -407,8 +407,17 @@ void testReadWrite() {
   });
 }
 
+void testSignatureFromType() {
+  test('signature from type', () {
+    final s = Persister.signatureFromType(GpcDummy);
+    expect(s, 'GpcDummy'.padRight(SignatureAndVersion.RequiredSignatureLength));
+  });
+}
+
 void main() {
   testPersistence();
 
   testReadWrite();
+
+  testSignatureFromType();
 }

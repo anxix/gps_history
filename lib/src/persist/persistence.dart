@@ -267,8 +267,8 @@ abstract class Persister {
   /// Creates a default signature from the type. This should be used carefully,
   /// since changing the name of the [supportedType] class in a refactoring can
   /// lead to stored files becoming incompatible.
-  String signatureFromType() {
-    var sig = supportedType.toString();
+  static String signatureFromType(Type type) {
+    var sig = type.toString();
     // Ensure the sig is not too short...
     sig = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
     // ...nor too long.
