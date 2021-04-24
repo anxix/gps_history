@@ -116,9 +116,9 @@ class Persistence {
   Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
     final loadedSignature = await state.readString(expectedSignature.length);
-    if (loadedSignature != _signatureAndVersion.signature) {
+    if (loadedSignature != expectedSignature) {
       throw InvalidSignatureException(
-          'Stream contains no or invalid signature \'${loadedSignature ?? ""}\', '
+          'Stream contains no or invalid signature "${loadedSignature ?? ""}", '
           'while "$expectedSignature" was expected.');
     }
   }
@@ -145,7 +145,7 @@ class Persistence {
   /// signature at either [Persistence] level or [Persister] level.
   /// Throws [NewerVersionException] if the stream contains a newer version at
   /// either [Persistence] level or [Persister] level.
-  void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
+  Future<void> read(GpsPointsView view, Stream<List<int>> sourceStream) async {
     if (view.isReadonly) {
       throw ReadonlyException();
     }
@@ -189,7 +189,8 @@ class Persistence {
     metadata.buffer.asUint8List().setRange(0, metadataLength, metadataList);
 
     // Have the persister read and interpret the actual data.
-    persister.readViewFromStream(view, state, loadedPersisterVersion, metadata);
+    return persister.readViewFromStream(
+        view, state, loadedPersisterVersion, metadata);
   }
 
   /// Writes [view] to [targetSink] in binary format.
@@ -284,7 +285,7 @@ abstract class Persister {
   /// the information fom the [source]. [version] and [metadata] indicate
   /// the additional information that was read from the block header in
   /// the file, and may be used to e.g. convert old formats to new.
-  void readViewFromStream(GpsPointsView view, StreamReaderState source,
+  Future<void> readViewFromStream(GpsPointsView view, StreamReaderState source,
       int version, ByteData metadata);
 
   /// Converts [view] to a [Stream] of bytes. Override in children.

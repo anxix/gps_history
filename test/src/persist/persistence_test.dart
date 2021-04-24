@@ -38,9 +38,9 @@ class PersisterDummy extends Persister {
   @override
   SignatureAndVersion initializeSignatureAndVersion() {
     // Signature of all 'x' characters.
-    final sig = String.fromCharCodes(
-        List<int>.filled(SignatureAndVersion.RequiredSignatureLength, 120));
-    return SignatureAndVersion(sig, 1);
+    final sig = String.fromCharCodes(List<int>.filled(
+        SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0)));
+    return SignatureAndVersion(sig, 13);
   }
 
   @override
@@ -53,21 +53,25 @@ class PersisterDummy extends Persister {
   /// and [redViewMetadata], and instantiates a point for every byte found
   /// in the stream).
   @override
-  void readViewFromStream(GpsPointsView view, StreamReaderState source,
+  Future<void> readViewFromStream(GpsPointsView view, StreamReaderState source,
       int version, ByteData metadata) async {
-    readViewVersion = version;
-    readViewMetadata = metadata;
+    return Future.sync(() async {
+      readViewVersion = version;
+      readViewMetadata = metadata;
 
-    // Should only be called for GpcDummy.
-    view = view as GpsPointsCollection;
-    while (true) {
-      var readByte = await source.readUint8();
-      if (readByte == null) {
-        break;
+      while (true) {
+        var readByte = await source.readUint8();
+        if (readByte == null) {
+          break;
+        }
+        // Should only be called for GpcDummy.
+        (view as GpsPointsCollection).add(GpsPoint(
+            DateTime.utc(readByte ~/ 10, readByte % 10),
+            readByte.toDouble(),
+            readByte.toDouble(),
+            readByte.toDouble()));
       }
-      view.add(GpsPoint(DateTime.utc(readByte ~/ 10, readByte % 10),
-          readByte.toDouble(), readByte.toDouble(), readByte.toDouble()));
-    }
+    });
   }
 
   /// Writes one byte for every item in the [view], with the byte being the
@@ -171,49 +175,59 @@ void testPersistence() {
   });
 }
 
-/// Tests [Persistence.write].
-void testWrite() {
+/// Tests [Persistence.write] and [Persistence.read].
+void testReadWrite() {
+  PersistenceDummy? persistence;
+  PersisterDummy? persister;
+  GpcDummy? gpc;
+  TestStreamSink? sink;
+  var sigList = <int>[];
+  var versionList = <int>[];
+  var persisterSigList = <int>[];
+  var persisterVersionList = <int>[];
+  var metadataLength = <int>[];
+  var metadata = <int>[];
+
+  final getHeader = () {
+    return [
+      ...sigList,
+      ...versionList,
+      ...persisterSigList,
+      ...persisterVersionList,
+      ...metadataLength,
+      ...metadata
+    ];
+  };
+
+  setUp(() {
+    persistence = PersistenceDummy.get();
+    persister = PersisterDummy(persistence!);
+
+    gpc = GpcDummy();
+
+    sink = TestStreamSink();
+
+    sigList = 'AnqsGpsHistoryFile--'.codeUnits;
+    versionList = [1, 0];
+    persisterSigList = List<int>.filled(
+        SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0));
+    persisterVersionList = [13, 0];
+    metadataLength = [0];
+    metadata = List<int>.filled(55, 0);
+  });
+
+  tearDown(() {
+    persistence = null;
+    gpc = null;
+  });
+
   group('Test writing', () {
-    PersistenceDummy? persistence;
-    PersisterDummy? persister;
-    GpcDummy? gpc;
-    TestStreamSink? sink;
-
-    setUp(() {
-      persistence = PersistenceDummy.get();
-      persister = PersisterDummy(persistence!);
-
-      gpc = GpcDummy();
-
-      sink = TestStreamSink();
-    });
-
-    tearDown(() {
-      persistence = null;
-      gpc = null;
-    });
-
     test('Check headers', () {
       persistence!.write(gpc!, sink!);
 
-      final sig = 'AnqsGpsHistoryFile--';
-      final sigList = sig.codeUnits;
-      final versionList = [1, 0];
-      final persisterSigList = List<int>.filled(
-          SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0));
-      final metadataLength = [0];
-      final metadata = List<int>.filled(55, 0);
-
       expect(sink!.receivedData.length, 100, reason: 'incorrect data');
 
-      expect(sink!.receivedData, [
-        ...sigList,
-        ...versionList,
-        ...persisterSigList,
-        ...versionList,
-        ...metadataLength,
-        ...metadata
-      ]);
+      expect(sink!.receivedData, getHeader());
     });
 
     test('Custom metadata', () {
@@ -248,10 +262,22 @@ void testWrite() {
           sink!.receivedData.sublist(100, sink!.receivedData.length), [1, 2]);
     });
   });
+
+  group('Test reading', () {
+    test('Check basic headers', () async {
+      await persistence!.read(gpc!, Stream.value(getHeader()));
+
+      expect(persister!.readViewVersion, 13,
+          reason: 'incorrect persister version');
+
+      expect(persister!.readViewMetadata!.lengthInBytes, 0,
+          reason: 'incorrect metadata');
+    });
+  });
 }
 
 void main() {
   testPersistence();
 
-  testWrite();
+  testReadWrite();
 }
