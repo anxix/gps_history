@@ -37,19 +37,19 @@ import 'package:gps_history/gps_history_persist.dart';
 ///     newer than its own, thus ensuring that older versions don't crash
 ///     or read incorrectly files that are written in a newer format.
 ///   * 20 bytes: [Persister] signature header to recognize data type.
-///     Each registered [_Persister] instance must have a unique signature.
-///     This will be validated at reading time against the [_Persister]
+///     Each registered [Persister] instance must have a unique signature.
+///     This will be validated at reading time against the [Persister]
 ///     registered for the data currently being read.
 ///   * 2 bytes: [Uint16] indicating the version number of the persisted data,
 ///     so that upgrades in format are possible and recognizable without
 ///     changing the header. [Persistence] will not read files that have a
 ///     persisted data version newer than the one supported by the relevant
-///     registered [_Persister]. Again, this ensures old versions don't try
+///     registered [Persister]. Again, this ensures old versions don't try
 ///     to read new data and do so badly.
 ///   * 1 byte: the number of bytes to be read from the following metadata
 ///     sub-stream
 ///   * 55 bytes: reserved for any kind of metadata a particular
-///     [_Persister] may require.
+///     [Persister] may require.
 /// * unknown number of bytes: the streamed data.
 /// By having a fixed header size, we can determine numbers of points in a file
 /// without fully parsing it, by simply looking at the total file size minus
@@ -111,7 +111,7 @@ class Persistence {
   }
 
   /// Reads a signature from [state], validates it against the
-  /// [expectedSignature] and throws [InvalidSignatureError] if they don't
+  /// [expectedSignature] and throws [InvalidSignatureException] if they don't
   /// match.
   Future<void> _readValidateSignature(
       StreamReaderState state, String expectedSignature) async {
@@ -141,10 +141,10 @@ class Persistence {
   ///
   /// Throws [ReadonlyException] if [view.isReadonly]==```true```, as the
   /// contents of a readonly view cannot be overwritten.
-  /// Throws [InvalidSignatureError] if the stream contains an invalid
-  /// signature at either [Persistance] level or [_Persister] level.
-  /// Throws [NewerVersionError] if the stream contains a newer version at
-  /// either [Persistance] level or [_Persister] level.
+  /// Throws [InvalidSignatureException] if the stream contains an invalid
+  /// signature at either [Persistance] level or [Persister] level.
+  /// Throws [NewerVersionException] if the stream contains a newer version at
+  /// either [Persistance] level or [Persister] level.
   void read(GpsPointsView view, Stream<List<int>> sourceStream) async {
     if (view.isReadonly) {
       throw ReadonlyException();
@@ -197,17 +197,17 @@ class Persistence {
       GpsPointsView view, StreamSink<List<int>> targetSink) async {
     final sink = StreamSinkWriter(targetSink);
 
-    // Write the signature and version of [Persistance].
+    // Write the signature and version of the persistence system.
     sink.writeString(_signatureAndVersion.signature);
     sink.writeUint16(_signatureAndVersion.version);
 
     final persister = getPersister(view);
 
-    // Write the signature and version information of [_Persister].
+    // Write the signature and version information of the persister.
     sink.writeString(persister.signature);
     sink.writeUint16(persister.version);
 
-    // Write the metadata of [_Persister].
+    // Write the metadata of the persister.
     final metadata = persister.getMetadata(view) ?? ByteData(0);
     if (metadata.lengthInBytes > maxMetadataLength) {
       throw (InvalidMetadataException(
