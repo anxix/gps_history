@@ -20,8 +20,7 @@ void main() async {
   // Indicate whether all the found points should be printed at the end.
   final printPoints = false;
   // Location of the file to parse.
-  final filename =
-      '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
+  final filename = '../../large_files/locationhistory.json';
 
   final stopwatch = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();

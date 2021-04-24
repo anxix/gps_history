@@ -16,8 +16,7 @@ void main() async {
   // Indicate whether all the found points should be printed at the end.
   final printPoints = false;
   // Location of the file to parse.
-  final filename =
-      '/home/me/src/gps_history/benchmark/Locatiegeschiedenis.json';
+  final filename = '../../large_data/locationhistory.json';
   // Filtering parameters that only influence the binary implementation,
   // allowing it to not emit points that are of low quality or too frequent.
   final binaryMinSecondsBetweenDatapoints = null;

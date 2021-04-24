@@ -27,7 +27,7 @@ def time_activity_rule(index):
 
 
 def time_rule(index):
-    extra_delay = 0 if index % 50 != 0 else time_between_points_s * \
+    extra_delay = 0 if (index % 50 != 0) else time_between_points_s * \
         100 * (index % 10)
     return index * 1000 * time_between_points_s + extra_delay
 
