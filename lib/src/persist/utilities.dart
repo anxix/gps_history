@@ -26,8 +26,8 @@ class ConflictingPersisterException extends GpsHistoryException {
 }
 
 /// An exception raised if trying to read data into a readonly object.
-class ReadonlyException extends GpsHistoryException {
-  ReadonlyException([String? message]) : super(message);
+class ReadonlyContainerException extends GpsHistoryException {
+  ReadonlyContainerException([String? message]) : super(message);
 }
 
 /// An exception raised if trying to set an invalid signature (e.g incorrect
@@ -46,6 +46,11 @@ class NewerVersionException extends GpsHistoryException {
 /// length).
 class InvalidMetadataException extends GpsHistoryException {
   InvalidMetadataException([String? message]) : super(message);
+}
+
+/// An exception raised if trying to read data into an object that's not empty.
+class NotEmptyContainerException extends GpsHistoryException {
+  NotEmptyContainerException([String? message]) : super(message);
 }
 
 /// Determines if [codeUnit] is between SPACE (ASCII 32) and ~ (ASCII 126).

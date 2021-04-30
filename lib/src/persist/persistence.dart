@@ -142,8 +142,11 @@ class Persistence {
   /// indicate how large the stream is, but see caveats in
   /// [StreamReaderState.remainingStreamBytesHint] on its use.
   ///
-  /// Throws [ReadonlyException] if [view.isReadonly]==```true```, as the
-  /// contents of a readonly view cannot be overwritten.
+  /// Throws [ReadonlyContainerException] if [view.isReadonly], as the contents
+  /// of a readonly view cannot be overwritten.
+  /// Throws [NotEmptyContainerException] if [view.isNotEmpty], as the contents
+  /// of an already existing view cannot be overwritten (since there may be
+  /// other views that depend on it).
   /// Throws [InvalidSignatureException] if the stream contains an invalid
   /// signature at either [Persistence] level or [Persister] level.
   /// Throws [NewerVersionException] if the stream contains a newer version at
@@ -151,7 +154,11 @@ class Persistence {
   Future<void> read(GpsPointsView view, Stream<List<int>> sourceStream,
       [int? streamSizeBytesHint]) async {
     if (view.isReadonly) {
-      throw ReadonlyException();
+      throw ReadonlyContainerException();
+    }
+
+    if (view.isNotEmpty) {
+      throw NotEmptyContainerException();
     }
 
     final state = StreamReaderState(sourceStream, streamSizeBytesHint);

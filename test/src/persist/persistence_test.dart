@@ -114,7 +114,16 @@ class PersisterDummyDupeSupportedType extends PersisterDummy {
 }
 
 /// Class for testing purposes.
-class GpcDummy extends GpcListBased {}
+class GpcDummy extends GpcListBased {
+  bool? _isReadonly;
+
+  @override
+  bool get isReadonly => _isReadonly ?? false;
+
+  set isReadonly(bool value) {
+    _isReadonly = value;
+  }
+}
 
 /// Tests the Persistence behaviours.
 void testPersistence() {
@@ -375,6 +384,18 @@ void testReadWrite() {
             ])),
         throwsA(isA<NewerVersionException>()),
       );
+    });
+
+    test('persister readonly', () async {
+      gpc!.isReadonly = true;
+      expect(() async => await persistence!.read(gpc!, Stream.value([])),
+          throwsA(isA<ReadonlyContainerException>()));
+    });
+
+    test('persister not empty', () async {
+      gpc!.add(GpsPoint(DateTime.utc(1970), 0.0, 0.0, 0.0));
+      expect(() async => await persistence!.read(gpc!, Stream.value([])),
+          throwsA(isA<NotEmptyContainerException>()));
     });
 
     test('persister signature wrong', () async {
