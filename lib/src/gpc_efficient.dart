@@ -10,6 +10,7 @@
 
 import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:gps_history/src/base.dart';
 
 /// A space-efficient [GpsPointsCollection] implementation.
@@ -38,7 +39,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   ///
   /// Subclasses must override this to indicate how many slots in the buffer
   /// are required to store every element.
-  int get _bytesPerElement;
+  int get elementSizeInBytes;
 
   /// The number of elements currently stored in the container.
   @override
@@ -57,7 +58,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// capacity.
   /// Capacity cannot be decreased to less than the current length, since
   /// that might invalidate any pre-existing views on this container.
-  int get capacity => _rawData.lengthInBytes ~/ _bytesPerElement;
+  int get capacity => _rawData.lengthInBytes ~/ elementSizeInBytes;
   set capacity(int newCapacity) {
     // Don't allow deleting any currently in-use elements, for it could invalidate
     // existing views.
@@ -128,7 +129,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
   /// Converts the number of an element to the byte offset where the representation
   /// of that element starts in the buffer.
-  int _elementNrToByteOffset(int elementNr) => elementNr * _bytesPerElement;
+  int _elementNrToByteOffset(int elementNr) => elementNr * elementSizeInBytes;
 
   /// Returns the element stored starting at the specified byteIndex.
   ///
@@ -155,6 +156,32 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     for (var element in iterable) {
       add(element);
     }
+  }
+
+  /// Adds all the [sourceData] to the internal buffer. The data must conform
+  /// to the internal format, i.e. the number of bytes must be sufficient to
+  /// represent completely a certain number of elements, otherwise an exception
+  /// will be thrown.
+  void addByteData(ByteData sourceData) {
+    // Make sure that the data we receive is well formed.
+    if (sourceData.lengthInBytes % elementSizeInBytes != 0) {
+      throw Exception(
+          'Provided number of bytes ${sourceData.lengthInBytes} not divisible by bytes per element $elementSizeInBytes.');
+    }
+
+    // Allocate sufficient space for the new elements.
+    final newElements = sourceData.lengthInBytes ~/ elementSizeInBytes;
+    capacity = max(capacity, length + newElements);
+
+    // Copy the data over.
+    final targetByte = _elementNrToByteOffset(length);
+    _rawData.buffer.asUint8List().setRange(
+        targetByte,
+        targetByte + _elementNrToByteOffset(sourceData.lengthInBytes),
+        sourceData.buffer.asUint8List());
+
+    // Update the number of elements.
+    _elementsCount += newElements;
   }
 }
 
@@ -313,7 +340,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   static const int _offsetAltitude = 12;
 
   @override
-  int get _bytesPerElement => 14;
+  int get elementSizeInBytes => 14;
 
   // Various wrappers around ByteData routines to ensure uniform endianness.
   int _getInt16(int byteIndex) => _rawData.getInt16(byteIndex, _endian);
@@ -389,7 +416,7 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
   static const int _offsetSpeedAccuracy = 20;
 
   @override
-  int get _bytesPerElement => 22;
+  int get elementSizeInBytes => 22;
 
   @override
   GpsMeasurement _readElementFromBytes(int byteIndex) {
