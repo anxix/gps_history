@@ -321,7 +321,7 @@ void testStreamReaderState() {
             reason: 'specified stream bytes');
 
         await sr.readUint16();
-        expect(sr.remainingStreamBytesHint, -1,
+        expect(sr.remainingStreamBytesHint, null,
             reason: 'already read more bytes than the hint claimed');
       });
 

@@ -141,8 +141,13 @@ class StreamReaderState {
   /// if known. This is a hint only, and may thus be incorrect - it can only
   /// be used to pre-allocate memory in readers in order to hopefully reduce
   /// repeated re-allocations, not to determine if the stream is finished.
-  int? get remainingStreamBytesHint =>
-      _streamSizeBytesHint == null ? null : _streamSizeBytesHint! - bytesRead;
+  /// If more bytes have already been read than the hint promised, the result
+  /// is by definition invalid and null will be returned.
+  int? get remainingStreamBytesHint {
+    if (_streamSizeBytesHint == null) return null;
+    final result = _streamSizeBytesHint! - bytesRead;
+    return (result < 0) ? null : result;
+  }
 
   /// Remembers whether the stream has finished providing data.
   var _streamFinished = false;
@@ -267,6 +272,21 @@ class StreamReaderState {
 
       // Continue until we've read all we needed to.
     } while (nrBytesToRead != 0);
+
+    return result;
+  }
+
+  Future<ByteData> readByteData(int maxBytes) async {
+    // Try to get enough data in the cache.
+    final cachedBytes = await _ensureEnoughBytesInCache(maxBytes);
+    final nrBytesToRead = min(maxBytes, cachedBytes);
+
+    final bytes = await readBytes(nrBytesToRead);
+
+    final result = ByteData(nrBytesToRead);
+    if (bytes != null) {
+      result.buffer.asUint8List().setRange(0, nrBytesToRead, bytes);
+    }
 
     return result;
   }
