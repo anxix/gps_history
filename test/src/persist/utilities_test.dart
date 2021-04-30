@@ -301,6 +301,42 @@ void testStreamReaderState() {
       expect(sr.bytesRead, 4, reason: 'should not read beyond stream end');
     });
 
+    group('remainingStreamBytesHint', () {
+      test('no hint', () async {
+        final sr =
+            StreamReaderState(Stream<List<int>>.value([1, 2, 3, 4]), null);
+
+        expect(sr.remainingStreamBytesHint, null,
+            reason: 'unspecified stream bytes');
+
+        await sr.readUint16();
+        expect(sr.remainingStreamBytesHint, null,
+            reason: 'unspecified stream bytes');
+      });
+
+      test('too small hint', () async {
+        final sr = StreamReaderState(Stream<List<int>>.value([1, 2, 3, 4]), 1);
+
+        expect(sr.remainingStreamBytesHint, 1,
+            reason: 'specified stream bytes');
+
+        await sr.readUint16();
+        expect(sr.remainingStreamBytesHint, -1,
+            reason: 'already read more bytes than the hint claimed');
+      });
+
+      test('too large hint', () async {
+        final sr =
+            StreamReaderState(Stream<List<int>>.value([1, 2, 3, 4]), 100);
+
+        expect(sr.remainingStreamBytesHint, 100,
+            reason: 'specified stream bytes');
+
+        await sr.readUint16();
+        expect(sr.remainingStreamBytesHint, 98);
+      });
+    });
+
     test('chunked plus leftover bytes', () async {
       // Ensure the counter works properly over chunk boundaries.
       final bytes = Stream<List<int>>.fromIterable([

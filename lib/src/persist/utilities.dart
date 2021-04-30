@@ -122,10 +122,22 @@ class SignatureAndVersion {
 class StreamReaderState {
   final Stream<List<int>> _stream;
 
+  /// The number of bytes read from the stream so far.
   int _bytesRead = 0;
+
+  /// Used to calculate [remainingStreamBytesHint], see its documentation for
+  /// purpose.
+  final int? _streamSizeBytesHint;
 
   /// Keeps track of how many bytes have been read so far.
   int get bytesRead => _bytesRead;
+
+  /// Returns the number of bytes of the stream that have not been read yet,
+  /// if known. This is a hint only, and may thus be incorrect - it can only
+  /// be used to pre-allocate memory in readers in order to hopefully reduce
+  /// repeated re-allocations, not to determine if the stream is finished.
+  int? get remainingStreamBytesHint =>
+      _streamSizeBytesHint == null ? null : _streamSizeBytesHint! - bytesRead;
 
   /// Remembers whether the stream has finished providing data.
   var _streamFinished = false;
@@ -136,7 +148,7 @@ class StreamReaderState {
   StreamSubscription? _streamSubscription;
   var _positionInFrontList = 0;
 
-  StreamReaderState(this._stream);
+  StreamReaderState(this._stream, [this._streamSizeBytesHint]);
 
   void _addToCacheAndPause(List<int> list) {
     // Make sure we get just one list at a time, so we cache as little as

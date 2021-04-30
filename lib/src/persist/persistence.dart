@@ -138,6 +138,9 @@ class Persistence {
   }
 
   /// Overwrites the contents of [view] with data read from [sourceStream].
+  /// Optionally a non-null [streamSizeBytesHint] may be provided to
+  /// indicate how large the stream is, but see caveats in
+  /// [StreamReaderState.remainingStreamBytesHint] on its use.
   ///
   /// Throws [ReadonlyException] if [view.isReadonly]==```true```, as the
   /// contents of a readonly view cannot be overwritten.
@@ -145,12 +148,13 @@ class Persistence {
   /// signature at either [Persistence] level or [Persister] level.
   /// Throws [NewerVersionException] if the stream contains a newer version at
   /// either [Persistence] level or [Persister] level.
-  Future<void> read(GpsPointsView view, Stream<List<int>> sourceStream) async {
+  Future<void> read(GpsPointsView view, Stream<List<int>> sourceStream,
+      [int? streamSizeBytesHint]) async {
     if (view.isReadonly) {
       throw ReadonlyException();
     }
 
-    final state = StreamReaderState(sourceStream);
+    final state = StreamReaderState(sourceStream, streamSizeBytesHint);
 
     // Read the header signature and stop if it's unrecognized.
     await _readValidateSignature(state, _signatureAndVersion.signature);
@@ -261,7 +265,7 @@ abstract class Persister {
   /// contain compatibility code for reading older versions.
   ///
   /// [signatureFromType] can be used to generate a standard signature from
-  /// the [supportedType].
+  /// the [supportedType], but read the caveats in its documentation.
   SignatureAndVersion initializeSignatureAndVersion();
 
   /// Creates a default signature from the type. This should be used carefully,

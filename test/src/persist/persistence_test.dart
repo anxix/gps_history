@@ -55,7 +55,8 @@ class PersisterDummy extends Persister {
   /// in the stream).
   @override
   Future<void> readViewFromStream(GpsPointsView view, StreamReaderState source,
-      int version, ByteData metadata) async {
+      int version, ByteData metadata,
+      [int? streamSizeBytesHint]) async {
     return Future.sync(() async {
       readViewVersion = version;
       readViewMetadata = metadata;
@@ -302,6 +303,29 @@ void testReadWrite() {
 
       expect(persister!.readViewMetadata!.lengthInBytes, 0,
           reason: 'incorrect metadata');
+    });
+
+    test('basic headers size hints', () async {
+      final _testSizeHint = (int? sizeHint) async {
+        setMetadata(null);
+        // The size hint is just a hint, should not affect reading if wrong.
+        await persistence!.read(gpc!, Stream.value(getHeader()), sizeHint);
+
+        expect(persister!.readViewVersion, 13,
+            reason: 'incorrect persister version');
+
+        expect(persister!.readViewMetadata!.lengthInBytes, 0,
+            reason: 'incorrect metadata');
+      };
+
+      // No size hint.
+      await _testSizeHint(null);
+
+      // Size hint that's too small.
+      await _testSizeHint(2);
+
+      // Size hint that's too high.
+      await _testSizeHint(2000000000000);
     });
 
     test('metadata', () async {
