@@ -410,7 +410,8 @@ void testReadWrite() {
 void testSignatureFromType() {
   test('signature from type', () {
     final s = Persister.signatureFromType(GpcDummy);
-    expect(s, 'GpcDummy'.padRight(SignatureAndVersion.RequiredSignatureLength));
+    expect(s,
+        'GpcDummy'.padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
   });
 }
 
