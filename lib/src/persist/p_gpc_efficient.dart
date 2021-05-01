@@ -18,6 +18,9 @@ import 'package:gps_history/gps_history_persist.dart';
 /// for specific children of [GpcEfficient], providing overriddes for
 /// methods/properties like [supportedType] and [initializeSignatureAndVersion].
 abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
+  // Approximate number of bytes to use as chunk size when reading/writing.
+  final chunkSize = 1 << 16;
+
   PGpcEfficient(Persistence persistence) : super(persistence);
 
   @override
@@ -29,13 +32,13 @@ abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
       // Pre-allocate the capacity if possible.
       gpc.capacity = source.remainingStreamBytesHint ?? gpc.capacity;
 
-      // Read data in roughly 64 kB chunks, but such that they're divisible
-      // by the expected element size.
-      final chunkSizeElements = (1 << 16) ~/ gpc.elementSizeInBytes;
+      // Read data in roughly chunks, such that they're divisible by the
+      // expected element size.
+      final elementsPerChunk = chunkSize ~/ gpc.elementSizeInBytes;
       // Ensure it's robust for stupid situations where the element size is
       // huge: always read at least one element at a time.
       final chunkSizeBytes =
-          gpc.elementSizeInBytes * max<int>(1, chunkSizeElements);
+          gpc.elementSizeInBytes * max<int>(1, elementsPerChunk);
 
       do {
         final readData = await source.readByteData(chunkSizeBytes);
@@ -48,5 +51,22 @@ abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
   }
 
   @override
-  Stream<List<int>> writeViewToStream(GpsPointsView view);
+  Stream<List<int>> writeViewToStream(GpsPointsView view) async* {
+    final gpc = view as GpcEfficient;
+
+    // Split it in chunks, making sure in case of huge element size that we
+    // write at least one element per chunk.
+    final elementsPerChunk = max<int>(1, chunkSize ~/ gpc.elementSizeInBytes);
+
+    var elementsWritten = 0;
+    while (elementsWritten < gpc.length) {
+      // Don't try to write more elements than there are yet unwritten.
+      final elementsToWrite =
+          min<int>(elementsPerChunk, gpc.length - elementsWritten);
+
+      yield gpc.getByteDataView(elementsWritten, elementsToWrite);
+
+      elementsWritten += elementsToWrite;
+    }
+  }
 }

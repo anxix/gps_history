@@ -181,6 +181,14 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     // Update the number of elements.
     _elementsCount += newElements;
   }
+
+  /// Returns a view of the internal bytes data starting at [startElement] and
+  /// containing [viewLengthElements] elements. Care must be taken that
+  /// [startElement] + [viewLengthElements] <= [length].
+  List<int> getByteDataView(int startElement, int viewLengthElements) {
+    return _rawData.buffer.asUint8List(_elementNrToByteOffset(startElement),
+        _elementNrToByteOffset(viewLengthElements));
+  }
 }
 
 /// Implements common conversions needed for storing GPS values in byte arrays.
