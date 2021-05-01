@@ -1,9 +1,14 @@
+# 0.0.3
+
+* Implemented persistence mechanism.
+
+
 # 0.0.2
 
 * Public API changes:
   * ```GoogleJsonHistoryBinaryDecoder``` renamed to 
     ```GoogleJsonHistoryDecoder```, as the binary parser seems pretty stable.
-    Similar naming changes for reladed classes, but those are not typically 
+    Similar naming changes for related classes, but those are not typically 
     used directly.
   * Removed ```GoogleJsonHistoryStringDecoder``` as it's slower and less
     flexible than the now standard binary decoder.

@@ -34,10 +34,10 @@ class PersisterDummy extends Persister {
   /// Custom metadata to write to stream.
   ByteData? metadataToWrite;
 
-  PersisterDummy(Persistence persistence) : super(persistence);
+  PersisterDummy() : super();
 
   @override
-  SignatureAndVersion initializeSignatureAndVersion() {
+  SignatureAndVersion get signatureAndVersion {
     // Signature of all 'x' characters.
     final sig = String.fromCharCodes(List<int>.filled(
         SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0)));
@@ -89,7 +89,7 @@ class PersisterDummy extends Persister {
 /// Dummy class that has the same signature as [PersisterDummy], to check that
 /// duplicate signatures are not allowed.
 class PersisterDummyDupeSignature extends PersisterDummy {
-  PersisterDummyDupeSignature(Persistence persistence) : super(persistence);
+  PersisterDummyDupeSignature() : super();
 
   /// Duplicate types are checked seapartely, so give it a different supported
   /// type.
@@ -100,12 +100,12 @@ class PersisterDummyDupeSignature extends PersisterDummy {
 /// Dummy class that has the same [supportedType] as [PersisterDummy], to check
 /// that duplicate supported types are overwritten.
 class PersisterDummyDupeSupportedType extends PersisterDummy {
-  PersisterDummyDupeSupportedType(Persistence persistence) : super(persistence);
+  PersisterDummyDupeSupportedType() : super();
 
   /// Duplicate signatures are checked seapartely, so give it a different
   /// signature.
   @override
-  SignatureAndVersion initializeSignatureAndVersion() {
+  SignatureAndVersion get signatureAndVersion {
     // Signature of all 'y' characters.
     final sig = String.fromCharCodes(
         List<int>.filled(SignatureAndVersion.RequiredSignatureLength, 121));
@@ -140,7 +140,7 @@ void testPersistence() {
   group('Persister registration and getPersister', () {
     test('Regular registration', () {
       final persistence = PersistenceDummy.get();
-      final persister = PersisterDummy(persistence);
+      final persister = persistence.register(PersisterDummy());
 
       expect(identical(persistence.getPersister(GpcDummy()), persister), true,
           reason: 'Dummy persister should have been returned.');
@@ -162,9 +162,9 @@ void testPersistence() {
 
     test('Duplicate signatures', () {
       final persistence = PersistenceDummy.get();
-      PersisterDummy(persistence);
+      persistence.register(PersisterDummy());
       expect(
-          () => PersisterDummyDupeSignature(persistence),
+          () => persistence.register(PersisterDummyDupeSignature()),
           throwsA(isA<ConflictingPersisterException>()
               .having((e) => e.message, 'message', contains('signature'))));
     });
@@ -173,11 +173,12 @@ void testPersistence() {
       final persistence = PersistenceDummy.get();
 
       // Register the first persister supporting GpsDummy.
-      PersisterDummy(persistence);
+      persistence.register(PersisterDummy());
 
       // Register a second persister supporting GpsDummy. This shoud
       // overwite the previous persister for that type.
-      final overwritingPersister = PersisterDummyDupeSupportedType(persistence);
+      final overwritingPersister =
+          persistence.register(PersisterDummyDupeSupportedType());
       expect(
           identical(persistence.getPersister(GpcDummy()), overwritingPersister),
           true,
@@ -239,7 +240,7 @@ void testReadWrite() {
 
   setUp(() {
     persistence = PersistenceDummy.get();
-    persister = PersisterDummy(persistence!);
+    persister = persistence!.register(PersisterDummy()) as PersisterDummy;
 
     gpc = GpcDummy();
 
@@ -262,6 +263,29 @@ void testReadWrite() {
     persisterSigList = <int>[];
     persisterVersionList = <int>[];
     setMetadata(null);
+  });
+
+  group('Signature building', () {
+    test('from type', () {
+      final s = persister!.signatureFromType(GpcDummy);
+      expect(
+          s,
+          'GpcDummy'
+              .padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
+    });
+
+    test('from string', () {
+      final s = persister!.signatureFromString('x');
+      expect(s, 'x'.padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
+    });
+
+    test('too long', () {
+      final charCodes = List<int>.filled(
+          SignatureAndVersion.RequiredSignatureLength + 1, 100);
+      expect(
+          () => persister!.signatureFromString(String.fromCharCodes(charCodes)),
+          throwsA(isA<InvalidSignatureException>()));
+    });
   });
 
   group('Test writing', () {
@@ -452,18 +476,8 @@ void testReadWrite() {
   });
 }
 
-void testSignatureFromType() {
-  test('signature from type', () {
-    final s = Persister.signatureFromType(GpcDummy);
-    expect(s,
-        'GpcDummy'.padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
-  });
-}
-
 void main() {
   testPersistence();
 
   testReadWrite();
-
-  testSignatureFromType();
 }

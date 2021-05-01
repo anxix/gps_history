@@ -12,3 +12,4 @@ library gps_history_persist;
 
 export 'src/persist/persistence.dart';
 export 'src/persist/utilities.dart';
+export 'src/persist/p_gpc_efficient.dart';

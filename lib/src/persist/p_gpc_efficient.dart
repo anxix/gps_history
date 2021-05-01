@@ -16,12 +16,12 @@ import 'package:gps_history/gps_history_persist.dart';
 
 /// Abstract persister for [GpcEfficient]. Child classes should be created
 /// for specific children of [GpcEfficient], providing overriddes for
-/// methods/properties like [supportedType] and [initializeSignatureAndVersion].
+/// methods/properties like [supportedType] and [signatureAndVersion].
 abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
   // Approximate number of bytes to use as chunk size when reading/writing.
   final chunkSize = 1 << 16;
 
-  PGpcEfficient(Persistence persistence) : super(persistence);
+  const PGpcEfficient() : super();
 
   @override
   Future<void> readViewFromStream(GpsPointsView view, StreamReaderState source,
@@ -69,4 +69,31 @@ abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
       elementsWritten += elementsToWrite;
     }
   }
+}
+
+/// Persister for [GpcCompactGpsPoint].
+class PGpcCompactGpsPoint extends PGpcEfficient<GpcCompactGpsPoint> {
+  PGpcCompactGpsPoint() : super();
+
+  @override
+  SignatureAndVersion get signatureAndVersion {
+    return SignatureAndVersion(signatureFromString('CGpsPoints'), 1);
+  }
+
+  @override
+  Type get supportedType => GpcCompactGpsPoint;
+}
+
+/// Persister for [GpcCompactGpsMeasurement].
+class PGpcCompactGpsMeasurement
+    extends PGpcEfficient<GpcCompactGpsMeasurement> {
+  const PGpcCompactGpsMeasurement() : super();
+
+  @override
+  SignatureAndVersion get signatureAndVersion {
+    return SignatureAndVersion(signatureFromString('CGpsMeasurement'), 1);
+  }
+
+  @override
+  Type get supportedType => GpcCompactGpsMeasurement;
 }

@@ -10,6 +10,7 @@
 
 import 'dart:async';
 import 'dart:typed_data';
+
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_persist.dart';
 
@@ -96,7 +97,14 @@ class Persistence {
     }
   }
 
-  void _registerPersister(Type viewType, Persister persister) {
+  /// Registers the specified [persister] as supporting the given [viewType],
+  /// and returns [persister] as result.
+  ///
+  /// The returning of the input is useful for writing code such as:
+  /// ```dart
+  /// final persister = persistence.register(SomePersister());
+  /// ```
+  Persister register(Persister persister) {
     // Check for duplicate singature.
     for (var value in _knownPersisters.values) {
       if (value.signature.toLowerCase() == persister.signature.toLowerCase()) {
@@ -107,7 +115,9 @@ class Persistence {
       }
     }
 
-    _knownPersisters[viewType] = persister;
+    _knownPersisters[persister.supportedType] = persister;
+
+    return persister;
   }
 
   /// Reads a signature from [state], validates it against the
@@ -240,18 +250,14 @@ class Persistence {
 }
 
 /// Children of [Persister] implement the actual reading and writing of
-/// particular types of [GpsPointsView] descendants.
+/// particular types of [GpsPointsView] descendants. They must be stateless
+/// w.r.t. to the data they are persisting, the only data they are allowed
+/// to contain are generic information such as their own version number
+/// and signature.
 abstract class Persister {
-  /// Store this data in a [SignatureAndVersion] class for its validation
-  /// facilities.
-  var _signatureAndVersion;
-
   /// Creates the [Persister] and registers it to the specified [persistence]
   /// manager class.
-  Persister(Persistence persistence) {
-    _signatureAndVersion = initializeSignatureAndVersion();
-    persistence._registerPersister(supportedType, this);
-  }
+  const Persister();
 
   /// Indicates what object type this [Persister] can persist, to be overridden
   /// in child classes.
@@ -259,11 +265,11 @@ abstract class Persister {
 
   /// Returns the signature string for this [Persister].
   String get signature {
-    return _signatureAndVersion!.signature;
+    return signatureAndVersion.signature;
   }
 
   /// Indicates the version of the persistence method.
-  int get version => _signatureAndVersion!.version;
+  int get version => signatureAndVersion.version;
 
   /// Override in children to indicate the signature of this class (used
   /// to recognize when reading a file which persister to initialize)
@@ -273,19 +279,32 @@ abstract class Persister {
   ///
   /// [signatureFromType] can be used to generate a standard signature from
   /// the [supportedType], but read the caveats in its documentation.
-  SignatureAndVersion initializeSignatureAndVersion();
+  SignatureAndVersion get signatureAndVersion;
 
   /// Creates a default signature from the type. This should be used carefully,
   /// since changing the name of the [supportedType] class in a refactoring can
   /// lead to stored files becoming incompatible.
-  static String signatureFromType(Type type) {
+  String signatureFromType(Type type) {
     var sig = type.toString();
-    // Ensure the sig is not too short...
-    sig = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
-    // ...nor too long.
-    sig = sig.substring(0, SignatureAndVersion.RequiredSignatureLength);
 
-    return sig;
+    return signatureFromString(sig);
+  }
+
+  /// Makes sure that the specified [sig], if too short, is extended to be of
+  /// valid signature length.
+  ///
+  /// Throws [InvalidSignatureException] if [sig] is too long, because trimming
+  /// signatures blindly can lead to distinct signatures becoming identical.
+  String signatureFromString(String sig) {
+    if (sig.length > SignatureAndVersion.RequiredSignatureLength) {
+      throw (InvalidSignatureException('Signature "$sig" is too long: '
+          '${sig.length} > ${SignatureAndVersion.RequiredSignatureLength}'));
+    }
+
+    // Ensure the sig is not too short.
+    var result = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
+
+    return result;
   }
 
   /// Allows writing up to [Persistence.maxMetadataLength] bytes of extra
