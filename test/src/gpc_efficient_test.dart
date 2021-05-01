@@ -5,7 +5,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:typed_data';
+
 import 'package:test/test.dart';
+
 import 'package:gps_history/gps_history.dart';
 import 'gpc_test_skeleton.dart';
 
@@ -192,6 +195,51 @@ void testGpc<T extends GpsPoint>(
     for (var i = 0; i < gpc.length; i++) {
       expect(gpc[i].latitude.round(), i, reason: 'Incorrect item at $i');
     }
+  });
+
+  group('$name: addByteData', () {
+    GpcEfficient? gpc;
+
+    setUp(() {
+      gpc = collectionConstructor();
+    });
+
+    test('add nothing', () {
+      final data = ByteData(0);
+      gpc!.addByteData(data);
+
+      expect(gpc!.length, 0);
+
+      gpc!.add(itemConstructor(0));
+      gpc!.addByteData(data);
+      expect(gpc!.length, 1);
+    });
+
+    test('add some items', () {
+      const nrElements = 10;
+      final data = ByteData(nrElements * gpc!.elementSizeInBytes);
+      for (var elemNr = 0; elemNr < nrElements; elemNr++) {
+        for (var byteNr = 0; byteNr < gpc!.elementSizeInBytes; byteNr++) {
+          data.setUint8(
+              byteNr + elemNr * gpc!.elementSizeInBytes, 1 + elemNr + byteNr);
+        }
+      }
+
+      gpc!.addByteData(data);
+      expect(gpc!.length, nrElements);
+
+      // Add some more.
+      gpc!.addByteData(data);
+      expect(gpc!.length, 2 * nrElements);
+
+      // Check the contents.
+      expect(gpc![0].altitude, 1798.5);
+      expect(gpc![1].altitude, 1927);
+      expect(gpc![9].altitude, 2955);
+      expect(gpc![10].altitude, 1798.5);
+      expect(gpc![11].altitude, 1927);
+      expect(gpc![19].altitude, 2955);
+    });
   });
 }
 

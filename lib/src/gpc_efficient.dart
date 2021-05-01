@@ -175,10 +175,8 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
     // Copy the data over.
     final targetByte = _elementNrToByteOffset(length);
-    _rawData.buffer.asUint8List().setRange(
-        targetByte,
-        targetByte + _elementNrToByteOffset(sourceData.lengthInBytes),
-        sourceData.buffer.asUint8List());
+    _rawData.buffer.asUint8List().setRange(targetByte,
+        targetByte + sourceData.lengthInBytes, sourceData.buffer.asUint8List());
 
     // Update the number of elements.
     _elementsCount += newElements;
