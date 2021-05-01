@@ -240,6 +240,14 @@ void testGpc<T extends GpsPoint>(
       expect(gpc![11].altitude, 1927);
       expect(gpc![19].altitude, 2955);
     });
+
+    test('add wrongly sized data', () {
+      var data = ByteData(2 * gpc!.elementSizeInBytes + 1);
+      expect(() => gpc!.addByteData(data), throwsA(isA<Exception>()));
+
+      data = ByteData(gpc!.elementSizeInBytes - 1);
+      expect(() => gpc!.addByteData(data), throwsA(isA<Exception>()));
+    });
   });
 }
 
