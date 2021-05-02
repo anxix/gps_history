@@ -137,7 +137,7 @@ void testPersistence() {
   });
 
   /// Test the registration of [Persister]s.
-  group('Persister registration and getPersister', () {
+  group('Persister registration, unregistration and getPersister: ', () {
     test('Regular registration', () {
       final persistence = PersistenceDummy.get();
       final persister = persistence.register(PersisterDummy());
@@ -158,6 +158,20 @@ void testPersistence() {
               'message', contains('${GpcDummy().runtimeType}'))),
           reason:
               'Global singleton Persistence should not contain persister for ${GpcDummy().runtimeType}');
+    });
+
+    test('Unregister', () {
+      final persistence = PersistenceDummy.get();
+      final persister = persistence.register(PersisterDummy());
+
+      persistence.unregister(persister);
+
+      expect(() => persistence.getPersister(GpcDummy()),
+          throwsA(isA<NoPersisterException>()));
+
+      expect(() => persistence.unregister(persister),
+          throwsA(isA<ConflictingPersisterException>()),
+          reason: 'Cannot unregister a persister that\'s not registered!');
     });
 
     test('Duplicate signatures', () {

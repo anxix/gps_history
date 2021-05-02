@@ -97,13 +97,18 @@ class Persistence {
     }
   }
 
-  /// Registers the specified [persister] as supporting the given [viewType],
-  /// and returns [persister] as result.
+  /// Registers the specified [persister] as supporting its
+  /// [persister.supportedType], and returns [persister] as result.
   ///
   /// The returning of the input is useful for writing code such as:
   /// ```dart
-  /// final persister = persistence.register(SomePersister());
+  /// final persister = Persistence.get().register(SomePersister());
   /// ```
+  ///
+  /// Throws [ConflictingPersisterException] if there's already a persister
+  /// with the same [Persister.signature] present, since it would be impossible
+  /// to validate the correct reading of files if multiple persisters have
+  /// the same signature.
   Persister register(Persister persister) {
     // Check for duplicate singature.
     for (var value in _knownPersisters.values) {
@@ -118,6 +123,24 @@ class Persistence {
     _knownPersisters[persister.supportedType] = persister;
 
     return persister;
+  }
+
+  /// Unregisters the specified [persister].
+  ///
+  /// Throws [ConflictingPersisterException] if the persister currently
+  /// registered for [persister.supportedType] is not [persister] itself.
+  void unregister(Persister persister) {
+    // Ensure that the persister is indeed the one currently registered for
+    // the specific type.
+    final value = _knownPersisters[persister.supportedType];
+    if (_knownPersisters[persister.supportedType] != persister) {
+      throw ConflictingPersisterException(
+          'Trying to unregister persister ${persister.runtimeType} with '
+          'supporedType="${persister.supportedType}", but found in registry '
+          '$value in that slot.');
+      ;
+    }
+    _knownPersisters.remove(persister.supportedType);
   }
 
   /// Reads a signature from [state], validates it against the
