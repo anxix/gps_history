@@ -158,6 +158,20 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     }
   }
 
+  /// Specialized version of [addAll] that can copy from a source of the
+  /// same type as this object, by doing a binary copy of the internal data.
+  void addAllFast(GpcEfficient<T> source) {
+    // Copying binary data between different types is not safe.
+    if (runtimeType != source.runtimeType) {
+      throw TypeError();
+    }
+
+    // source._rawData may contain allocated, but currently unused bytes. Don't
+    // copy those. Instead, create a view of only the used bytes and copy that.
+    addByteData(source._rawData.buffer
+        .asByteData(0, source.length * source.elementSizeInBytes));
+  }
+
   /// Adds all the [sourceData] to the internal buffer. The data must conform
   /// to the internal format, i.e. the number of bytes must be sufficient to
   /// represent completely a certain number of elements, otherwise an exception
