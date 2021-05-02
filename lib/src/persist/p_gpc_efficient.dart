@@ -41,7 +41,9 @@ abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
           gpc.elementSizeInBytes * max<int>(1, elementsPerChunk);
 
       do {
-        final readData = await source.readByteData(chunkSizeBytes);
+        final readData =
+            await source.readByteData(chunkSizeBytes, gpc.elementSizeInBytes);
+
         if (readData.lengthInBytes == 0) {
           break;
         }

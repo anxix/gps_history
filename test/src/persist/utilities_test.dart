@@ -154,6 +154,15 @@ Future<void> _runReaderTestBytes(
           state.readBytes((expected == null) ? 0 : expected.length));
 }
 
+/// Wrapper for [_runReaderTest] specialized in [ByteData].
+Future<void> _runReaderTestByteData(List<List<int>> bytes,
+    List<List<int>?> expecteds, int maxBytes, int bytesMultiple) async {
+  return _runReaderTest<List<int>?>(bytes, expecteds, (state, expected) async {
+    final byteData = await state.readByteData(maxBytes, bytesMultiple);
+    return byteData.buffer.asUint8List();
+  });
+}
+
 /// Tests for all possible ways of grouping the values in [srcList] whether
 /// they return the same [expecteds] when calling the specified
 /// [readerTestRunner]. This function recurses for purposes of generating
@@ -281,6 +290,51 @@ void testStreamReaderState() {
         [100],
         [97, 98, 99]
       ], _runReaderTestBytes);
+    });
+  });
+
+  group('readByteData', () {
+    test('entire lists', () async {
+      await _runReaderTestByteData(
+          listOfList([10, 11, 12]), listOfList([10, 11, 12]), 3, 1);
+
+      await _runReaderTestByteData(
+          listOfList([13, 14, 15]), listOfList([13, 14]), 2, 2);
+    });
+
+    test('custom max/increment', () async {
+      // Ask to read more than available, but accept lower multiples.
+      await _runReaderTestByteData(
+          listOfList([16, 17, 18]), listOfList([16, 17, 18]), 30, 1);
+      await _runReaderTestByteData(
+          listOfList([16, 17, 18]), listOfList([16, 17]), 30, 2);
+      await _runReaderTestByteData(
+          listOfList([16, 17, 18, 19]), listOfList([16, 17, 18, 19]), 30, 2);
+      await _runReaderTestByteData(listOfList([16, 17, 18, 19, 20]),
+          listOfList([16, 17, 18, 19]), 30, 2);
+
+      await _runReaderTestByteData(listOfList([19, 20, 21]), [[]], 4, 4);
+    });
+
+    test('empty data', () async {
+      await _runReaderTestByteData(listOfList([]), [[]], 1, 1);
+    });
+
+    test('multiple bytes lists', () async {
+      await _testAllGroups<List<int>?>(
+          [
+            89,
+            90,
+            100,
+            97,
+            98,
+            99
+          ],
+          [
+            [89, 90, 100, 97, 98]
+          ],
+          (List<List<int>> bytes, List<List<int>?> expecteds) =>
+              _runReaderTestByteData(bytes, expecteds, 20, 5));
     });
   });
 

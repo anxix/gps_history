@@ -276,10 +276,16 @@ class StreamReaderState {
     return result;
   }
 
-  Future<ByteData> readByteData(int maxBytes) async {
+  /// Reads [ByteData] of at most [maxBytes] length (since the stream may not
+  /// contain that many bytes), but such at the amount read is always a multiple
+  /// of [bytesMultiple].
+  Future<ByteData> readByteData(int maxBytes, int bytesMultiple) async {
     // Try to get enough data in the cache.
     final cachedBytes = await _ensureEnoughBytesInCache(maxBytes);
-    final nrBytesToRead = min(maxBytes, cachedBytes);
+
+    // Always read a correct multiple of bytes.
+    var nrBytesToRead = min(maxBytes, cachedBytes);
+    nrBytesToRead = (nrBytesToRead ~/ bytesMultiple) * bytesMultiple;
 
     final bytes = await readBytes(nrBytesToRead);
 
