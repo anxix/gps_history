@@ -18,8 +18,12 @@ import 'package:gps_history/gps_history_persist.dart';
 /// for specific children of [GpcEfficient], providing overriddes for
 /// methods/properties like [supportedType] and [signatureAndVersion].
 abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
-  // Approximate number of bytes to use as chunk size when reading/writing.
-  final chunkSize = 1 << 16;
+  /// Approximate number of bytes to use as chunk size when reading/writing.
+  /// After some basic testing settled on about 4 MB chunks, since some
+  /// performance checks with 1M [GpsPoint] in a [GpcCompactGpsPoint] showed
+  /// less than 15% performance improvements if huge chunk sizes are allowed
+  /// that fit the whole list in one go.
+  final chunkSize = 1 << 22;
 
   const PGpcEfficient() : super();
 

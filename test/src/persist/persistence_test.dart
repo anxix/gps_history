@@ -14,15 +14,6 @@ import 'package:gps_history/gps_history_persist.dart';
 
 import 'persist_test_helpers.dart';
 
-/// Class for testing purposes, as the global [Persistence] class is a singleton
-/// and we don't want to interfere with its state. This one is not a singleton.
-class PersistenceDummy extends Persistence {
-  factory PersistenceDummy.get() => PersistenceDummy._internal();
-
-  /// Internal constructor for use in singleton behaviour.
-  PersistenceDummy._internal();
-}
-
 /// Class for testing purposes.
 class PersisterDummy extends Persister {
   /// Remember if readViewFromStream was called, what the version was.

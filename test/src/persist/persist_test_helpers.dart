@@ -7,6 +7,8 @@
 
 import 'dart:async';
 
+import 'package:gps_history/gps_history_persist.dart';
+
 /// Sink for testing purposes that collects all data it receives into a list.
 class TestSink implements Sink<List<int>> {
   final receivedData = List<int>.empty(growable: true);
@@ -51,4 +53,13 @@ class TestStreamSink extends TestSink implements StreamSink<List<int>> {
   Future get done {
     return closeCompleter.future;
   }
+}
+
+/// Class for testing purposes, as the global [Persistence] class is a singleton
+/// and we don't want to interfere with its state. This one is not a singleton.
+class PersistenceDummy extends Persistence {
+  factory PersistenceDummy.get() => PersistenceDummy._internal();
+
+  /// Internal constructor for use in not-singleton behaviour.
+  PersistenceDummy._internal();
 }
