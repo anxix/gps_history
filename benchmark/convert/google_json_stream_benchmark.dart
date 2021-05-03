@@ -10,8 +10,10 @@ import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
 
-/// Try out the performance of the string-based JSON parser versus the
-/// byte-based one. Can also be used to check that their results are the same.
+/// Try out the performance of the custom JSON.
+/// Can also be used to check that its results are the same as those of the
+/// reference decoder implemented in the benchmark
+/// ```google_json_reference_decoder.dart```.
 void main() async {
   // Indicate whether all the found points should be printed at the end.
   final printPoints = false;
