@@ -429,8 +429,6 @@ class JsonParseException extends GpsHistoryException {
 
 /// Decoder for a stream of bytes from a Google location history JSON file to
 /// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
-///
-/// Although the stream may contain information about accuracy.
 class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   double? _minSecondsBetweenDatapoints;
   double? _accuracyThreshold;
