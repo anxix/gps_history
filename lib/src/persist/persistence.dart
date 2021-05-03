@@ -138,7 +138,6 @@ class Persistence {
           'Trying to unregister persister ${persister.runtimeType} with '
           'supporedType="${persister.supportedType}", but found in registry '
           '$value in that slot.');
-      ;
     }
     _knownPersisters.remove(persister.supportedType);
   }
