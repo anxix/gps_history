@@ -33,19 +33,12 @@ Future<void>
 
     final _testSaveLoad = (C sourceCollection) async {
       final sink = TestStreamSink();
-      final s = Stopwatch();
-      s.start();
       await persistence!.write(sourceCollection, sink);
-      s.stop();
-      // TODO: remove prints
-      print('saved in ${s.elapsedMilliseconds} ms');
+
       final loadedCollection = collectionConstructor();
-      s.reset();
-      s.start();
       await persistence!
           .read(loadedCollection, Stream.value(sink.receivedData));
-      s.stop();
-      print('loaded in ${s.elapsedMilliseconds} ms');
+
       expect(loadedCollection, sourceCollection);
     };
 
