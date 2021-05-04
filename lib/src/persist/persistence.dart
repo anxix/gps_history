@@ -277,7 +277,7 @@ class Persistence {
 /// to contain are generic information such as their own version number
 /// and signature.
 abstract class Persister {
-  /// Creates the [Persister] and registers it to the specified [persistence]
+  /// Creates the [Persister] and registers it to the specified [Persistence]
   /// manager class.
   const Persister();
 
