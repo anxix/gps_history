@@ -38,5 +38,5 @@ status=$?
 rm -f github_changes.md
 
 # Publish to pub.dev
-read -p Preparing to publish $relname on pub.dev. Press ENTER to continue.
+read -p 'Preparing to publish '$relname' on pub.dev. Press ENTER to continue.'
 dart pub publish
