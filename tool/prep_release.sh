@@ -27,7 +27,7 @@ read -p 'Inspect dartdoc output for warnings/errors. Press ENTER if OK to contin
 # Do a dryrun
 dart pub publish --dry-run
 read -p 'Release name (e.g. 1.0.2): ' relname
-read -p Preparing to release $relname on GitHub. Press ENTER to continue.
+read -p 'Preparing to release '$relname' on GitHub. Press ENTER to continue.'
 
 # Generate the github changes file.
 tool/gen_github_changes.py CHANGELOG.md github_changes.md $relname
