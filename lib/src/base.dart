@@ -158,7 +158,7 @@ class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
 
 /// Read-only view on the GPS points stored in a [GpsPointsCollection].
 ///
-/// Provides read-only access to GPS poins, therefore typically acting as
+/// Provides read-only access to GPS points, therefore typically acting as
 /// a view onto a read/write collection of GpsPoints.
 /// Subclass names may start with "Gpv".
 abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
