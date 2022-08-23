@@ -280,7 +280,7 @@ class PointParser {
   /// value part.
   String? _parseValueString(List<int> bytes, int end) {
     // Skip ahead to digits or minus sign.
-    var valueString;
+    String? valueString;
     for (var i = pos; i < end; i++) {
       final cu = bytes[i];
       // Interested in characters between 0 and 9 (both inclusive), or -
@@ -469,7 +469,7 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   /// [JsonParseException], since the interface disallows returning a nullable.
   @override
   GpsPoint convert(List<int> bytes, [int start = 0, int? end]) {
-    var result;
+    GpsPoint? result;
     var passthroughSink = _PassthroughSink((point) {
       result = point;
     });
@@ -488,7 +488,7 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
     parserSink.close();
 
     if (result != null) {
-      return result;
+      return result!;
     } else {
       throw JsonParseException('Unable to parse point from specified bytes');
     }
