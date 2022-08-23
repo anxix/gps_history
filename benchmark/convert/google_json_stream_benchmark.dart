@@ -47,7 +47,7 @@ void main() async {
 
   var diffs = <int>[];
   var sumdiffs = 0;
-  var prevp;
+  GpsPoint? prevp;
   var mindiff = 100000000;
   var maxdiff = 0;
 

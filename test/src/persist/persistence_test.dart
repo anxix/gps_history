@@ -31,7 +31,7 @@ class PersisterDummy extends Persister {
   SignatureAndVersion get signatureAndVersion {
     // Signature of all 'x' characters.
     final sig = String.fromCharCodes(List<int>.filled(
-        SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0)));
+        SignatureAndVersion.requiredSignatureLength, 'x'.codeUnitAt(0)));
     return SignatureAndVersion(sig, 13);
   }
 
@@ -99,7 +99,7 @@ class PersisterDummyDupeSupportedType extends PersisterDummy {
   SignatureAndVersion get signatureAndVersion {
     // Signature of all 'y' characters.
     final sig = String.fromCharCodes(
-        List<int>.filled(SignatureAndVersion.RequiredSignatureLength, 121));
+        List<int>.filled(SignatureAndVersion.requiredSignatureLength, 121));
     return SignatureAndVersion(sig, 1);
   }
 }
@@ -204,8 +204,8 @@ void testReadWrite() {
   var persisterSigList = <int>[];
   var persisterVersionList = <int>[];
 
-  final getMetadata = () => persister?.metadataToWrite?.buffer.asUint8List();
-  final setMetadata = (List<int>? data) {
+  getMetadata() => persister?.metadataToWrite?.buffer.asUint8List();
+  setMetadata(List<int>? data) {
     if (data == null) {
       persister!.metadataToWrite = null;
       return;
@@ -215,9 +215,9 @@ void testReadWrite() {
       bytedata.setUint8(i, data[i]);
     }
     persister!.metadataToWrite = bytedata;
-  };
+  }
 
-  final getHeader = () {
+  getHeader() {
     // The metadata in the header requires some processing if it's null or
     // of shorter length than the maximum supported.
 
@@ -241,7 +241,7 @@ void testReadWrite() {
       ...[metadataLength],
       ...metadata
     ];
-  };
+  }
 
   setUp(() {
     persistence = PersistenceDummy.get();
@@ -254,7 +254,7 @@ void testReadWrite() {
     sigList = 'AnqsGpsHistoryFile--'.codeUnits;
     versionList = [1, 0];
     persisterSigList = List<int>.filled(
-        SignatureAndVersion.RequiredSignatureLength, 'x'.codeUnitAt(0));
+        SignatureAndVersion.requiredSignatureLength, 'x'.codeUnitAt(0));
     persisterVersionList = [13, 0];
     setMetadata(List<int>.filled(55, 0));
   });
@@ -276,17 +276,17 @@ void testReadWrite() {
       expect(
           s,
           'GpcDummy'
-              .padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
+              .padRight(SignatureAndVersion.requiredSignatureLength, '-'));
     });
 
     test('from string', () {
       final s = persister!.signatureFromString('x');
-      expect(s, 'x'.padRight(SignatureAndVersion.RequiredSignatureLength, '-'));
+      expect(s, 'x'.padRight(SignatureAndVersion.requiredSignatureLength, '-'));
     });
 
     test('too long', () {
       final charCodes = List<int>.filled(
-          SignatureAndVersion.RequiredSignatureLength + 1, 100);
+          SignatureAndVersion.requiredSignatureLength + 1, 100);
       expect(
           () => persister!.signatureFromString(String.fromCharCodes(charCodes)),
           throwsA(isA<InvalidSignatureException>()));
@@ -344,7 +344,7 @@ void testReadWrite() {
     });
 
     test('basic headers size hints', () async {
-      final _testSizeHint = (int? sizeHint) async {
+      runTestSizeHint(int? sizeHint) async {
         setMetadata(null);
         // The size hint is just a hint, should not affect reading if wrong.
         await persistence!.read(gpc!, Stream.value(getHeader()), sizeHint);
@@ -354,16 +354,16 @@ void testReadWrite() {
 
         expect(persister!.readViewMetadata!.lengthInBytes, 0,
             reason: 'incorrect metadata');
-      };
+      }
 
       // No size hint.
-      await _testSizeHint(null);
+      await runTestSizeHint(null);
 
       // Size hint that's too small.
-      await _testSizeHint(2);
+      await runTestSizeHint(2);
 
       // Size hint that's too high.
-      await _testSizeHint(2000000000000);
+      await runTestSizeHint(2000000000000);
     });
 
     test('metadata', () async {
@@ -395,7 +395,7 @@ void testReadWrite() {
           reason: 'too short signature');
 
       final badSig = List<int>.filled(
-          SignatureAndVersion.RequiredSignatureLength, '-'.codeUnitAt(0));
+          SignatureAndVersion.requiredSignatureLength, '-'.codeUnitAt(0));
       expect(
           () async => await persistence!.read(gpc!, Stream.value(badSig)),
           throwsA(isA<InvalidSignatureException>().having((e) => e.message,

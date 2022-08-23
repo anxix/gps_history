@@ -71,9 +71,9 @@ void testGpsPointsCollection<T extends GpsPoint>(
       // It's required that the constructor returns items with at least the
       // latitude being equal to the itemIndex+1.
       var total = 0.0;
-      gpc!.forEach((point) {
+      for (var point in gpc!) {
         total += point.latitude;
-      });
+      }
       expect(total, 6.0);
     });
   });

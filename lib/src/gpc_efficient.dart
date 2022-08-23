@@ -66,7 +66,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
     // If there's no change, stop.
     if (newCapacity == capacity) {
-      return null;
+      return;
     }
 
     // Capacity needs to change -> rebuild the list

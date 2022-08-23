@@ -28,7 +28,7 @@ void main() async {
 
   // Calculate with what frequency the points have been recorded.
   var intervals = <int>[];
-  var prevPoint;
+  GpsPoint? prevPoint;
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {

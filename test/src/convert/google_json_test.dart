@@ -27,9 +27,10 @@ void _testPointParser(
 
   test(testName, () {
     final foundPoints = <GpsPoint>[];
-    final Function(GpsPoint point) pointsCollector = (GpsPoint point) {
+    pointsCollector(GpsPoint point) {
       foundPoints.add(point);
-    };
+    }
+
     final parser = PointParser(null, null, pointsCollector);
 
     for (var chunk in chunks) {
@@ -232,7 +233,7 @@ void main() {
   // trip up the parser.
   testJsonToGps(
       'Long character data ("jjjjjj...")',
-      String.fromCharCodes(List<int>.filled(2000000, 106)) + ' ' + onePointJson,
+      '${String.fromCharCodes(List<int>.filled(2000000, 106))} $onePointJson',
       [onePointGpsPoint],
       35000);
   testJsonToGps(

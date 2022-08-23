@@ -12,7 +12,7 @@ import 'package:gps_history/gps_history.dart';
 
 void main() {
   group('Test GpvQuerier', () {
-    final _points = GpcListBased<GpsPoint>()
+    final points = GpcListBased<GpsPoint>()
       ..addAll([
         GpsPoint(DateTime.utc(1), 1, 1, 1),
         GpsPoint(DateTime.utc(2), 2, 2, 2),
@@ -20,10 +20,10 @@ void main() {
       ]);
 
     test('Check backwards', () {
-      var view = GpvQuerier(_points, Int32List.fromList([2, 0]));
+      var view = GpvQuerier(points, Int32List.fromList([2, 0]));
       expect(view.length, 2, reason: 'incorrect length');
-      expect(view[0], _points[2], reason: 'incorrect first item');
-      expect(view[1], _points[0], reason: 'incorrect last item');
+      expect(view[0], points[2], reason: 'incorrect first item');
+      expect(view[1], points[0], reason: 'incorrect last item');
     });
   });
 }

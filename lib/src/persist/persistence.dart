@@ -56,12 +56,12 @@ import 'package:gps_history/gps_history_persist.dart';
 /// without fully parsing it, by simply looking at the total file size minus
 /// the header and dividing the outcome by the storage size per point.
 class Persistence {
-  static var _singletonInstance;
+  static Persistence? _singletonInstance;
 
   /// Factory that returns the singleton instance.
   factory Persistence.get() {
     _singletonInstance ??= Persistence._internal();
-    return _singletonInstance;
+    return _singletonInstance!;
   }
 
   /// Internal constructor for use in singleton behaviour.
@@ -318,13 +318,13 @@ abstract class Persister {
   /// Throws [InvalidSignatureException] if [sig] is too long, because trimming
   /// signatures blindly can lead to distinct signatures becoming identical.
   String signatureFromString(String sig) {
-    if (sig.length > SignatureAndVersion.RequiredSignatureLength) {
+    if (sig.length > SignatureAndVersion.requiredSignatureLength) {
       throw (InvalidSignatureException('Signature "$sig" is too long: '
-          '${sig.length} > ${SignatureAndVersion.RequiredSignatureLength}'));
+          '${sig.length} > ${SignatureAndVersion.requiredSignatureLength}'));
     }
 
     // Ensure the sig is not too short.
-    var result = sig.padRight(SignatureAndVersion.RequiredSignatureLength, '-');
+    var result = sig.padRight(SignatureAndVersion.requiredSignatureLength, '-');
 
     return result;
   }

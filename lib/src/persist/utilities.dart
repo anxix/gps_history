@@ -71,21 +71,21 @@ int? getFirstNonAsciiCharIndex(String string) {
 /// Represents the signature and version data of [Persistence] and [Persister].
 class SignatureAndVersion {
   /// Indicates the exact required length of signatures (in bytes/ASCII chars).
-  static const RequiredSignatureLength = 20;
+  static const requiredSignatureLength = 20;
 
-  /// The signature of the entity, must have a length of [RequiredSignatureLength].
+  /// The signature of the entity, must have a length of [requiredSignatureLength].
   var _signature = getEmptySignature();
 
   /// The version of the entity.
   var version = 0;
 
   SignatureAndVersion(this._signature, this.version) {
-    _checkValidSignature(_signature, RequiredSignatureLength);
+    _checkValidSignature(_signature, requiredSignatureLength);
   }
 
   /// Returns a valid, but empty (all-space) signature.
   static String getEmptySignature() =>
-      String.fromCharCodes(List<int>.filled(RequiredSignatureLength, 32));
+      String.fromCharCodes(List<int>.filled(requiredSignatureLength, 32));
 
   /// Returns the currently configured signature.
   String get signature => _signature;
@@ -371,14 +371,14 @@ class StreamSinkWriter {
   /// Writes ASCII [string] to the sink, replacing any non-ASCII characters
   /// with whitespace.
   void writeString(String string) {
-    final intAtIndex = (int index) {
+    intAtIndex(int index) {
       var c = string.codeUnitAt(index);
       if (isValidAsciiChar(c)) {
         return c;
       } else {
         return 32;
       }
-    };
+    }
 
     writeBytes(List<int>.generate(string.length, intAtIndex));
   }

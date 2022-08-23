@@ -454,9 +454,9 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   }
 
   @override
-  Stream<GpsPoint> bind(Stream<List<int>> inputStream) {
+  Stream<GpsPoint> bind(Stream<List<int>> stream) {
     return Stream.eventTransformed(
-        inputStream,
+        stream,
         (EventSink<GpsPoint> outputSink) => _GpsPointParserEventSink(
             outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold));
   }
@@ -495,9 +495,9 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   }
 
   @override
-  Sink<List<int>> startChunkedConversion(Sink<GpsPoint> outputSink) {
+  Sink<List<int>> startChunkedConversion(Sink<GpsPoint> sink) {
     return _GpsPointParserSink(
-        outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold);
+        sink, _minSecondsBetweenDatapoints, _accuracyThreshold);
   }
 }
 
@@ -528,9 +528,9 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
 
   final _leftoverChunk = <int>[];
 
-  _GpsPointParserSink(this._outputSink, double? _minSecondsBetweenDatapoints,
-      double? _accuracyThreshold) {
-    _pointParser = PointParser(_minSecondsBetweenDatapoints, _accuracyThreshold,
+  _GpsPointParserSink(this._outputSink, double? minSecondsBetweenDatapoints,
+      double? accuracyThreshold) {
+    _pointParser = PointParser(minSecondsBetweenDatapoints, accuracyThreshold,
         (GpsPoint point) => _outputSink.add(point));
   }
 
@@ -604,10 +604,9 @@ class _GpsPointParserEventSink extends _GpsPointParserSink
   final EventSink<GpsPoint> _eventOutputSink;
 
   _GpsPointParserEventSink(EventSink<GpsPoint> eventOutputSink,
-      double? _minSecondsBetweenDatapoints, double? _accuracyThreshold)
+      double? minSecondsBetweenDatapoints, double? accuracyThreshold)
       : _eventOutputSink = eventOutputSink,
-        super(
-            eventOutputSink, _minSecondsBetweenDatapoints, _accuracyThreshold);
+        super(eventOutputSink, minSecondsBetweenDatapoints, accuracyThreshold);
 
   @override
   void addError(Object o, [StackTrace? stackTrace]) {

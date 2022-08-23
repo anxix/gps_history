@@ -30,7 +30,7 @@ Future<void>
       persistence = null;
     });
 
-    final _testSaveLoad = (C sourceCollection) async {
+    runTestSaveLoad(C sourceCollection) async {
       final sink = TestStreamSink();
       await persistence!.write(sourceCollection, sink);
 
@@ -39,17 +39,17 @@ Future<void>
           .read(loadedCollection, Stream.value(sink.receivedData));
 
       expect(loadedCollection, sourceCollection);
-    };
+    }
 
     test('emtpy', () async {
-      await _testSaveLoad(collectionConstructor());
+      await runTestSaveLoad(collectionConstructor());
     });
 
     test('single item', () async {
       final collection = collectionConstructor();
       collection.add(itemConstructor(0));
 
-      await _testSaveLoad(collection);
+      await runTestSaveLoad(collection);
     });
 
     test('many items', () async {
@@ -58,7 +58,7 @@ Future<void>
         collection.add(itemConstructor(i));
       }
 
-      await _testSaveLoad(collection);
+      await runTestSaveLoad(collection);
     });
   });
 }

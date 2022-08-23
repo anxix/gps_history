@@ -63,7 +63,7 @@ void testSignatureAndVersion() {
     });
 
     test('too long', () {
-      final sig = SignatureAndVersion.getEmptySignature() + ' ';
+      final sig = '${SignatureAndVersion.getEmptySignature()} ';
       expect(
           () => SignatureAndVersion(sig, 1),
           throwsA(isA<InvalidSignatureException>()
@@ -72,7 +72,7 @@ void testSignatureAndVersion() {
     });
 
     test('invalid characters', () {
-      final sig = SignatureAndVersion.getEmptySignature().substring(1) + '\n';
+      final sig = '${SignatureAndVersion.getEmptySignature().substring(1)}\n';
       expect(
           () => SignatureAndVersion(sig, 1),
           throwsA(isA<InvalidSignatureException>()
@@ -97,7 +97,7 @@ void testSignatureAndVersion() {
       var sig = SignatureAndVersion.getEmptySignature();
       final signatureAndVersion = SignatureAndVersion(sig, 1);
 
-      sig = 'x' + sig.substring(1);
+      sig = 'x${sig.substring(1)}';
       signatureAndVersion.signature = sig;
       expect(signatureAndVersion.signature, sig);
     });
@@ -191,9 +191,9 @@ Future<void> _testAllGroups<T>(
 
 /// Test the behaviours of the StreamReaderState object.
 void testStreamReaderState() {
-  final listOfList = (List<int> list) {
+  listOfList(List<int> list) {
     return List<List<int>>.filled(1, list);
-  };
+  }
 
   group('readUint8', () {
     test('valid single value', () async {
