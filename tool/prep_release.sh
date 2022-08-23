@@ -18,11 +18,11 @@ status=$?
 
 # See if the documentation is in order
 rm -rf doc/api
-dartdoc
+dart doc
 status=$?
-[ $status -ne 0 ] && read -p 'dartdoc found problems. Fix before releasing. Press ENTER.' $$ exit $status
+[ $status -ne 0 ] && read -p 'dart doc found problems. Fix before releasing. Press ENTER.' $$ exit $status
 
-read -p 'Inspect dartdoc output for warnings/errors. Press ENTER if OK to continue.'
+read -p 'Inspect dart doc output for warnings/errors. Press ENTER if OK to continue.'
 
 # Do a dryrun
 dart pub publish --dry-run
