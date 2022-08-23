@@ -98,7 +98,7 @@ class Persistence {
   }
 
   /// Registers the specified [persister] as supporting its
-  /// [persister.supportedType], and returns [persister] as result.
+  /// [persister].supportedType, and returns [persister] as result.
   ///
   /// The returning of the input is useful for writing code such as:
   /// ```dart
@@ -106,7 +106,7 @@ class Persistence {
   /// ```
   ///
   /// Throws [ConflictingPersisterException] if there's already a persister
-  /// with the same [Persister.signature] present, since it would be impossible
+  /// with the same [persister].signature present, since it would be impossible
   /// to validate the correct reading of files if multiple persisters have
   /// the same signature.
   Persister register(Persister persister) {
@@ -128,7 +128,7 @@ class Persistence {
   /// Unregisters the specified [persister].
   ///
   /// Throws [ConflictingPersisterException] if the persister currently
-  /// registered for [persister.supportedType] is not [persister] itself.
+  /// registered for [persister].supportedType is not [persister] itself.
   void unregister(Persister persister) {
     // Ensure that the persister is indeed the one currently registered for
     // the specific type.
@@ -174,9 +174,9 @@ class Persistence {
   /// indicate how large the stream is, but see caveats in
   /// [StreamReaderState.remainingStreamBytesHint] on its use.
   ///
-  /// Throws [ReadonlyContainerException] if [view.isReadonly], as the contents
+  /// Throws [ReadonlyContainerException] if [view].isReadonly, as the contents
   /// of a readonly view cannot be overwritten.
-  /// Throws [NotEmptyContainerException] if [view.isNotEmpty], as the contents
+  /// Throws [NotEmptyContainerException] if [view].isNotEmpty, as the contents
   /// of an already existing view cannot be overwritten (since there may be
   /// other views that depend on it).
   /// Throws [InvalidSignatureException] if the stream contains an invalid
