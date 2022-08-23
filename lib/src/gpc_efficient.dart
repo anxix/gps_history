@@ -334,7 +334,7 @@ class Conversions {
   static int headingToInt16(double? value) =>
       smallDoubleToUint16(value != null ? value % 360.0 : null);
 
-  //// The opposite of [headingToInt16].
+  /// The opposite of [headingToInt16].
   static double? int16ToHeading(int value) => uint16ToSmallDouble(value);
 }
 
