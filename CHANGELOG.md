@@ -1,3 +1,10 @@
+# 0.0.4
+
+* Various updates to be compatible with more modern (dart 2.17.6) tooling.
+  This includes switching to the new linter, using dart doc instead of dartdoc.
+  No API changes.
+
+
 # 0.0.3
 
 * Implemented persistence mechanism.

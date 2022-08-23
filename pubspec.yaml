@@ -4,11 +4,11 @@ description: >
   and using relatively little memory. Can import Google location history JSON
   files.
 
-version: 0.0.3
+version: 0.0.4
 repository: https://github.com/anxix/gps_history
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.17.0 <3.0.0'
 
 #dependencies:
 #  path: ^1.7.0
