@@ -6,7 +6,6 @@
  */
 
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/src/base.dart';
 import 'package:test/test.dart';
 
 import 'package:gps_history/gps_history_persist.dart';

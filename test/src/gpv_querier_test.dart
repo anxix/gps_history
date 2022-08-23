@@ -9,8 +9,6 @@ import 'dart:typed_data';
 
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/src/gpc_list_based.dart';
-import 'package:gps_history/src/gpv_querier.dart';
 
 void main() {
   group('Test GpvQuerier', () {
