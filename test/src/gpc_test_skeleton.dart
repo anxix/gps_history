@@ -60,10 +60,30 @@ void testGpsPointsCollection<T extends GpsPoint>(
     test('Check AddAll', () {
       final src = makeList(2);
 
+      // Try addAll on different types (src and gpc are not of the
+      // same class).
+      expect(gpc!.runtimeType, isNot(src.runtimeType),
+          reason: 'test intended to be on different types');
       gpc!.addAll(src);
       expect(gpc!.length, src.length, reason: 'wrong length');
       for (var i = 0; i < gpc!.length; i++) {
         expect(gpc![i], src[i], reason: 'incorrect point at position $i');
+      }
+
+      // Try addAll on the same type.
+      final otherGpc = collectionConstructor();
+      expect(gpc!.runtimeType, otherGpc.runtimeType,
+          reason: 'test intended to be on same types');
+      otherGpc.addAll(gpc!);
+      otherGpc.addAll(gpc!);
+      expect(otherGpc.length, 2 * gpc!.length,
+          reason: 'wrong length after addAll on same type');
+      for (var i = 0; i < gpc!.length; i++) {
+        expect(otherGpc[i], gpc![i],
+            reason: 'incorrect point at position $i after addAll on same type');
+        expect(otherGpc[gpc!.length + i], gpc![i],
+            reason:
+                'incorrect point at position ${gpc!.length + i} after addAll on same type');
       }
     });
 
@@ -75,8 +95,8 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'should be empty if adding from beyond the source boundary');
 
       final skip = 2;
-      // Try addAllStartingAt on potentially different type (src and gpc are not
-      // be of the same class).
+      // Try addAllStartingAt on different types (src and gpc are not of the
+      // same class).
       expect(gpc!.runtimeType, isNot(src.runtimeType),
           reason: 'test intended to be on different types');
       gpc!.addAllStartingAt(src, skip);
@@ -93,16 +113,16 @@ void testGpsPointsCollection<T extends GpsPoint>(
       otherGpc.addAllStartingAt(gpc!, 0);
       otherGpc.addAllStartingAt(gpc!, 1);
       expect(otherGpc.length, 2 * gpc!.length - 1,
-          reason: 'wrong length after second addAllStartingAt');
+          reason: 'wrong length after addAllStartingAt on same type');
       for (var i = 0; i < gpc!.length; i++) {
         expect(otherGpc[i], gpc![i],
             reason:
-                'incorrect point at position $i after second addAllStartingAt');
+                'incorrect point at position $i after addAllStartingAt on same type');
       }
       for (var i = gpc!.length; i < otherGpc.length; i++) {
         expect(otherGpc[i], gpc![i - gpc!.length + 1],
             reason:
-                'incorrect point at position $i after second addAllStartingAt');
+                'incorrect point at position $i after addAllStartingAt on same type');
       }
     });
 
