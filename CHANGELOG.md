@@ -1,3 +1,12 @@
+# 0.0.5
+
+* The addAll implementation of GpcEfficient<T> automatically switches to
+  addAllFast when possible.
+* Fixed bugs in the addAll/addAllFast implementations.
+* Added addAllStartingAt. This required some refactoring of the base 
+  classes for the Iterable implementation.
+
+
 # 0.0.4
 
 * Various updates to be compatible with more modern (dart 2.17.6) tooling.

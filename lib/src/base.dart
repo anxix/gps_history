@@ -8,8 +8,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'dart:collection';
-
 import 'package:gps_history/src/hash.dart';
 
 /// [Exception] class that can act as ancestor for exceptions raised by
@@ -129,15 +127,49 @@ class GpsMeasurement extends GpsPoint {
       '${super.toString()}\tacc: $accuracy\thdng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
 }
 
-/// Iterator support for GPS points views.
+/// Abstract class representing iterables with fast random access to contents.
 ///
-/// The iterator allows [GpsPointsView] and children to easily implement
-/// an Iterable interface.
-class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
-  int _index = -1;
-  final GpsPointsView<T> _source;
+/// Subclasses should implement fast access to [length], getting item by index
+/// and similar functionality. This can not be enforced, but code using it
+/// will rely on these operations not looping over the entire contents before
+/// returning a result.
+abstract class RandomAccessIterable<T> extends Iterable<T>
+//with IterableMixin<T>
+{
+  T operator [](int index);
 
-  GpsPointsViewIterator(this._source);
+  @override
+  RandomAccessIterator<T> get iterator => RandomAccessIterator<T>(this);
+
+  @override
+  T elementAt(int index) {
+    return this[index];
+  }
+
+  @override
+  RandomAccessIterable<T> skip(int count) {
+    return RandomAccessSkipIterable<T>(this, count);
+  }
+}
+
+/// Iterator support for [RandomAccessIterable].
+///
+/// The iterator allows [RandomAccessIterable] and children to easily implement
+/// an Iterable interface. An important limitation is that the wrapped
+/// [RandomAccessIterable] must be random-access, with quick access to items and
+/// properties like length. This is a workaround for the fact that Dart doesn't
+/// expose the [RandomAccessSkipIterable] interface for implementation in
+/// third party code.
+class RandomAccessIterator<T> extends Iterator<T> {
+  int _index = -1;
+  final RandomAccessIterable<T> _source;
+
+  /// Creates the iterator for the specified [_source] iterable, optionally
+  /// allowing to skip [skipcount] items at the start of the iteration.
+  RandomAccessIterator(this._source, [int skipCount = 0]) {
+    assert(skipCount >= 0);
+    _index += skipCount;
+  }
 
   @override
   bool moveNext() {
@@ -155,18 +187,53 @@ class GpsPointsViewIterator<T extends GpsPoint> extends Iterator<T> {
   }
 }
 
+/// An iterable aimed at quickly skipping a number of items at the beginning.
+class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
+  final RandomAccessIterable<T> _iterable;
+  final int _skipCount;
+
+  factory RandomAccessSkipIterable(
+      RandomAccessIterable<T> iterable, int skipCount) {
+    return RandomAccessSkipIterable<T>._(iterable, _checkCount(skipCount));
+  }
+
+  RandomAccessSkipIterable._(this._iterable, this._skipCount);
+
+  @override
+  T operator [](int index) => _iterable[index];
+
+  @override
+  int get length {
+    int length = _iterable.length - _skipCount;
+    if (length >= 0) return length;
+    return 0;
+  }
+
+  @override
+  RandomAccessIterable<T> skip(int count) {
+    return RandomAccessSkipIterable<T>._(
+        _iterable, _skipCount + _checkCount(count));
+  }
+
+  @override
+  RandomAccessIterator<T> get iterator {
+    return RandomAccessIterator<T>(_iterable, _skipCount);
+  }
+
+  static int _checkCount(int count) {
+    ArgumentError.checkNotNull(count, "count");
+    RangeError.checkNotNegative(count, "count");
+    return count;
+  }
+}
+
 /// Read-only view on the GPS points stored in a [GpsPointsCollection].
 ///
 /// Provides read-only access to GPS points, therefore typically acting as
 /// a view onto a read/write collection of GpsPoints.
 /// Subclass names may start with "Gpv".
-abstract class GpsPointsView<T extends GpsPoint> with IterableMixin<T> {
-  // List-likes
-  @override
-  Iterator<T> get iterator => GpsPointsViewIterator<T>(this);
-
-  T operator [](int index);
-
+abstract class GpsPointsView<T extends GpsPoint>
+    extends RandomAccessIterable<T> {
   /// Indicate if the view is read-only and cannot be modified.
   bool get isReadonly => true;
 
@@ -187,8 +254,14 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Add a single [element] to the collection.
   void add(T element);
 
-  /// Add all the elements from [iterable] to the collection.
-  void addAll(Iterable<T> iterable);
+  /// Add all the elements from [source] to the collection.
+  void addAll(Iterable<T> source) {
+    addAllStartingAt(source);
+  }
+
+  /// Add all elements from [source] to [this], after skipping [skipItems]
+  /// items from the [source]. [skipItems]=0 is equivalent to calling [addAll].
+  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]);
 
   /// Collections are typically not read-only.
   @override

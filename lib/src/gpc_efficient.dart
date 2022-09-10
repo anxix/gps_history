@@ -151,25 +151,44 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 
   @override
-  void addAll(Iterable<T> iterable) {
-    capacity = _elementsCount + iterable.length;
-    for (var element in iterable) {
-      add(element);
+  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+    // Try the fast algorithm if the data is of the correct type.
+    if (runtimeType == source.runtimeType) {
+      addAllStartingAtFast(source as GpcEfficient<T>, skipItems);
+    } else {
+      // No the same type -> do a slow copy.r
+      capacity = _elementsCount + source.length - skipItems;
+
+      for (var element in source.skip(skipItems)) {
+        add(element);
+      }
     }
   }
 
   /// Specialized version of [addAll] that can copy from a source of the
   /// same type as this object, by doing a binary copy of the internal data.
   void addAllFast(GpcEfficient<T> source) {
+    addAllStartingAtFast(source, 0);
+  }
+
+  /// Specialized version of [addAllStartingAtFast] that can copy from a source of the
+  /// same type as this object, by doing a binary copy of the internal data.
+  void addAllStartingAtFast(GpcEfficient<T> source, [int skipItems = 0]) {
     // Copying binary data between different types is not safe.
     if (runtimeType != source.runtimeType) {
       throw TypeError();
     }
 
-    // source._rawData may contain allocated, but currently unused bytes. Don't
-    // copy those. Instead, create a view of only the used bytes and copy that.
-    addByteData(source._rawData.buffer
-        .asByteData(0, source.length * source.elementSizeInBytes));
+    final skipBytes = skipItems * source.elementSizeInBytes;
+
+    // source._rawData may contain allocated, but currently unused bytes, which
+    // the buffer would still regard as being part of its length. We don't want
+    // to copy those unused bytes, which is what would happen if we called
+    // buffer.asByteData without a length argument. We want a view of only the
+    // used bytes.
+    final bytesToCopy = source.length * source.elementSizeInBytes - skipBytes;
+
+    addByteData(source._rawData.buffer.asByteData(skipBytes, bytesToCopy));
   }
 
   /// Adds all the [sourceData] to the internal buffer. The data must conform
@@ -189,8 +208,10 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
     // Copy the data over.
     final targetByte = _elementNrToByteOffset(length);
-    _rawData.buffer.asUint8List().setRange(targetByte,
-        targetByte + sourceData.lengthInBytes, sourceData.buffer.asUint8List());
+    final sourceBytes = sourceData.buffer
+        .asUint8List(sourceData.offsetInBytes, sourceData.lengthInBytes);
+    _rawData.buffer.asUint8List().setRange(
+        targetByte, targetByte + sourceData.lengthInBytes, sourceBytes);
 
     // Update the number of elements.
     _elementsCount += newElements;

@@ -286,7 +286,7 @@ void main() {
       (int i) => GpsPoint(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          DateTime.utc(2103 + i),
+          DateTime.utc(2100 + i),
           i.toDouble(), // required to be equal to i
           175.0 + i,
           16E3 + i));
@@ -297,7 +297,7 @@ void main() {
       (int i) => GpsMeasurement(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          DateTime.utc(2103 + i),
+          DateTime.utc(2100 + i),
           i.toDouble(), // required to be equal to i
           175.0 + i,
           16E3 + i,

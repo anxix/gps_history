@@ -37,6 +37,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       gpc!.add(p0);
       expect(gpc!.length, 1, reason: 'wrong length after first add');
       expect(gpc![0], p0, reason: 'wrong point after first add');
+      expect(gpc!.elementAt(0), p0, reason: 'wrong elementAt after first add');
 
       // basic tests with a second point
       final p1 = itemConstructor(2);
@@ -44,19 +45,64 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.length, 2, reason: 'wrong length after second add');
       expect(gpc![0], p0, reason: 'wrong point at [0] after second add');
       expect(gpc![1], p1, reason: 'wrong point at [1] after second add');
+      expect(gpc!.elementAt(1), p1, reason: 'wrong elementAt after second add');
     });
 
-    test('Check AddAll', () {
-      final src = List<T>.filled(2, itemConstructor(0), growable: true);
-
-      for (var i = 0; i < src.length; i++) {
-        src[i] = itemConstructor(i + 1);
+    List<T> makeList(int nrItems) {
+      final result =
+          List<T>.filled(nrItems, itemConstructor(0), growable: true);
+      for (var i = 0; i < result.length; i++) {
+        result[i] = itemConstructor(i + 1);
       }
+      return result;
+    }
+
+    test('Check AddAll', () {
+      final src = makeList(2);
 
       gpc!.addAll(src);
-      expect(gpc!.length, src.length, reason: 'wrong length after addAll');
-      for (var i = 0; i < src.length; i++) {
+      expect(gpc!.length, src.length, reason: 'wrong length');
+      for (var i = 0; i < gpc!.length; i++) {
         expect(gpc![i], src[i], reason: 'incorrect point at position $i');
+      }
+    });
+
+    test('Check AddAllStartingAt', () {
+      final src = makeList(5);
+
+      gpc!.addAllStartingAt(src, src.length);
+      expect(gpc!.length, 0,
+          reason: 'should be empty if adding from beyond the source boundary');
+
+      final skip = 2;
+      // Try addAllStartingAt on potentially different type (src and gpc are not
+      // be of the same class).
+      expect(gpc!.runtimeType, isNot(src.runtimeType),
+          reason: 'test intended to be on different types');
+      gpc!.addAllStartingAt(src, skip);
+      expect(gpc!.length, src.length - skip, reason: 'wrong length');
+      for (var i = 0; i < gpc!.length; i++) {
+        expect(gpc![i], src[skip + i],
+            reason: 'incorrect point at position $i');
+      }
+
+      // Try addAllStartingAlt on the same type.
+      final otherGpc = collectionConstructor();
+      expect(gpc!.runtimeType, otherGpc.runtimeType,
+          reason: 'test intended to be on same types');
+      otherGpc.addAllStartingAt(gpc!, 0);
+      otherGpc.addAllStartingAt(gpc!, 1);
+      expect(otherGpc.length, 2 * gpc!.length - 1,
+          reason: 'wrong length after second addAllStartingAt');
+      for (var i = 0; i < gpc!.length; i++) {
+        expect(otherGpc[i], gpc![i],
+            reason:
+                'incorrect point at position $i after second addAllStartingAt');
+      }
+      for (var i = gpc!.length; i < otherGpc.length; i++) {
+        expect(otherGpc[i], gpc![i - gpc!.length + 1],
+            reason:
+                'incorrect point at position $i after second addAllStartingAt');
       }
     });
 
