@@ -165,7 +165,7 @@ class RandomAccessIterator<T> extends Iterator<T> {
   final RandomAccessIterable<T> _source;
 
   /// Creates the iterator for the specified [_source] iterable, optionally
-  /// allowing to skip [skipcount] items at the start of the iteration.
+  /// allowing to skip [skipCount] items at the start of the iteration.
   RandomAccessIterator(this._source, [int skipCount = 0]) {
     assert(skipCount >= 0);
     _index += skipCount;
