@@ -156,7 +156,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     if (runtimeType == source.runtimeType) {
       addAllStartingAtFast(source as GpcEfficient<T>, skipItems);
     } else {
-      // No the same type -> do a slow copy.r
+      // No the same type -> do a slow copy.
       capacity = _elementsCount + source.length - skipItems;
 
       for (var element in source.skip(skipItems)) {
