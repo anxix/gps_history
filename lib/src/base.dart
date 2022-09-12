@@ -147,6 +147,25 @@ abstract class RandomAccessIterable<T> extends Iterable<T>
   }
 
   @override
+  T get first {
+    if (isEmpty) {
+      throw StateError('no element');
+    }
+    return this[0];
+  }
+
+  @override
+  T get last {
+    if (isEmpty) {
+      throw StateError('no element');
+    }
+    return this[length - 1];
+  }
+
+  @override
+  bool get isEmpty => length == 0;
+
+  @override
   RandomAccessIterable<T> skip(int count) {
     return RandomAccessSkipIterable<T>(this, count);
   }
@@ -221,7 +240,6 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
   }
 
   static int _checkCount(int count) {
-    ArgumentError.checkNotNull(count, "count");
     RangeError.checkNotNegative(count, "count");
     return count;
   }

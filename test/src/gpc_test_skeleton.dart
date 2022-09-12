@@ -31,13 +31,26 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
     test('Check length empty', () => expect(gpc!.length, 0));
 
+    test('Check isEmpty/isNotEmpty', () {
+      expect(gpc!.isEmpty, true, reason: 'wrong for empty list');
+      expect(gpc!.isNotEmpty, false, reason: 'wrong for empty list');
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.isEmpty, false, reason: 'wrong for non-empty list');
+      expect(gpc!.isNotEmpty, true, reason: 'wrong for non-empty list');
+    });
+
     test('Check simple add and indexing', () {
+      expect(() => gpc!.first, throwsA(isA<StateError>()));
+      expect(() => gpc!.last, throwsA(isA<StateError>()));
+
       // basic tests with just one point
       final p0 = itemConstructor(1);
       gpc!.add(p0);
       expect(gpc!.length, 1, reason: 'wrong length after first add');
       expect(gpc![0], p0, reason: 'wrong point after first add');
       expect(gpc!.elementAt(0), p0, reason: 'wrong elementAt after first add');
+      expect(gpc!.first, p0, reason: 'wrong first after first add');
+      expect(gpc!.last, p0, reason: 'wrong last after first add');
 
       // basic tests with a second point
       final p1 = itemConstructor(2);
@@ -46,6 +59,8 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc![0], p0, reason: 'wrong point at [0] after second add');
       expect(gpc![1], p1, reason: 'wrong point at [1] after second add');
       expect(gpc!.elementAt(1), p1, reason: 'wrong elementAt after second add');
+      expect(gpc!.first, p0, reason: 'wrong first after second add');
+      expect(gpc!.last, p1, reason: 'wrong last after second add');
     });
 
     List<T> makeList(int nrItems) {
@@ -124,6 +139,10 @@ void testGpsPointsCollection<T extends GpsPoint>(
             reason:
                 'incorrect point at position $i after addAllStartingAt on same type');
       }
+
+      // Check invalid argument throws error.
+      expect(() => otherGpc.addAllStartingAt(gpc!, -1),
+          throwsA(isA<RangeError>()));
     });
 
     test('Check forEach', () {

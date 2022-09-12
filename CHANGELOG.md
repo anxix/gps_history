@@ -1,3 +1,8 @@
+# 0.0.6
+
+* Implemented faster versions of several methods in the RandomAccessIterable.
+
+
 # 0.0.5
 
 * The addAll implementation of GpcEfficient<T> automatically switches to
