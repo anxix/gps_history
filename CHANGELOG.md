@@ -1,6 +1,8 @@
 # 0.0.6
 
 * Implemented faster versions of several methods in the RandomAccessIterable.
+* Added a sample application for converting Google location history JSON file to
+  a SQLite database.
 
 
 # 0.0.5
