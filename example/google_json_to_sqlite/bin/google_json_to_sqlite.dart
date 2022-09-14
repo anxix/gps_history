@@ -1,8 +1,6 @@
 // Sample for converting a Google location history JSON file to a SQLite DB.
-// Compile (launching from a console in the
-//
-//    examples/google_json_to_sqlite
-// directory) and launch as follows:
+// Compile and launch as follows, in a console with the current directory being
+// set to <gps_history_dir>/examples/google_json_to_sqlite:
 //
 //    dart compile exe bin/google_json_to_sqlite.dart && bin/google_json_to_sqlite.exe
 
@@ -21,7 +19,7 @@ import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
 
 void main() async {
-  final jsonFilename = '../data/g_history_sample.json';
+  final jsonFilename = '/home/me/src/locstory/locationhistory.json';
 
   final file = File(jsonFilename);
   final sqliteDbFilename = path.join(path.dirname(file.absolute.path),
