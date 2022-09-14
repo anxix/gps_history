@@ -26,7 +26,7 @@ void main() async {
       '${path.basenameWithoutExtension(jsonFilename)}.sqlite');
 
   print('Converting from: ${file.absolute.path}');
-  print('Converting to: ${sqliteDbFilename}');
+  print('Converting to: $sqliteDbFilename');
 
   // Init ffi loader if needed.
   sqfliteFfiInit();
