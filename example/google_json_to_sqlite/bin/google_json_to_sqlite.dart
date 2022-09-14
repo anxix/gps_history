@@ -51,7 +51,9 @@ void main() async {
 
   // Create indexes on everything for easy exploring in a database browser.
   // This increases the size of the generated database file by about a factor 3,
-  // but makes it feasible to sort quickly by any column in a database browser.
+  // but makes it feasible to sort and filter quickly by any column in a database
+  // browser. Without indexes, the process is painfully slow, at least in
+  // DB Browser for SQLite on Linux.
   await db.execute('''
     CREATE INDEX idx_datetime ON Points(datetime);
     CREATE INDEX idx_datetime_s_from_epoch ON Points(datetime_s_from_epoch);
