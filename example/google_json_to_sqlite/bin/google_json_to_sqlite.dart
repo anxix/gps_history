@@ -1,3 +1,11 @@
+// Sample for converting a Google location history JSON file to a SQLite DB.
+// Compile (launching from a console in the
+//
+//    examples/google_json_to_sqlite
+// directory) and launch as follows:
+//
+//    dart compile exe bin/google_json_to_sqlite.dart && bin/google_json_to_sqlite.exe
+
 /* Copyright (c)
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -71,14 +79,15 @@ void main() async {
         // Insert the point in the SQLite database.
         await txn.insert('Points', {
           'datetime': p.time.toIso8601String(),
-          'datetime_s_from_epoch': p.time.millisecondsSinceEpoch / ~1000,
+          'datetime_s_from_epoch':
+              (p.time.millisecondsSinceEpoch / 1000).round(),
           'latitude': p.latitude,
           'longitude': p.longitude,
           'altitude': p.altitude,
-          'accuracy': p is GpsMeasurement ? p.accuracy ?? -1 : -1,
-          'heading': p is GpsMeasurement ? p.heading ?? -1 : -1,
-          'speed': p is GpsMeasurement ? p.speed ?? -1 : -1,
-          'speedAccuracy': p is GpsMeasurement ? p.speedAccuracy ?? -1 : -1,
+          'accuracy': p is GpsMeasurement ? p.accuracy : null,
+          'heading': p is GpsMeasurement ? p.heading : null,
+          'speed': p is GpsMeasurement ? p.speed : null,
+          'speedAccuracy': p is GpsMeasurement ? p.speedAccuracy : null,
         });
         count++;
         if (count % 10000 == 0) {
