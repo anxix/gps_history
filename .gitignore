@@ -20,3 +20,6 @@ partial.md
 
 # Any stored GPS History files
 *.agh
+
+# Generated executables
+*.exe
