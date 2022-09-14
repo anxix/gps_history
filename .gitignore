@@ -21,5 +21,8 @@ partial.md
 # Any stored GPS History files
 *.agh
 
+# Any generated SQLite databases
+*.sqlite
+
 # Generated executables
 *.exe
