@@ -10,5 +10,6 @@ include: package:lints/recommended.yaml
 #     - camel_case_types
 
 analyzer:
-#   exclude:
+   exclude:
+      - example/google_json_to_sqlite/**
 #     - path/to/excluded/files/**
