@@ -64,3 +64,6 @@ void main() async {
   }
 }
 ```
+
+# Automatic master branch test state
+[![Dart](https://github.com/anxix/gps_history/actions/workflows/dart.yml/badge.svg)](https://github.com/anxix/gps_history/actions/workflows/dart.yml)
