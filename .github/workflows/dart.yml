@@ -38,7 +38,7 @@ jobs:
       # The JSON to SQLite conversion example has custom dependencies, which
       # the action doesn't handle well. Analyze it separately.
       - name: Analyze example with its own pubspec
-        run: cd example/google_json_to_sqlite && dart pub get && dart analyze
+        run: cd example/google_json_to_sqlite && dart pub get && dart analyze && cd ../..
 
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
