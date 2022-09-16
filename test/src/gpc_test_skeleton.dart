@@ -22,13 +22,23 @@ void testGpsPointsCollection<T extends GpsPoint>(
     String name,
     GpsPointsCollection<T> Function() collectionConstructor,
     T Function(int itemIndex) itemConstructor) {
-  group('Test $name', () {
-    GpsPointsCollection<T>? gpc;
+  GpsPointsCollection<T>? gpc;
 
-    setUp(() {
-      gpc = collectionConstructor();
-    });
+  /// Returns a list with [nrItems] items built with the specified
+  /// [itemConstructor].
+  List<T> makeList(int nrItems) {
+    final result = List<T>.filled(nrItems, itemConstructor(0), growable: true);
+    for (var i = 0; i < result.length; i++) {
+      result[i] = itemConstructor(i + 1);
+    }
+    return result;
+  }
 
+  setUp(() {
+    gpc = collectionConstructor();
+  });
+
+  group('Test $name - basics:', () {
     test('Check length empty', () => expect(gpc!.length, 0));
 
     test('Check isEmpty/isNotEmpty', () {
@@ -62,17 +72,10 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.first, p0, reason: 'wrong first after second add');
       expect(gpc!.last, p1, reason: 'wrong last after second add');
     });
+  });
 
-    List<T> makeList(int nrItems) {
-      final result =
-          List<T>.filled(nrItems, itemConstructor(0), growable: true);
-      for (var i = 0; i < result.length; i++) {
-        result[i] = itemConstructor(i + 1);
-      }
-      return result;
-    }
-
-    test('Check AddAll', () {
+  group('Test $name - addAll* functionality:', () {
+    test('Check addAll', () {
       final src = makeList(2);
 
       // Try addAll on different types (src and gpc are not of the
@@ -102,7 +105,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       }
     });
 
-    test('Check AddAllStartingAt', () {
+    test('Check addAllStartingAt', () {
       final src = makeList(5);
 
       gpc!.addAllStartingAt(src, src.length);
@@ -144,7 +147,9 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(() => otherGpc.addAllStartingAt(gpc!, -1),
           throwsA(isA<RangeError>()));
     });
+  });
 
+  group('Test $name - iterator behaviour:', () {
     test('Check forEach', () {
       // Add three points. Start from 1 rather than 0, because we'll use
       // addition to detect if all elements have been traversed, and skipping
