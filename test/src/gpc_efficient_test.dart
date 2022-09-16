@@ -128,6 +128,18 @@ void testConversions() {
     // Check the caps.
     expect(Conversions.smallDoubleToUint16(-999999), 0);
     expect(Conversions.smallDoubleToUint16(999999), 65534);
+
+    // Check value close to cap.
+    expect(Conversions.smallDoubleToUint16(6553), 65530);
+    expect(Conversions.uint16ToSmallDouble(65530), 6553);
+    expect(Conversions.uint16ToSmallDouble(65534), 6553.4);
+    expect(Conversions.uint16ToSmallDouble(65535), null);
+    expect(
+        Conversions.uint16ToSmallDouble(Conversions.smallDoubleToUint16(null)),
+        null);
+    expect(
+        Conversions.uint16ToSmallDouble(Conversions.smallDoubleToUint16(6553)),
+        6553);
   });
 
   test('Check heading to Uint16 conversions, with null support', () {
