@@ -102,10 +102,10 @@ packages:
   gps_history:
     dependency: "direct main"
     description:
-      name: gps_history
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.5"
+      path: "../.."
+      relative: true
+    source: path
+    version: "0.0.6"
   http_multi_server:
     dependency: transitive
     description:
@@ -280,7 +280,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.0"
+    version: "1.9.0"
   stack_trace:
     dependency: transitive
     description:

@@ -8,10 +8,11 @@ environment:
 
 dependencies:
   path: ^1.8.2
-  gps_history: ^0.0.5
   sqflite_common: ^2.2.1+1
   sqflite_common_ffi: ^2.1.1+1
   intl: ^0.17.0
+  gps_history: 
+    path: ../../
 
 dev_dependencies:
   lints: ^2.0.0
