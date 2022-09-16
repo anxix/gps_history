@@ -399,6 +399,8 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   /// Useful to use in children's [_readElementFromBytes] implementations.
   GpsPoint _readGpsPointFromBytes(int byteIndex) {
     return GpsPoint(
+        // If the time storage method is changed, also modify the compareTime
+        // method!
         Conversions.uint32ToDateTime(_getUint32(byteIndex)),
         Conversions.uint32ToLatitude(_getUint32(byteIndex + _offsetLatitude)),
         Conversions.uint32ToLongitude(_getUint32(byteIndex + _offsetLongitude)),
@@ -429,6 +431,23 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   @override
   void _writeElementToBytes(GpsPoint element, int byteIndex) {
     return _writeGpsPointToBytes(element, byteIndex);
+  }
+
+  @override
+  TimeComparisonResult compareTime(int itemNrA, int itemNrB) {
+    // No need to fully parse and instantiate the points, it's enough to
+    // compare the integer representations of the time values.
+    final timeA = _getUint32(_elementNrToByteOffset(itemNrA));
+    final timeB = _getUint32(_elementNrToByteOffset(itemNrB));
+
+    if (timeA < timeB) {
+      return TimeComparisonResult.before;
+    } else if (timeA == timeB) {
+      return TimeComparisonResult.same;
+    } else {
+      // timeA > timeB
+      return TimeComparisonResult.after;
+    }
   }
 }
 

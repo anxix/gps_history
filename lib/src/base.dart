@@ -245,6 +245,11 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
   }
 }
 
+/// Exception class for sorting issues in [GpsPointsView] (sub)classes.
+class GpsPointsViewSortingException extends GpsHistoryException {
+  GpsPointsViewSortingException([message]) : super(message);
+}
+
 /// Read-only view on the GPS points stored in a [GpsPointsCollection].
 ///
 /// Provides read-only access to GPS points, therefore typically acting as
@@ -260,6 +265,19 @@ abstract class GpsPointsView<T extends GpsPoint>
 //      double maxLatitude, double maxLongitude);
 }
 
+/// Used as result type for time comparison.
+///
+/// The enumeration values of [before], [same] and [after] are self-explanatory.
+/// [overlapping] is used in situations where the compared times are time
+/// spans rather than moments, meaning that the time spans may overlap partially
+/// or completely.
+enum TimeComparisonResult {
+  before,
+  same,
+  after,
+  overlapping,
+}
+
 /// Stores GPS points with read/write access.
 ///
 /// Provides read/write access to GPS points. Because lightweight
@@ -269,6 +287,101 @@ abstract class GpsPointsView<T extends GpsPoint>
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
+  bool _forceSortedTime = true;
+  bool _sortedByTime = true;
+
+  /// Whether the list is will disallow modifications that render it
+  /// in a state that's not sorted by time. Setting this property to true
+  /// while the collection is in an unsorted state will raise an exception.
+  bool get forceSortedTime => _forceSortedTime;
+  set forceSortedTime(bool value) {
+    // If unchanged, do nothing.
+    if (forceSortedTime == value) {
+      return;
+    }
+
+    // Change to not force sorting is always safe.
+    if (!value) {
+      _forceSortedTime = value;
+    } else {
+      // Change to force sorting -> only safe if the contents are currently
+      // sorted, otherwise throw an exception.
+      if (!sortedByTime) {
+        throw GpsPointsViewSortingException(
+            'Cannot switch to force sorting by time if the list is currently unsorted.');
+      } else {
+        _forceSortedTime = value;
+      }
+    }
+  }
+
+  /// Indicates whether the contents are sorted in increasing order of time
+  /// value. If this is the case, time-based queries can be faster by performing
+  /// a binary search.
+  bool get sortedByTime => _sortedByTime;
+
+  /// Checks whether the contents are sorted by increasing time in cases where
+  /// the list is not marked as [sortedByTime].
+  ///
+  /// Even if the collection is not marked as [sortedByTime], it might be
+  /// entirely or partially sorted (depending on how its contents were
+  /// initialized).
+  /// If [sortedByTime] is true, the method immediately returns true. Otherwise
+  /// it checks the contents (optionally skipping the first [skipItems] items)
+  /// to determine if they are in fact sorted.
+  /// In the situation that the list is found to be fully sorted,
+  /// [sortedByTime] will be set to true as well.
+  bool checkContentsSortedByTime([int skipItems = 0]) {
+    if (sortedByTime) {
+      return true;
+    }
+
+    var detectedSorted = true;
+    for (var itemNr = skipItems + 1; itemNr < length; itemNr++) {
+      switch (compareTime(itemNr - 1, itemNr)) {
+        case TimeComparisonResult.before:
+        case TimeComparisonResult.same:
+          continue;
+        case TimeComparisonResult.after:
+        case TimeComparisonResult.overlapping:
+          detectedSorted = false;
+          break;
+      }
+    }
+
+    // If we compared the entire list and found it's sorted, set the internal
+    // flag.
+    if (detectedSorted && skipItems == 0) {
+      _sortedByTime = true;
+    }
+
+    // Note that detectedSorted is not necessarily same as _sortedByTime,
+    // since the comparison may have skipped a number of items at the beginning!
+    return detectedSorted;
+  }
+
+  /// Compares the time values in the positions [itemNrA] and [itemNrB] and
+  /// returns the result.
+  ///
+  /// If the time in [itemNrA] is considered before that in [itemNrB], the result
+  /// will be [TimeComparisonResult.before], etc.
+  /// Children my override this method to implement more efficient or custom
+  /// implementations, for example if they support overlapping time or if
+  /// they have a way to do quick time comparisons without doing full item
+  /// retrieval.
+  TimeComparisonResult compareTime(int itemNrA, int itemNrB) {
+    switch (this[itemNrA].time.compareTo(this[itemNrB].time)) {
+      case -1:
+        return TimeComparisonResult.before;
+      case 0:
+        return TimeComparisonResult.same;
+      case 1:
+        return TimeComparisonResult.after;
+      default:
+        throw GpsPointsViewSortingException('Unexpected compareTo result!');
+    }
+  }
+
   /// Add a single [element] to the collection.
   void add(T element);
 
