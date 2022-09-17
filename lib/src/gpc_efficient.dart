@@ -151,6 +151,18 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 
   @override
+  rollbackAddingLastItem() {
+    // Pretend the last element doesn't exist (decreases the length).
+    _elementsCount--;
+
+    // Overwrite the data with all zeroes (this will increas the length again).
+    addByteData(ByteData(elementSizeInBytes));
+
+    // Move the length backwars again.
+    _elementsCount--;
+  }
+
+  @override
   void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
     // Try the fast algorithm if the data is of the correct type.
     if (runtimeType == source.runtimeType) {
@@ -243,6 +255,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 /// Ranges of data will be ensured only at writing time. This because the data
 /// is written only once, but potentially read many times.
 class Conversions {
+  // TODO: should we move the zero time to 2000-ish?
   static final _zeroDateTimeUtc = DateTime.utc(1970);
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));

@@ -450,11 +450,19 @@ abstract class GpsPointsCollection<T extends GpsPoint>
         }
       }
     } on GpsPointsViewSortingException {
+      rollbackAddingLastItem();
       if (sortingEnforcement == SortingEnforcement.throwIfWrongItems) {
         rethrow;
       } // otherwise we just skip the item, silently
     }
   }
+
+  /// Removes the last object in this list, but only intended for use during
+  /// [add] and similar calls. The list is in general not supposed to have
+  /// insert/remove operations available as explained in the documentation
+  /// of the list itself.
+  @protected
+  rollbackAddingLastItem();
 
   /// Internal implementation of [add], which does not do any safety checks
   /// regarding sorting. Only to be overridden in children.

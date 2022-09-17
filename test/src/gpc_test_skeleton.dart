@@ -174,22 +174,69 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'empty list should implicitly be sorted');
 
       gpc!.add(itemConstructor(1));
+      expect(gpc!.length, 1, reason: 'first item should have been added');
       expect(gpc!.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
 
       gpc!.add(itemConstructor(2));
+      expect(gpc!.length, 2, reason: 'second item should have been added');
       expect(gpc!.sortedByTime, true,
           reason: 'list with two incrementing items should be sorted');
 
       gpc!.add(itemConstructor(2));
+      expect(gpc!.length, 3, reason: 'third item should have been added');
       expect(gpc!.sortedByTime, true,
           reason:
               'list with two identical incrementing items should be sorted');
 
-      gpc!.forceSortedTime = false;
+      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
       gpc!.add(itemConstructor(1));
+      expect(gpc!.length, 4,
+          reason:
+              'fourth item should have been added even if it breaks sorting');
       expect(gpc!.sortedByTime, false,
           reason: 'list with non-incrementing items should be unsorted');
+    });
+
+    test('Check skipWrongItems sorting behaviour', () {
+      gpc!.sortingEnforcement = SortingEnforcement.skipWrongItems;
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.sortedByTime, true,
+          reason: 'one-item list should implicitly be sorted');
+
+      gpc!.add(itemConstructor(0));
+      expect(gpc!.length, 1,
+          reason: 'the invalid value should have been skipped');
+      expect(gpc!.sortedByTime, true,
+          reason: 'the invalid value should have been skipped');
+
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.length, 2,
+          reason: 'valid duplicate value should have been allowed');
+      expect(gpc!.sortedByTime, true,
+          reason: 'list with two identical items should be sorted');
+
+      gpc!.add(itemConstructor(3));
+      expect(gpc!.length, 3, reason: 'valid value should have been allowed');
+      expect(gpc!.sortedByTime, true,
+          reason: 'list with three incrementing items should be sorted');
+    });
+
+    test('Check throwing behaviour in case of sorting violating items', () {
+      gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.sortedByTime, true,
+          reason: 'one-item list should implicitly be sorted');
+
+      expect(() {
+        gpc!.add(itemConstructor(0));
+      }, throwsA(isA<GpsPointsViewSortingException>()));
+      expect(gpc!.length, 1,
+          reason: 'the invalid value should have not been added');
+      expect(gpc!.sortedByTime, true,
+          reason: 'one-item list should implicitly be sorted');
+      expect(gpc!.last, itemConstructor(1),
+          reason: 'contents of existing item were changed by failed addition');
     });
   });
 }
