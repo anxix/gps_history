@@ -230,8 +230,8 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
 
   @override
   int get length {
-    int length = _iterable.length - _skipCount;
-    if (length >= 0) return length;
+    int result = _iterable.length - _skipCount;
+    if (result >= 0) return result;
     return 0;
   }
 
