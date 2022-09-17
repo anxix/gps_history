@@ -70,7 +70,7 @@ abstract class PGpcEfficient<T extends GpcEfficient> extends Persister {
       final elementsToWrite =
           min<int>(elementsPerChunk, gpc.length - elementsWritten);
 
-      yield gpc.getByteDataView(elementsWritten, elementsToWrite);
+      yield gpc.exportAsBytes(elementsWritten, elementsToWrite);
 
       elementsWritten += elementsToWrite;
     }

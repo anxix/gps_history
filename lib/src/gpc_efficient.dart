@@ -217,12 +217,22 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     _elementsCount += newElements;
   }
 
-  /// Returns a view of the internal bytes data starting at [startElement] and
-  /// containing [viewLengthElements] elements. Care must be taken that
-  /// [startElement] + [viewLengthElements] <= [length].
-  List<int> getByteDataView(int startElement, int viewLengthElements) {
-    return _rawData.buffer.asUint8List(_elementNrToByteOffset(startElement),
-        _elementNrToByteOffset(viewLengthElements));
+  /// Returns a copy of the internal bytes data starting at [startElement] and
+  /// containing [nrElements] elements.
+  ///
+  /// Care must be taken that [startElement] + [nrElements] <= [length].
+  /// Note that this is not a view, because a view would allow the caller to
+  /// modify the contents directly, thereby bypassing any checks related to
+  /// sorted state.
+  List<int> exportAsBytes(int startElement, int nrElements) {
+    final startByte = _elementNrToByteOffset(startElement);
+    final endByte = _elementNrToByteOffset(nrElements);
+    final view = _rawData.buffer.asUint8List(startByte, endByte);
+
+    // Convert the view to a new list, so the internal buffer data cannot be
+    // modified by the recipient of the result, which would allow bypassing
+    // internal checks regarding sorted state.
+    return view.toList(growable: false);
   }
 }
 
