@@ -258,4 +258,30 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'should not switch to throwIfWrongItems while unsorted');
     });
   });
+
+  test('checkContentsSortedByTime', () {
+    expect(gpc!.checkContentsSortedByTime(), true,
+        reason: 'Empty list is by definition sorted');
+
+    gpc!.sortingEnforcement = SortingEnforcement.notRequired;
+    gpc!.add(itemConstructor(1));
+    gpc!.add(itemConstructor(0));
+    gpc!.add(itemConstructor(2));
+
+    expect(gpc!.sortedByTime, false,
+        reason: 'list is incorrectly marked as sorted');
+
+    expect(gpc!.checkContentsSortedByTime(), false,
+        reason: 'entire list is unsorted');
+    expect(gpc!.checkContentsSortedByTime(1), true,
+        reason: 'list is partially unsorted');
+    expect(gpc!.checkContentsSortedByTime(2), true,
+        reason: 'last item of the list is by defintion sorted');
+    expect(gpc!.sortedByTime, false,
+        reason:
+            'list is incorrectly marked as sorted because part of it is sorted');
+    expect(gpc!.checkContentsSortedByTime(gpc!.length), true,
+        reason:
+            'contents beyond list are treated as empty list and hence sorted');
+  });
 }
