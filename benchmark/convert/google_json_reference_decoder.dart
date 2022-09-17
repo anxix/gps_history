@@ -64,11 +64,12 @@ void main() async {
     var maxdiff = 0;
 
     for (var p in gpsPoints) {
+      // ignore: dead_code
       if (printPoints) {
         print(p);
       }
       if (prevp != null) {
-        final diff = p.time.difference(prevp.time).inSeconds;
+        final int diff = p.time.difference(prevp.time).inSeconds;
         if (diff > 0) {
           mindiff = min(diff, mindiff);
         }

@@ -46,17 +46,18 @@ void main() async {
       'Read ${gpsPoints.length} in $dt s: ${gpsPoints.length / 1000000 / dt} Mpoints/s or ${dt / (gpsPoints.length / 1000000)} s/Mpoint');
 
   var diffs = <int>[];
-  var sumdiffs = 0;
+  int sumdiffs = 0;
   GpsPoint? prevp;
   var mindiff = 100000000;
   var maxdiff = 0;
 
   for (var p in gpsPoints) {
+    // ignore: dead_code
     if (printPoints) {
       print(p);
     }
     if (prevp != null) {
-      final diff = p.time.difference(prevp.time).inSeconds;
+      final int diff = p.time.difference(prevp.time).inSeconds;
       if (diff > 0) {
         mindiff = min(diff, mindiff);
       }
