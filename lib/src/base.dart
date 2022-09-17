@@ -43,7 +43,10 @@ class GpsPoint {
   /// sources).
   final double? altitude;
 
-  GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
+  /// Constant constructor, as modifying points while they're part of a
+  /// collection could have bad effects in that collection's meta flags, like
+  /// sorted state.
+  const GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
 
   /// Equality operator overload.
   ///
@@ -91,7 +94,10 @@ class GpsMeasurement extends GpsPoint {
   /// The accuracy of the speed measurement.
   final double? speedAccuracy;
 
-  GpsMeasurement(
+  /// Constant constructor, as modifying points while they're part of a
+  /// collection could have bad effects in that collection's meta flags, like
+  /// sorted state.
+  const GpsMeasurement(
       DateTime time,
       double latitude,
       double longitude,
