@@ -320,8 +320,15 @@ class Conversions {
   /// at the appropriate boundary (no exception will be raised).
   static int altitudeToInt16(double? value) {
     if (value != null) {
-      final cappedValue = value.sign * min(value.abs(), _extremeAltitude);
-      return (2 * cappedValue).round();
+      // The code below saves about 10% on a benchmark compared to a
+      // more legible implementation using .sign(), .abs() and min().
+      if (value > _extremeAltitude) {
+        value = _extremeAltitude.toDouble();
+      } else if (value < -_extremeAltitude) {
+        value = -_extremeAltitude.toDouble();
+      }
+
+      return (2 * value).round();
     } else {
       // Encode null as the maximum allowed positive Int16.
       return 2 * _extremeAltitude + 1;
