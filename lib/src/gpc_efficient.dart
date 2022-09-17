@@ -445,13 +445,9 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
     return _writeGpsPointToBytes(element, byteIndex);
   }
 
-  @override
-  TimeComparisonResult compareItemTime(int itemNrA, int itemNrB) {
-    // No need to fully parse and instantiate the points, it's enough to
-    // compare the integer representations of the time values.
-    final timeA = _getUint32(_elementNrToByteOffset(itemNrA));
-    final timeB = _getUint32(_elementNrToByteOffset(itemNrB));
-
+  /// Like the inherited [compareTime], except it works on Uint32 representation
+  /// of time that is used internally by the GpcCompact classes.
+  TimeComparisonResult _compareUint32Time(int timeA, int timeB) {
     if (timeA < timeB) {
       return TimeComparisonResult.before;
     } else if (timeA == timeB) {
@@ -460,6 +456,25 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
       // timeA > timeB
       return TimeComparisonResult.after;
     }
+  }
+
+  @override
+  TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
+    // No need to fully parse and instantiate the points, it's enough to
+    // compare the integer representations of the time values.
+    final timeA = _getUint32(_elementNrToByteOffset(elementNrA));
+    final timeB = _getUint32(_elementNrToByteOffset(elementNrB));
+
+    return _compareUint32Time(timeA, timeB);
+  }
+
+  @override
+  TimeComparisonResult compareElementTimeWithSeparateItem(
+      int elementNr, GpsPoint item) {
+    final elementTime = _getUint32(_elementNrToByteOffset(elementNr));
+    final itemTime = Conversions.dateTimeToUint32(item.time);
+
+    return _compareUint32Time(elementTime, itemTime);
   }
 }
 

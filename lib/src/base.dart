@@ -339,7 +339,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
     var detectedSorted = true;
     for (var itemNr = skipItems + 1; itemNr < length; itemNr++) {
-      switch (compareItemTime(itemNr - 1, itemNr)) {
+      switch (compareElementTime(itemNr - 1, itemNr)) {
         case TimeComparisonResult.before:
         case TimeComparisonResult.same:
           continue;
@@ -361,15 +361,28 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     return detectedSorted;
   }
 
-  /// Performs [compareTime] for the items in the positions [itemNrA]
-  /// and [itemNrB], then returns the result.
+  /// Performs [compareTime] for the elements in the positions [elementNrA]
+  /// and [elementNrB], then returns the result.
   ///
   /// Children my override this method to implement more efficient or custom
   /// implementations, for example if they support overlapping time or if
   /// they have a way to do quick time comparisons without doing full item
   /// retrieval.
-  TimeComparisonResult compareItemTime(int itemNrA, int itemNrB) {
-    return compareTime(this[itemNrA], this[itemNrB]);
+  TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
+    return compareTime(this[elementNrA], this[elementNrB]);
+  }
+
+  /// Performs [compareTime] for the item in the positions [elementNr]
+  /// and some separate [item] that's presumably not in the list, then returns
+  /// the result.
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// implementations, for example if they support overlapping time or if
+  /// they have a way to do quick time comparisons without doing full item
+  /// retrieval.
+  TimeComparisonResult compareElementTimeWithSeparateItem(
+      int elementNr, T item) {
+    return compareTime(this[elementNr], item);
   }
 
   /// Compares the time values of [itemA] and [itemB] and returns the result.
@@ -397,7 +410,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       // If it's already not sorted by time, we don't have to check anything, so
       // only do further checks if currently sorted.
       if (sortedByTime) {
-        final comparison = compareTime(last, element);
+        final comparison =
+            compareElementTimeWithSeparateItem(length - 1, element);
         switch (comparison) {
           case TimeComparisonResult.before:
           case TimeComparisonResult.same:
