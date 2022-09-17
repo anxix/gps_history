@@ -279,6 +279,21 @@ enum TimeComparisonResult {
   overlapping,
 }
 
+/// Indicates how the sorting requirement for [GpsPointsCollection] should
+/// behave.
+///
+/// [SortingEnforcement.notRequired] means that the collection will accept
+/// elements in non-sorted order.
+/// [SortingEnforcement.skipWrongItems] means that the collection will not add
+/// any elements that violate the sorting order, but not throw an exception.
+/// [SortingEnforcement.throwIfWrongItems] means that the list will throw an
+/// exception if trying to add elements that violate the sorting order.
+enum SortingEnforcement {
+  notRequired,
+  skipWrongItems,
+  throwIfWrongItems,
+}
+
 /// Stores GPS points with read/write access.
 ///
 /// Provides read/write access to GPS points. Because lightweight
@@ -288,22 +303,22 @@ enum TimeComparisonResult {
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
-  bool _forceSortedTime = true;
+  SortingEnforcement _sortingEnforcement = SortingEnforcement.throwIfWrongItems;
   bool _sortedByTime = true;
 
   /// Whether the list is will disallow modifications that render it
   /// in a state that's not sorted by time. Setting this property to true
   /// while the collection is in an unsorted state will raise an exception.
-  bool get forceSortedTime => _forceSortedTime;
-  set forceSortedTime(bool value) {
+  SortingEnforcement get sortingEnforcement => _sortingEnforcement;
+  set sortingEnforcement(SortingEnforcement value) {
     // If unchanged, do nothing.
-    if (forceSortedTime == value) {
+    if (sortingEnforcement == value) {
       return;
     }
 
     // Change to not force sorting is always safe.
-    if (!value) {
-      _forceSortedTime = value;
+    if (value == SortingEnforcement.notRequired) {
+      _sortingEnforcement = value;
     } else {
       // Change to force sorting -> only safe if the contents are currently
       // sorted, otherwise throw an exception.
@@ -311,7 +326,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
         throw GpsPointsViewSortingException(
             'Cannot switch to force sorting by time if the list is currently unsorted.');
       } else {
-        _forceSortedTime = value;
+        _sortingEnforcement = value;
       }
     }
   }
@@ -425,27 +440,26 @@ abstract class GpsPointsCollection<T extends GpsPoint>
             case TimeComparisonResult.after:
             case TimeComparisonResult.overlapping:
               // Disallow adding unsorted item if configured to force sorting.
-              if (forceSortedTime) {
+              if (sortingEnforcement != SortingEnforcement.notRequired) {
                 throw GpsPointsViewSortingException(
                     'Adding element $element after $last would make the list unsorted!');
               }
               _sortedByTime = false;
+              break;
           }
         }
       }
-    } catch (e) {
-      if (forceSortedTime) {
-        throw e;
-      }
+    } on GpsPointsViewSortingException {
+      if (sortingEnforcement == SortingEnforcement.throwIfWrongItems) {
+        rethrow;
+      } // otherwise we just skip the item, silently
     }
   }
 
   /// Internal implementation of [add], which does not do any safety checks
   /// regarding sorting. Only to be overridden in children.
   @protected
-  void addUnsafe(T element) {
-    if (isNotEmpty) {}
-  }
+  void addUnsafe(T element);
 
   void addAll(Iterable<T> source) {
     addAllStartingAt(source);
