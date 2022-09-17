@@ -166,6 +166,25 @@ void testGpsPointsCollection<T extends GpsPoint>(
       }
       expect(total, 6.0);
     });
+
+    test('Check skip', () {
+      for (var i = 1; i < 4; i++) {
+        gpc!.add(itemConstructor(i));
+      }
+
+      var partialGpc = gpc!.skip(0);
+      expect(partialGpc.length, gpc!.length);
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc![i], reason: 'Invalid point at position $i');
+      }
+
+      partialGpc = gpc!.skip(1);
+      expect(partialGpc.length, 2);
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc![i + 1],
+            reason: 'Invalid point at position $i');
+      }
+    });
   });
 
   group('Test $name - sorting behaviour:', () {

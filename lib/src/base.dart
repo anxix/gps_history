@@ -226,7 +226,7 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
   RandomAccessSkipIterable._(this._iterable, this._skipCount);
 
   @override
-  T operator [](int index) => _iterable[index];
+  T operator [](int index) => _iterable[index + _skipCount];
 
   @override
   int get length {
