@@ -404,30 +404,40 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   /// Add a single [element] to the collection.
   void add(T element) {
-    // For the non-empty list, we need to take into consideration sorting
-    // requirements.
-    if (isNotEmpty) {
-      // If it's already not sorted by time, we don't have to check anything, so
-      // only do further checks if currently sorted.
-      if (sortedByTime) {
-        final comparison =
-            compareElementTimeWithSeparateItem(length - 1, element);
-        switch (comparison) {
-          case TimeComparisonResult.before:
-          case TimeComparisonResult.same:
-            break;
-          case TimeComparisonResult.after:
-          case TimeComparisonResult.overlapping:
-            // Disallow adding unsorted item if configured to force sorting.
-            if (forceSortedTime) {
-              throw GpsPointsViewSortingException('');
-            }
-            _sortedByTime = false;
+    try {
+      // It's faster to add first in a try block and raise if it turns out the
+      // list is unsorted, than to first check if we can add. Particularly for
+      // the GpcCompact descendants that can do fast time comparisons on the
+      // internal binary representation.
+      addUnsafe(element);
+
+      // For the non-empty list, we need to take into consideration sorting
+      // requirements.
+      if (length > 1) {
+        // If it's already not sorted by time, we don't have to check anything, so
+        // only do further checks if currently sorted.
+        if (sortedByTime) {
+          final comparison = compareElementTime(length - 2, length - 1);
+          switch (comparison) {
+            case TimeComparisonResult.before:
+            case TimeComparisonResult.same:
+              break;
+            case TimeComparisonResult.after:
+            case TimeComparisonResult.overlapping:
+              // Disallow adding unsorted item if configured to force sorting.
+              if (forceSortedTime) {
+                throw GpsPointsViewSortingException(
+                    'Adding element $element after $last would make the list unsorted!');
+              }
+              _sortedByTime = false;
+          }
         }
       }
+    } catch (e) {
+      if (forceSortedTime) {
+        throw e;
+      }
     }
-
-    addUnsafe(element);
   }
 
   /// Internal implementation of [add], which does not do any safety checks
