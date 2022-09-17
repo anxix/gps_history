@@ -144,7 +144,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   void _writeElementToBytes(T element, int byteIndex);
 
   @override
-  void add(T element) {
+  void addUnsafe(T element) {
     _growCapacity();
     _writeElementToBytes(element, _elementNrToByteOffset(_elementsCount));
     _elementsCount += 1;
@@ -160,7 +160,8 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
       capacity = _elementsCount + source.length - skipItems;
 
       for (var element in source.skip(skipItems)) {
-        add(element);
+        // TODO: should this be add or addUnsafe?
+        addUnsafe(element);
       }
     }
   }
@@ -168,6 +169,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// Specialized version of [addAll] that can copy from a source of the
   /// same type as this object, by doing a binary copy of the internal data.
   void addAllFast(GpcEfficient<T> source) {
+    // TODO: shouldn't this automatically be done by add()?
     addAllStartingAtFast(source, 0);
   }
 
@@ -444,7 +446,7 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   }
 
   @override
-  TimeComparisonResult compareTime(int itemNrA, int itemNrB) {
+  TimeComparisonResult compareItemTime(int itemNrA, int itemNrB) {
     // No need to fully parse and instantiate the points, it's enough to
     // compare the integer representations of the time values.
     final timeA = _getUint32(_elementNrToByteOffset(itemNrA));

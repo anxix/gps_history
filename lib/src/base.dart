@@ -9,6 +9,7 @@
  */
 
 import 'package:gps_history/src/hash.dart';
+import 'package:meta/meta.dart';
 
 /// [Exception] class that can act as ancestor for exceptions raised by
 /// this package.
@@ -338,7 +339,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
     var detectedSorted = true;
     for (var itemNr = skipItems + 1; itemNr < length; itemNr++) {
-      switch (compareTime(itemNr - 1, itemNr)) {
+      switch (compareItemTime(itemNr - 1, itemNr)) {
         case TimeComparisonResult.before:
         case TimeComparisonResult.same:
           continue;
@@ -360,17 +361,23 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     return detectedSorted;
   }
 
-  /// Compares the time values in the positions [itemNrA] and [itemNrB] and
-  /// returns the result.
+  /// Performs [compareTime] for the items in the positions [itemNrA]
+  /// and [itemNrB], then returns the result.
   ///
-  /// If the time in [itemNrA] is considered before that in [itemNrB], the result
-  /// will be [TimeComparisonResult.before], etc.
   /// Children my override this method to implement more efficient or custom
   /// implementations, for example if they support overlapping time or if
   /// they have a way to do quick time comparisons without doing full item
   /// retrieval.
-  TimeComparisonResult compareTime(int itemNrA, int itemNrB) {
-    switch (this[itemNrA].time.compareTo(this[itemNrB].time)) {
+  TimeComparisonResult compareItemTime(int itemNrA, int itemNrB) {
+    return compareTime(this[itemNrA], this[itemNrB]);
+  }
+
+  /// Compares the time values of [itemA] and [itemB] and returns the result.
+  ///
+  /// If the time of [itemA] is considered before that of [itemB], the result
+  /// will be [TimeComparisonResult.before], etc.
+  TimeComparisonResult compareTime(T itemA, T itemB) {
+    switch (itemA.time.compareTo(itemB.time)) {
       case -1:
         return TimeComparisonResult.before;
       case 0:
@@ -383,9 +390,39 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   }
 
   /// Add a single [element] to the collection.
-  void add(T element);
+  void add(T element) {
+    // For the non-empty list, we need to take into consideration sorting
+    // requirements.
+    if (isNotEmpty) {
+      // If it's already not sorted by time, we don't have to check anything, so
+      // only do further checks if currently sorted.
+      if (sortedByTime) {
+        final comparison = compareTime(last, element);
+        switch (comparison) {
+          case TimeComparisonResult.before:
+          case TimeComparisonResult.same:
+            break;
+          case TimeComparisonResult.after:
+          case TimeComparisonResult.overlapping:
+            // Disallow adding unsorted item if configured to force sorting.
+            if (forceSortedTime) {
+              throw GpsPointsViewSortingException('');
+            }
+            _sortedByTime = false;
+        }
+      }
+    }
 
-  /// Add all the elements from [source] to the collection.
+    addUnsafe(element);
+  }
+
+  /// Internal implementation of [add], which does not do any safety checks
+  /// regarding sorting. Only to be overridden in children.
+  @protected
+  void addUnsafe(T element) {
+    if (isNotEmpty) {}
+  }
+
   void addAll(Iterable<T> source) {
     addAllStartingAt(source);
   }

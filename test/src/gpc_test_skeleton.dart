@@ -167,4 +167,29 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(total, 6.0);
     });
   });
+
+  group('Test $name - sorting behaviour:', () {
+    test('Check simple sorted states', () {
+      expect(gpc!.sortedByTime, true,
+          reason: 'empty list should implicitly be sorted');
+
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.sortedByTime, true,
+          reason: 'one-item list should implicitly be sorted');
+
+      gpc!.add(itemConstructor(2));
+      expect(gpc!.sortedByTime, true,
+          reason: 'list with two incrementing items should be sorted');
+
+      gpc!.add(itemConstructor(2));
+      expect(gpc!.sortedByTime, true,
+          reason:
+              'list with two identical incrementing items should be sorted');
+
+      gpc!.forceSortedTime = false;
+      gpc!.add(itemConstructor(1));
+      expect(gpc!.sortedByTime, false,
+          reason: 'list with non-incrementing items should be unsorted');
+    });
+  });
 }

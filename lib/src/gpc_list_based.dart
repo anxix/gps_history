@@ -28,7 +28,7 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   T operator [](int index) => _points[index];
 
   @override
-  void add(T element) {
+  void addUnsafe(T element) {
     _points.add(element);
   }
 
