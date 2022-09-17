@@ -490,7 +490,14 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   /// Add all elements from [source] to [this], after skipping [skipItems]
   /// items from the [source]. [skipItems]=0 is equivalent to calling [addAll].
-  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]);
+  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+    addAllStartingAtUnsafe(source, skipItems);
+  }
+
+  /// Internal implementation of [addAllStartingAt], which does not do any
+  /// safety checks regarding sorting. Only to be overridden in children.
+  @protected
+  void addAllStartingAtUnsafe(Iterable<T> source, [int skipItems = 0]);
 
   /// Collections are typically not read-only.
   @override

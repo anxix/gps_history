@@ -38,7 +38,7 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 
   @override
-  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+  void addAllStartingAtUnsafe(Iterable<T> source, [int skipItems = 0]) {
     _points.addAll(source.skip(skipItems));
   }
 }

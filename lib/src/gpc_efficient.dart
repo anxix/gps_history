@@ -163,7 +163,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 
   @override
-  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+  void addAllStartingAtUnsafe(Iterable<T> source, [int skipItems = 0]) {
     // Try the fast algorithm if the data is of the correct type.
     if (runtimeType == source.runtimeType) {
       addAllStartingAtFast(source as GpcEfficient<T>, skipItems);
