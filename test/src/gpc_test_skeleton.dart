@@ -238,5 +238,24 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.last, itemConstructor(1),
           reason: 'contents of existing item were changed by failed addition');
     });
+
+    test('Check switching sorting enforcement', () {
+      expect(gpc!.sortingEnforcement, SortingEnforcement.throwIfWrongItems,
+          reason: 'initial state not as expected');
+
+      // Create an unsorted state.
+      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
+      gpc!.add(itemConstructor(1));
+      gpc!.add(itemConstructor(0));
+
+      expect(() {
+        gpc!.sortingEnforcement = SortingEnforcement.skipWrongItems;
+      }, throwsA(isA<GpsPointsViewSortingException>()),
+          reason: 'should not switch to skipWrongItems while unsorted');
+      expect(() {
+        gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+      }, throwsA(isA<GpsPointsViewSortingException>()),
+          reason: 'should not switch to throwIfWrongItems while unsorted');
+    });
   });
 }

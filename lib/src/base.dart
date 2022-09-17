@@ -303,7 +303,13 @@ enum SortingEnforcement {
 /// Subclass names may start with "Gpc".
 abstract class GpsPointsCollection<T extends GpsPoint>
     extends GpsPointsView<T> {
+  /// [_sortingEnforcement] defaults to the strictest possible setting, as it's
+  /// easy to detect problems with this default and become more lenient if
+  /// necessary. Hunting for bugs due to unexpected sorting issues in huge lists
+  /// would however be very unpleasant, which could happen if the default was
+  /// chosen to be lenient.
   SortingEnforcement _sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+
   bool _sortedByTime = true;
 
   /// Whether the list is will disallow modifications that render it
