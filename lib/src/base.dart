@@ -432,10 +432,13 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Add a single [element] to the collection.
   void add(T element) {
     try {
-      // It's faster to add first in a try block and raise if it turns out the
-      // list is unsorted, than to first check if we can add. Particularly for
-      // the GpcCompact descendants that can do fast time comparisons on the
-      // internal binary representation.
+      // [GpcCompact] and subclasses have very fast comparison operations for
+      // items that are in the list. It is therefore cheaper to not first check
+      // if the new item is valid, but rather add it to the list, check if that
+      // makes the list invalid, and rollback if necessary. This is of course
+      // for the common case where additions are typically valid, because if
+      // incoming data is mostly invalid the add-and-rollback combo may be more
+      // expensive.
       addUnsafe(element);
 
       // For the non-empty list, we need to take into consideration sorting
