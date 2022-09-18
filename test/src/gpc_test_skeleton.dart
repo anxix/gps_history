@@ -73,8 +73,11 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.elementAt(1), p1, reason: 'wrong elementAt after second add');
       expect(gpc!.first, p0, reason: 'wrong first after second add');
       expect(gpc!.last, p1, reason: 'wrong last after second add');
+    });
 
-      //TODO: test invalid indexes
+    test('Invalid indexing', () {
+      expect(() => gpc![-1], throwsA(isA<RangeError>()));
+      expect(() => gpc![0], throwsA(isA<RangeError>()));
     });
   });
 
