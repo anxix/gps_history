@@ -11,7 +11,7 @@ void main() async {
   final points = GpcCompactGpsPoint();
   points.capacity = 10000000;
 
-  final point = GpsPoint(DateTime.now().toUtc(), 0, 0, 0);
+  final point = GpsPoint.allZero.copyWith(time: DateTime.now().toUtc());
   final startTime = DateTime.now();
 
   for (var i = 0; i < points.capacity; i++) {

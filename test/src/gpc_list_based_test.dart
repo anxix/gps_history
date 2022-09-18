@@ -13,8 +13,8 @@ void main() {
       'GpcListBased',
       () => GpcListBased<GpsPoint>(),
       (int i) => GpsPoint(
-          DateTime.utc(i),
-          i.toDouble(), // required to be equal to i
-          i.toDouble(),
-          i.toDouble()));
+          time: DateTime.utc(i),
+          latitude: i.toDouble(), // required to be equal to i
+          longitude: i.toDouble(),
+          altitude: i.toDouble()));
 }

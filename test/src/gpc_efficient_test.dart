@@ -271,10 +271,10 @@ void main() {
       (int i) => GpsPoint(
           // The constraints of GpcEfficientGpsPoint mean the date must be
           // somewhat reasonable, so we can't just use year 1.
-          DateTime.utc(2000 + i),
-          i.toDouble(), // required to be equal to i
-          i.toDouble(),
-          i.toDouble()));
+          time: DateTime.utc(2000 + i),
+          latitude: i.toDouble(), // required to be equal to i
+          longitude: i.toDouble(),
+          altitude: i.toDouble()));
 
   testGpc<GpsPoint>(
       'GpcCompactGpsPoint with extreme values',
@@ -282,10 +282,10 @@ void main() {
       (int i) => GpsPoint(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          DateTime.utc(2100 + i),
-          i.toDouble(), // required to be equal to i
-          175.0 + i,
-          16E3 + i));
+          time: DateTime.utc(2100 + i),
+          latitude: i.toDouble(), // required to be equal to i
+          longitude: 175.0 + i,
+          altitude: 16E3 + i));
 
   testGpc<GpsMeasurement>(
       'GpcCompactGpsMeasurement with extreme values',
@@ -293,12 +293,12 @@ void main() {
       (int i) => GpsMeasurement(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          DateTime.utc(2100 + i),
-          i.toDouble(), // required to be equal to i
-          175.0 + i,
-          16E3 + i,
-          3.2,
-          null, // make sure we also test a null
-          6546.0,
-          6545.0));
+          time: DateTime.utc(2100 + i),
+          latitude: i.toDouble(), // required to be equal to i
+          longitude: 175.0 + i,
+          altitude: 16E3 + i,
+          accuracy: 3.2,
+          heading: null, // make sure we also test a null
+          speed: 6546.0,
+          speedAccuracy: 6545.0));
 }

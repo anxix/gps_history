@@ -43,10 +43,38 @@ class GpsPoint {
   /// sources).
   final double? altitude;
 
+  /// The DateTime that is regarded as point zero in various collection/storage
+  /// implementations.
+  static final zeroDateTime = DateTime.utc(1970);
+
+  /// A point with all fields set to null if possible, or to zero otherwise.
+  static final zeroOrNulls =
+      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0, altitude: null);
+
+  /// A point with all fields set to zero.
+  static final allZero =
+      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0, altitude: 0);
+
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
-  const GpsPoint(this.time, this.latitude, this.longitude, this.altitude);
+  const GpsPoint(
+      {required this.time,
+      required this.latitude,
+      required this.longitude,
+      required this.altitude});
+
+  /// Create a copy of the point with optionally one or more of its fields set
+  /// to new values.
+  GpsPoint copyWith(
+      {DateTime? time, double? latitude, double? longitude, double? altitude}) {
+    return GpsPoint(
+      time: time ?? this.time,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitude: altitude ?? this.altitude,
+    );
+  }
 
   /// Equality operator overload.
   ///
@@ -94,23 +122,65 @@ class GpsMeasurement extends GpsPoint {
   /// The accuracy of the speed measurement.
   final double? speedAccuracy;
 
+  /// A measurement with all fields set to null if possible, or to zero otherwise.
+  static final zeroOrNulls = GpsMeasurement.fromPoint(GpsPoint.zeroOrNulls,
+      accuracy: null, heading: null, speed: null, speedAccuracy: null);
+
+  /// A measurement with all fields set to zero.
+  static final allZero = GpsMeasurement.fromPoint(GpsPoint.allZero,
+      accuracy: 0, heading: 0, speed: 0, speedAccuracy: 0);
+
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
   const GpsMeasurement(
-      DateTime time,
-      double latitude,
-      double longitude,
-      double? altitude,
-      this.accuracy,
-      this.heading,
-      this.speed,
-      this.speedAccuracy)
-      : super(time, latitude, longitude, altitude);
+      {required DateTime time,
+      required double latitude,
+      required double longitude,
+      required double? altitude,
+      required this.accuracy,
+      required this.heading,
+      required this.speed,
+      required this.speedAccuracy})
+      : super(
+          time: time,
+          latitude: latitude,
+          longitude: longitude,
+          altitude: altitude,
+        );
 
-  GpsMeasurement.fromPoint(GpsPoint point, this.accuracy, this.heading,
-      this.speed, this.speedAccuracy)
-      : super(point.time, point.latitude, point.longitude, point.altitude);
+  GpsMeasurement.fromPoint(GpsPoint point,
+      {required this.accuracy,
+      required this.heading,
+      required this.speed,
+      required this.speedAccuracy})
+      : super(
+            time: point.time,
+            latitude: point.latitude,
+            longitude: point.longitude,
+            altitude: point.altitude);
+
+  @override
+  GpsMeasurement copyWith(
+      {DateTime? time,
+      double? latitude,
+      double? longitude,
+      double? altitude,
+      double? accuracy,
+      double? heading,
+      double? speed,
+      double? speedAccuracy}) {
+    return GpsMeasurement(
+      time: time ?? this.time,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitude: altitude ?? this.altitude,
+      accuracy: accuracy ?? this.accuracy,
+      heading: heading ?? this.heading,
+      speed: speed ?? this.speed,
+      speedAccuracy: speedAccuracy ?? this.speedAccuracy,
+    );
+  }
 
   @override
   bool operator ==(other) {

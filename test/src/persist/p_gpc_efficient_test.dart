@@ -68,20 +68,23 @@ void main() async {
       'GpcCompactGpsPoint',
       () => PGpcCompactGpsPoint(),
       () => GpcCompactGpsPoint(),
-      (i) => GpsPoint(DateTime.utc(1970).add(Duration(hours: i)),
-          (i + 1) / 1000.0, (i + 1) / 2000.0, (i + 1) / 100));
+      (i) => GpsPoint(
+          time: DateTime.utc(1970).add(Duration(hours: i)),
+          latitude: (i + 1) / 1000.0,
+          longitude: (i + 1) / 2000.0,
+          altitude: (i + 1) / 100));
 
   await testPersister(
       'GpcCompactGpsMeasurement',
       () => PGpcCompactGpsMeasurement(),
       () => GpcCompactGpsMeasurement(),
       (i) => GpsMeasurement(
-          DateTime.utc(1970).add(Duration(hours: i)),
-          (i + 1) / 1000.0,
-          (i + 1) / 2000.0,
-          (i + 1) / 100,
-          (i + 1) / 200,
-          (i + 1) / 300,
-          (i + 1) / 400,
-          (i + 1) / 500));
+          time: DateTime.utc(1970).add(Duration(hours: i)),
+          latitude: (i + 1) / 1000.0,
+          longitude: (i + 1) / 2000.0,
+          altitude: (i + 1) / 100,
+          accuracy: (i + 1) / 200,
+          heading: (i + 1) / 300,
+          speed: (i + 1) / 400,
+          speedAccuracy: (i + 1) / 500));
 }

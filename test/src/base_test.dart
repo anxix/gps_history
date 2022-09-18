@@ -68,9 +68,13 @@ void main() {
   });
 
   group('Test GpsPoint', () {
-    makePoint(DateTime date, double latitude, double longitude,
+    makePoint(DateTime time, double latitude, double longitude,
             double? altitude) =>
-        GpsPoint(date, latitude, longitude, altitude);
+        GpsPoint(
+            time: time,
+            latitude: latitude,
+            longitude: longitude,
+            altitude: altitude);
 
     testBasicPoint(makePoint);
     testEqualityOfPoints(makePoint);
@@ -79,9 +83,21 @@ void main() {
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testMeasurementFromPoint() {
     test('Check correct construction from point', () {
-      final p = GpsPoint(DateTime.utc(1), 2, 3, 4);
-      final m = GpsMeasurement.fromPoint(p, 5, 6, 7, 8);
-      expect(m, GpsMeasurement(DateTime.utc(1), 2, 3, 4, 5, 6, 7, 8));
+      final p = GpsPoint(
+          time: DateTime.utc(1), latitude: 2, longitude: 3, altitude: 4);
+      final m = GpsMeasurement.fromPoint(p,
+          accuracy: 5, heading: 6, speed: 7, speedAccuracy: 8);
+      expect(
+          m,
+          GpsMeasurement(
+              time: DateTime.utc(1),
+              latitude: 2,
+              longitude: 3,
+              altitude: 4,
+              accuracy: 5,
+              heading: 6,
+              speed: 7,
+              speedAccuracy: 8));
     });
   }
 
@@ -89,9 +105,17 @@ void main() {
     // For basic point tests we want to have all fields different values, so any
     // mistaken implementation doesn't accidentally pass a test due to the
     // wrong fields being compared, that happen to have the same default value.
-    makeMeasurement(DateTime date, double latitude, double longitude,
+    makeMeasurement(DateTime time, double latitude, double longitude,
             double? altitude) =>
-        GpsMeasurement(date, latitude, longitude, altitude, 400, 500, 600, 700);
+        GpsMeasurement(
+            time: time,
+            latitude: latitude,
+            longitude: longitude,
+            altitude: altitude,
+            accuracy: 400,
+            heading: 500,
+            speed: 600,
+            speedAccuracy: 700);
     testBasicPoint(makeMeasurement);
 
     testMeasurementFromPoint();
@@ -107,24 +131,34 @@ void main() {
     // will vary one field at a time. That way a mistaken implementation doesn't
     // accidentally pass due to fields being unequal just because they're in
     // reality different fields.
-    makeMeasurementWithNulls(DateTime date, double latitude, double longitude,
+    makeMeasurementWithZeroes(DateTime time, double latitude, double longitude,
             double? altitude) =>
-        GpsMeasurement(date, latitude, longitude, altitude, 0, 0, 0, 0);
-    testEqualityOfPoints(makeMeasurementWithNulls);
-    final mz = makeMeasurementWithNulls(DateTime.utc(0), 0, 0, 0);
+        GpsMeasurement.allZero.copyWith(
+            time: time,
+            latitude: latitude,
+            longitude: longitude,
+            altitude: altitude);
+    testEqualityOfPoints(makeMeasurementWithZeroes);
+    final mz = GpsMeasurement.allZero;
     testUnequalPoints(
-        'accuracy', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 1, 0, 0, 0));
+        'accuracy', mz, GpsMeasurement.allZero.copyWith(accuracy: 1));
     testUnequalPoints(
-        'heading', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 1, 0, 0));
+        'heading', mz, GpsMeasurement.allZero.copyWith(heading: 1));
+    testUnequalPoints('speed', mz, GpsMeasurement.allZero.copyWith(speed: 1));
     testUnequalPoints(
-        'speed', mz, GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 0, 1, 0));
-    testUnequalPoints('speedAccuracy', mz,
-        GpsMeasurement(DateTime.utc(0), 0, 0, 0, 0, 0, 0, 1));
+        'speedAccuracy', mz, GpsMeasurement.allZero.copyWith(speedAccuracy: 1));
   });
 
   group('Test GpsMeasurement nulls', () {
-    final m =
-        GpsMeasurement(DateTime.utc(2020), 10, 20, 30, null, null, null, null);
+    final m = GpsMeasurement(
+        time: DateTime.utc(2020),
+        latitude: 10,
+        longitude: 20,
+        altitude: 30,
+        accuracy: null,
+        heading: null,
+        speed: null,
+        speedAccuracy: null);
 
     test('Check accuracy', () => expect(m.accuracy, null));
     test('Check heading', () => expect(m.heading, null));

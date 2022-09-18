@@ -59,10 +59,10 @@ class PersisterDummy extends Persister {
         }
         // Should only be called for GpcDummy.
         (view as GpsPointsCollection).add(GpsPoint(
-            DateTime.utc(readByte ~/ 10, readByte % 10),
-            readByte.toDouble(),
-            readByte.toDouble(),
-            readByte.toDouble()));
+            time: DateTime.utc(readByte ~/ 10, readByte % 10),
+            latitude: readByte.toDouble(),
+            longitude: readByte.toDouble(),
+            altitude: readByte.toDouble()));
       }
     });
   }
@@ -320,7 +320,7 @@ void testReadWrite() {
     });
 
     test('some dummy points', () async {
-      final point = GpsPoint(DateTime.utc(1970), 0, 0, 0);
+      final point = GpsPoint.allZero;
       gpc!.add(point);
       gpc!.add(point);
 
@@ -422,7 +422,7 @@ void testReadWrite() {
     });
 
     test('persister not empty', () async {
-      gpc!.add(GpsPoint(DateTime.utc(1970), 0.0, 0.0, 0.0));
+      gpc!.add(GpsPoint.allZero);
       expect(() async => await persistence!.read(gpc!, Stream.value([])),
           throwsA(isA<NotEmptyContainerException>()));
     });

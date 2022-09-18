@@ -13,8 +13,11 @@ import 'package:gps_history/gps_history_persist.dart';
 GpcCompactGpsPoint generatePoints(int nrPoints) {
   final result = GpcCompactGpsPoint();
   for (var i = 1; i <= nrPoints; i++) {
-    final point = GpsPoint(DateTime.utc(1970).add(Duration(minutes: i)),
-        i / 150.0, i / 250.0, i / 350.0);
+    final point = GpsPoint(
+        time: DateTime.utc(1970).add(Duration(minutes: i)),
+        latitude: i / 150.0,
+        longitude: i / 250.0,
+        altitude: i / 350.0);
     result.add(point);
   }
   return result;

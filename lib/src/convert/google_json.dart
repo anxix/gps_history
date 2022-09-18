@@ -406,12 +406,19 @@ class PointParser {
     } else {
       // We do want this point -> create and report it.
       var p = GpsPoint(
-          time, latitudeE7! / 1E7, longitudeE7! / 1E7, altitude?.toDouble());
+          time: time,
+          latitude: latitudeE7! / 1E7,
+          longitude: longitudeE7! / 1E7,
+          altitude: altitude?.toDouble());
 
       // If we have accuracy specified, return a GpsMeasurement object that's
       // capable of storing accuracy information.
       if (accuracy != null) {
-        p = GpsMeasurement.fromPoint(p, accuracy!.toDouble(), null, null, null);
+        p = GpsMeasurement.fromPoint(p,
+            accuracy: accuracy!.toDouble(),
+            heading: null,
+            speed: null,
+            speedAccuracy: null);
       }
 
       _prevParsedPoint = p;

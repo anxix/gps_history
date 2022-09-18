@@ -14,9 +14,9 @@ void main() {
   group('Test GpvQuerier', () {
     final points = GpcListBased<GpsPoint>()
       ..addAll([
-        GpsPoint(DateTime.utc(1), 1, 1, 1),
-        GpsPoint(DateTime.utc(2), 2, 2, 2),
-        GpsPoint(DateTime.utc(3), 3, 3, 3),
+        GpsPoint(time: DateTime.utc(1), latitude: 1, longitude: 1, altitude: 1),
+        GpsPoint(time: DateTime.utc(2), latitude: 2, longitude: 2, altitude: 2),
+        GpsPoint(time: DateTime.utc(3), latitude: 3, longitude: 3, altitude: 3),
       ]);
 
     test('Check backwards', () {

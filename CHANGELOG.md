@@ -4,6 +4,9 @@
   * Removed the ```addAll*Fast``` family of methods from the ```GpcEfficient```
    classes. The fast implementation was already called automatically by the
    ```addAll*``` methods when possible (as of version 0.0.5).
+  * Made the constructors of all ```GpsPoint``` and children use mandatory 
+    named parameters, because reading and writing the long lists of positional
+    arguments is a bit error-prone.
 
 * New features:
   * Implemented faster versions of several methods in the RandomAccessIterable.
@@ -12,6 +15,9 @@
   * Support for tracking and enforcing sorted state of 
     ```GpsPointsCollection```. This will allow fast binary search queries based
     on time.
+  * Added ```copyWith``` methods for ```GpsPoint``` and children.
+  * Added null-like and zero-like statics for ```GpsPoint``` and children, which
+    are useful in unit tests. Also combined with the ```copyWith``` methods.
 
 * Fixes:
 

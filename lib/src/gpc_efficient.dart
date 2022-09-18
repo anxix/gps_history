@@ -252,7 +252,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 /// Ranges of data will be ensured only at writing time. This because the data
 /// is written only once, but potentially read many times.
 class Conversions {
-  static final _zeroDateTimeUtc = DateTime.utc(1970);
+  static final _zeroDateTimeUtc = GpsPoint.zeroDateTime;
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
   static final int _extremeAltitude = 32767 ~/ 2; //int16 is -32768..32767
@@ -429,10 +429,13 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     return GpsPoint(
         // If the time storage method is changed, also modify the compareTime
         // method!
-        Conversions.uint32ToDateTime(_getUint32(byteIndex)),
-        Conversions.uint32ToLatitude(_getUint32(byteIndex + _offsetLatitude)),
-        Conversions.uint32ToLongitude(_getUint32(byteIndex + _offsetLongitude)),
-        Conversions.int16ToAltitude(_getInt16(byteIndex + _offsetAltitude)));
+        time: Conversions.uint32ToDateTime(_getUint32(byteIndex)),
+        latitude: Conversions.uint32ToLatitude(
+            _getUint32(byteIndex + _offsetLatitude)),
+        longitude: Conversions.uint32ToLongitude(
+            _getUint32(byteIndex + _offsetLongitude)),
+        altitude: Conversions.int16ToAltitude(
+            _getInt16(byteIndex + _offsetAltitude)));
   }
 
   /// Writes a single GPS point to the [_rawData].
@@ -535,13 +538,14 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
   GpsMeasurement _readElementFromBytes(int byteIndex) {
     final point = _readGpsPointFromBytes(byteIndex);
 
-    return GpsMeasurement.fromPoint(
-        point,
-        Conversions.uint16ToSmallDouble(
+    return GpsMeasurement.fromPoint(point,
+        accuracy: Conversions.uint16ToSmallDouble(
             _getUint16(byteIndex + _offsetAccuracy)),
-        Conversions.int16ToHeading(_getUint16(byteIndex + _offsetHeading)),
-        Conversions.uint16ToSmallDouble(_getUint16(byteIndex + _offsetSpeed)),
-        Conversions.uint16ToSmallDouble(
+        heading:
+            Conversions.int16ToHeading(_getUint16(byteIndex + _offsetHeading)),
+        speed: Conversions.uint16ToSmallDouble(
+            _getUint16(byteIndex + _offsetSpeed)),
+        speedAccuracy: Conversions.uint16ToSmallDouble(
             _getUint16(byteIndex + _offsetSpeedAccuracy)));
   }
 
