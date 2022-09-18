@@ -7,6 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:math';
+
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
@@ -71,6 +73,8 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.elementAt(1), p1, reason: 'wrong elementAt after second add');
       expect(gpc!.first, p0, reason: 'wrong first after second add');
       expect(gpc!.last, p1, reason: 'wrong last after second add');
+
+      //TODO: test invalid indexes
     });
   });
 
@@ -313,6 +317,92 @@ void testGpsPointsCollection<T extends GpsPoint>(
     expect(gpc!.checkContentsSortedByTime(gpc!.length), true,
         reason:
             'contents beyond list are treated as empty list and hence sorted');
+  });
+
+  group('addAllStartingAt with (partially) unsorted source', () {
+    runTest(dynamic source) {
+      // Tests for adding invalid data.
+      gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+      gpc!.add(itemConstructor(0));
+      for (var i = 0; i <= 1; i++) {
+        expect(() {
+          gpc!.addAllStartingAt(source, i);
+        }, throwsA(isA<GpsPointsViewSortingException>()),
+            reason:
+                'Should not be able to add unsorted source starting from index $i');
+      }
+
+      // Test for adding valid subset of data from overall invalid source.
+      for (var i = 2; i <= source.length; i++) {
+        final target = collectionConstructor();
+        target.add(itemConstructor(0));
+        target.addAllStartingAt(source, i);
+        expect(target.length, max<int>(0, source.length - i) + 1,
+            reason:
+                'Should be able to add partially sorted source starting from index $i');
+      }
+
+      // Test with originally empty target and throwing in case of invalid data.
+      for (var i = 0; i <= 1; i++) {
+        final target = collectionConstructor();
+        target.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+        expect(() {
+          target.addAllStartingAt(source, i);
+        }, throwsA(isA<GpsPointsViewSortingException>()),
+            reason: 'Expected failure when adding invalid data');
+      }
+
+      // Test for adding invalid data to target that doesn't care about sorting.
+      for (var i = 0; i <= source.length; i++) {
+        final target = collectionConstructor();
+        target.sortingEnforcement = SortingEnforcement.notRequired;
+        target.add(itemConstructor(0));
+        target.addAllStartingAt(source, i);
+        expect(target.length, max<int>(0, source.length - i) + 1,
+            reason:
+                'Should be able to add unsorted source starting from index $i');
+      }
+
+      // Test for adding partially invalid data to target that skips invalid data.
+      for (var skipNr = 0; skipNr <= 1; skipNr++) {
+        final target = collectionConstructor();
+        target.sortingEnforcement = SortingEnforcement.skipWrongItems;
+        target.add(itemConstructor(0));
+        // The below will only copy up to but exculding source[2], as that's where
+        // there's a discontinuity in the sorting.
+        target.addAllStartingAt(source, skipNr);
+        expect(target.length, 1 + (2 - skipNr),
+            reason:
+                'Should be able to add unsorted source starting from index $skipNr, skipping invalid items');
+        for (var targetItemNr = 1;
+            targetItemNr < target.length;
+            targetItemNr++) {
+          expect(target[targetItemNr], source[targetItemNr - 1 + skipNr],
+              reason:
+                  'invalid data at position $targetItemNr after copying from index $skipNr');
+        }
+      }
+    }
+
+    test('addAllStartingAt with (partially) unsorted source', () {
+      final source = makeList(0);
+      // Create a list where the sorting is broken after the second item.
+      source.add(itemConstructor(3));
+      source.add(itemConstructor(4));
+      source.add(itemConstructor(0));
+      source.add(itemConstructor(1));
+      source.add(itemConstructor(2));
+      // There's a separate code path for source of different type than target.
+      runTest(source);
+
+      final typedSource = collectionConstructor();
+      typedSource.sortingEnforcement = SortingEnforcement.notRequired;
+      for (final element in source) {
+        typedSource.add(element);
+      }
+      // There's a separate code path for source of same type as target.
+      runTest(typedSource);
+    });
   });
 
   test('Time comparisons', () {

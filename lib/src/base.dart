@@ -465,7 +465,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
           switch (comparison) {
             case TimeComparisonResult.before:
             case TimeComparisonResult.same:
-              break;
+              return true;
             case TimeComparisonResult.after:
             case TimeComparisonResult.overlapping:
               // Disallow adding unsorted item if configured to force sorting.
@@ -533,11 +533,18 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // data is incorrect, it can be detected already while copying from the
     // iterable to the list.
     copiedSource.sortingEnforcement = sortingEnforcement;
+    // Add the last item of the current collection, as that's going to be the
+    // benchmark that everything else is compared to.
+    if (isNotEmpty) {
+      copiedSource.add(last);
+    }
     // Only copy after any skipped items.
     for (final element in source.skip(skipItems)) {
       copiedSource.add(element);
     }
-    addAll(copiedSource);
+    // When adding, skip the reference item that we copied from the current
+    // collection, if any.
+    addAllStartingAt(copiedSource, isNotEmpty ? 1 : 0);
   }
 
   /// Implements the [addAllStartingAt] code path for the situation where the
