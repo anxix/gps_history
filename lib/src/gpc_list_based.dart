@@ -22,6 +22,11 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   GpcListBased();
 
   @override
+  GpcListBased<T> newEmpty() {
+    return GpcListBased<T>();
+  }
+
+  @override
   int get length => _points.length;
 
   @override

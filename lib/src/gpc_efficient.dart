@@ -185,8 +185,9 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     addAllStartingAtFast(source, 0);
   }
 
-  /// Specialized version of [addAllStartingAtFast] that can copy from a source of the
-  /// same type as this object, by doing a binary copy of the internal data.
+  /// Specialized version of [addAllStartingAtFast] that can copy from a source
+  /// of the same type as this object, by doing a binary copy of the internal
+  /// data.
   void addAllStartingAtFast(GpcEfficient<T> source, [int skipItems = 0]) {
     // Copying binary data between different types is not safe.
     if (runtimeType != source.runtimeType) {
@@ -456,6 +457,11 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
 /// Implements efficient storage for [GpsPoint] elements.
 class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   @override
+  GpsPointsCollection<GpsPoint> newEmpty() {
+    return GpcCompactGpsPoint();
+  }
+
+  @override
   GpsPoint _readElementFromBytes(int byteIndex) {
     return _readGpsPointFromBytes(byteIndex);
   }
@@ -521,6 +527,11 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
   static const int _offsetHeading = 16;
   static const int _offsetSpeed = 18;
   static const int _offsetSpeedAccuracy = 20;
+
+  @override
+  GpcCompactGpsMeasurement newEmpty() {
+    return GpcCompactGpsMeasurement();
+  }
 
   @override
   int get elementSizeInBytes => 22;

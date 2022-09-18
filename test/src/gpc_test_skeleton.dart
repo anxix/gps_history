@@ -90,6 +90,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
       // Try addAll on the same type.
       final otherGpc = collectionConstructor();
+      otherGpc.sortingEnforcement = SortingEnforcement.notRequired;
       expect(gpc!.runtimeType, otherGpc.runtimeType,
           reason: 'test intended to be on same types');
       otherGpc.addAll(gpc!);
@@ -108,6 +109,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
     test('Check addAllStartingAt', () {
       final src = makeList(5);
 
+      // It's valid to call add with skipItems beyond the source boundary.
       gpc!.addAllStartingAt(src, src.length);
       expect(gpc!.length, 0,
           reason: 'should be empty if adding from beyond the source boundary');
@@ -115,6 +117,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       final skip = 2;
       // Try addAllStartingAt on different types (src and gpc are not of the
       // same class).
+      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
       expect(gpc!.runtimeType, isNot(src.runtimeType),
           reason: 'test intended to be on different types');
       gpc!.addAllStartingAt(src, skip);
@@ -129,6 +132,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.runtimeType, otherGpc.runtimeType,
           reason: 'test intended to be on same types');
       otherGpc.addAllStartingAt(gpc!, 0);
+      otherGpc.sortingEnforcement = SortingEnforcement.notRequired;
       otherGpc.addAllStartingAt(gpc!, 1);
       expect(otherGpc.length, 2 * gpc!.length - 1,
           reason: 'wrong length after addAllStartingAt on same type');

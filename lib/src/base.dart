@@ -318,6 +318,12 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   bool _sortedByTime = true;
 
+  /// Creates a collection of the same type as this.
+  ///
+  /// To be overridden and implemented in children.
+  @protected
+  GpsPointsCollection<T> newEmpty();
+
   /// Whether the list is will disallow modifications that render it
   /// in a state that's not sorted by time. Setting this property to true
   /// while the collection is in an unsorted state will raise an exception.
@@ -430,7 +436,13 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   }
 
   /// Add a single [element] to the collection.
-  void add(T element) {
+  ///
+  /// Returns true if the addition was successful. In case of failure it will
+  /// either return false
+  /// (if [sortingEnforcement] == [SortingEnforcement.skipWrongItems]) or
+  /// it will throw [GpsPointsViewSortingException]
+  /// (if [sortingEnforcement] == [SortingEnforcement.throwIfWrongItems]).
+  bool add(T element) {
     try {
       // [GpcCompact] and subclasses have very fast comparison operations for
       // items that are in the list. It is therefore cheaper to not first check
@@ -443,7 +455,9 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
       // For the non-empty list, we need to take into consideration sorting
       // requirements.
-      if (length > 1) {
+      if (length <= 1) {
+        return true;
+      } else {
         // If it's already not sorted by time, we don't have to check anything, so
         // only do further checks if currently sorted.
         if (sortedByTime) {
@@ -457,10 +471,10 @@ abstract class GpsPointsCollection<T extends GpsPoint>
               // Disallow adding unsorted item if configured to force sorting.
               if (sortingEnforcement != SortingEnforcement.notRequired) {
                 throw GpsPointsViewSortingException(
-                    'Adding element $element after $last would make the list unsorted!');
+                    'Adding element ${this[length - 1]} after ${this[length - 2]} would make the list unsorted!');
               }
               _sortedByTime = false;
-              break;
+              return true;
           }
         }
       }
@@ -469,7 +483,9 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       if (sortingEnforcement == SortingEnforcement.throwIfWrongItems) {
         rethrow;
       } // otherwise we just skip the item, silently
+      return false;
     }
+    return false;
   }
 
   /// Removes the last object in this list, but only intended for use during
@@ -491,7 +507,110 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Add all elements from [source] to [this], after skipping [skipItems]
   /// items from the [source]. [skipItems]=0 is equivalent to calling [addAll].
   void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+    // If the collection doesn't care about sorting or it's already unsorted, go
+    // ahead and add.
+    if (sortingEnforcement == SortingEnforcement.notRequired || !sortedByTime) {
+      _addAllStartingAt_NoSortingRequired(source, skipItems);
+      return;
+    }
+
+    // If the code arrives here, the current collection is sorted and cares
+    // about sorting.
+
+    // If the source is itself a collection, rely on its internal sorting
+    // flags to determine the validity of the situation cheaply.
+    if (source is GpsPointsCollection<T>) {
+      _addAllStartingAt_CollectionSource(source, skipItems);
+      return;
+    }
+
+    // Source is some random iterable. Convert it to a collection and run it
+    // through the procedure again. This is an expensive operation both in time
+    // and in terms of memory. Memory could possibly be reduced by using an
+    // async stream-based approach, but that's not worth the effort for now.
+    final copiedSource = newEmpty();
+    // Use same enforcement strategy as the target collection. That way if the
+    // data is incorrect, it can be detected already while copying from the
+    // iterable to the list.
+    copiedSource.sortingEnforcement = sortingEnforcement;
+    // Only copy after any skipped items.
+    for (final element in source.skip(skipItems)) {
+      copiedSource.add(element);
+    }
+    addAll(copiedSource);
+  }
+
+  /// Implements the [addAllStartingAt] code path for the situation where the
+  /// sorting is not relevant.
+  void _addAllStartingAt_NoSortingRequired(Iterable<T> source, int skipItems) {
+    final originalLength = length;
     addAllStartingAtUnsafe(source, skipItems);
+    // If the collection was originally sorted by time, check if it still is.
+    if (sortedByTime) {
+      // Start checking including the original last element, because it needs
+      // to determine if the first newly added element is sorted compared to
+      // the original last element.
+      checkContentsSortedByTime(
+          originalLength > 0 // include original last element if there was one
+              ? originalLength - 1 // position of original last element
+              : 0 // no original last element -> start at beginning of list
+          );
+    }
+  }
+
+  /// Implements the [addAllStartingAt] code path for the situation where the
+  /// source is a collection.
+  void _addAllStartingAt_CollectionSource(
+      GpsPointsCollection<T> source, int skipItems) {
+    // Stop if there's nothing to add.
+    if (source.length - skipItems < 1) {
+      return;
+    }
+
+    // If the source is sorted by time completely or at least for the part
+    // starting at skipItems, find the correct starting point in the source for
+    // performing the addition. Everything after that point can be inserted
+    // immediately with confidence that sorted state will be maintained.
+    if (source.checkContentsSortedByTime(skipItems)) {
+      int maxStartingPoint = sortingEnforcement ==
+              SortingEnforcement.throwIfWrongItems
+          ? skipItems // unsorted not skipped -> there must be valid data from the start
+          : source.length - 1; // can skip unsorted -> need valid data anywehere
+
+      // Find the starting point for the addition and add everything from there.
+      for (var i = skipItems; i <= maxStartingPoint; i++) {
+        if (add(source[i])) {
+          // If the add() call didn't fail, this is the location where the two
+          // lists can be joined while maintaining sorted conditions. Add the
+          // rest of the source as well.
+          // For the situation of
+          // sortingEnforcement == SortingEnforcement.throwIfWrongItems,
+          // the add() will throw an exception if the source[i] item is invalid
+          // and the whole addition will (correctly) fail.
+          addAllStartingAtUnsafe(source, i + 1);
+          return;
+        }
+      }
+
+      // The execution will end up here if no valid starting point for the
+      // addition of source to this collection was found -> can stop.
+      return;
+    } else {
+      // Source is not sorted in the region that should be added. This requires
+      // slow item-by-item adding. However, this is only possible if the list
+      // is not set up to throw an exception in case of wrong items, because
+      // otherwise it's guaranteed to throw at some point and hence the entire
+      // operation is not allowed.
+      if (sortingEnforcement == SortingEnforcement.skipWrongItems) {
+        for (final element in source.skip(skipItems)) {
+          add(element);
+        }
+      } else {
+        assert(sortingEnforcement == SortingEnforcement.throwIfWrongItems);
+        throw GpsPointsViewSortingException(
+            'Adding all points from unsorted source would make the list unsorted.');
+      }
+    }
   }
 
   /// Internal implementation of [addAllStartingAt], which does not do any
