@@ -111,6 +111,88 @@ class GpsPoint {
       't: $time\tlat:\t$latitude\tlong: $longitude\talt: $altitude';
 }
 
+/// GPS point representing a stay in that location for some amount of time.
+///
+/// Some fields may be unavailable (null), depending on data source. The
+/// inherited [time] indicates the start of the stay.
+class GpsStay extends GpsPoint {
+  /// The accuracy of the measurement.
+  final double? accuracy;
+
+  /// The end time of the stay in the specified location (should be >= [time]),
+  /// which is seen as the start time of the stay). If unspecified, equivalent
+  /// to being equal to [time].
+  final DateTime? endTime;
+
+  /// A stay with all fields set to null if possible, or to zero otherwise.
+  static final zeroOrNulls = GpsStay.fromPoint(GpsPoint.zeroOrNulls);
+
+  /// A stay with all fields set to zero.
+  static final allZero = GpsStay.fromPoint(GpsPoint.allZero,
+      accuracy: 0, endTime: GpsPoint.zeroDateTime);
+
+  /// Constant constructor, as modifying points while they're part of a
+  /// collection could have bad effects in that collection's meta flags, like
+  /// sorted state.
+  const GpsStay(
+      {required DateTime time,
+      required double latitude,
+      required double longitude,
+      double? altitude,
+      this.accuracy,
+      this.endTime})
+      : super(
+          time: time,
+          latitude: latitude,
+          longitude: longitude,
+          altitude: altitude,
+        );
+
+  GpsStay.fromPoint(GpsPoint point, {this.accuracy, this.endTime})
+      : super(
+          time: point.time,
+          latitude: point.latitude,
+          longitude: point.longitude,
+          altitude: point.altitude,
+        );
+
+  @override
+  GpsStay copyWith(
+      {DateTime? time,
+      double? latitude,
+      double? longitude,
+      double? altitude,
+      double? accuracy,
+      DateTime? endTime}) {
+    return GpsStay(
+      time: time ?? this.time,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitude: altitude ?? this.altitude,
+      accuracy: accuracy ?? this.accuracy,
+      endTime: endTime ?? this.endTime,
+    );
+  }
+
+  @override
+  bool operator ==(other) {
+    if (!(super == (other))) {
+      return false;
+    }
+    return other is GpsStay &&
+        other.accuracy == accuracy &&
+        other.endTime == endTime;
+  }
+
+  @override
+  int get hashCode {
+    return hash3(super.hashCode, accuracy, endTime);
+  }
+
+  @override
+  String toString() => '${super.toString()}\tacc: $accuracy\tend: $endTime';
+}
+
 /// GPS point with additional information related to the measurement.
 ///
 /// Some fields may be unavailable (null), depending on data source.

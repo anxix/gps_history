@@ -78,6 +78,60 @@ void main() {
   });
 
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
+  void testStayFromPoint() {
+    test('Check correct construction from point', () {
+      final p = GpsPoint(
+          time: DateTime.utc(1), latitude: 2, longitude: 3, altitude: 4);
+      final m = GpsStay.fromPoint(p, accuracy: 5, endTime: DateTime.utc(6));
+      expect(
+          m,
+          GpsStay(
+              time: DateTime.utc(1),
+              latitude: 2,
+              longitude: 3,
+              altitude: 4,
+              accuracy: 5,
+              endTime: DateTime.utc(6)));
+    });
+  }
+
+  group('Test GpsStay', () {
+    // For basic point tests we want to have all fields different values, so any
+    // mistaken implementation doesn't accidentally pass a test due to the
+    // wrong fields being compared, that happen to have the same default value.
+    final makeStay = GpsStay.allZero
+        .copyWith(
+          accuracy: 400,
+          endTime: GpsPoint.zeroDateTime.add(Duration(seconds: 1)),
+        )
+        .copyWith;
+    testBasicPoint(makeStay);
+
+    testStayFromPoint();
+
+    // run specific tests that are not covered by the basic point test
+    final s = makeStay(
+        time: DateTime.utc(2020),
+        latitude: 10,
+        longitude: 20,
+        altitude: 30,
+        endTime: DateTime.utc(2022));
+    test('Check accuracy', () => expect(s.accuracy, 400));
+    test('Check endTime', () => expect(s.endTime, DateTime.utc(2022)));
+
+    // For equality tests we want all fields as equal as possible, because we
+    // will vary one field at a time. That way a mistaken implementation doesn't
+    // accidentally pass due to fields being unequal just because they're in
+    // reality different fields.
+    testEqualityOfPoints(GpsStay.allZero.copyWith);
+
+    final sz = GpsStay.allZero;
+    testUnequalPoints('accuracy', sz, GpsStay.allZero.copyWith(accuracy: 1));
+    testUnequalPoints('heading', sz,
+        GpsMeasurement.allZero.copyWith(time: DateTime.utc(2022)));
+  });
+
+  /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testMeasurementFromPoint() {
     test('Check correct construction from point', () {
       final p = GpsPoint(
@@ -97,6 +151,16 @@ void main() {
               speedAccuracy: 8));
     });
   }
+
+  group('Test GpsMeasurement nulls', () {
+    final m = GpsMeasurement(
+        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
+
+    test('Check accuracy', () => expect(m.accuracy, null));
+    test('Check heading', () => expect(m.heading, null));
+    test('Check speed', () => expect(m.speed, null));
+    test('Check speedAccuracy', () => expect(m.speedAccuracy, null));
+  });
 
   group('Test GpsMeasurement', () {
     // For basic point tests we want to have all fields different values, so any
