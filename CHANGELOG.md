@@ -1,3 +1,15 @@
+# 0.0.7
+
+* Public API changes:
+  * 
+
+* New features:
+  * 
+
+* Fixes:
+  *
+
+
 # 0.0.6
 
 * Public API changes:
@@ -19,8 +31,6 @@
   * Added ```copyWith``` methods for ```GpsPoint``` and children.
   * Added null-like and zero-like statics for ```GpsPoint``` and children, which
     are useful in unit tests. Also combined with the ```copyWith``` methods.
-
-* Fixes:
 
 
 # 0.0.5
