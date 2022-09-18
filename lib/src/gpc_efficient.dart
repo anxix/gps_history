@@ -252,7 +252,6 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 /// Ranges of data will be ensured only at writing time. This because the data
 /// is written only once, but potentially read many times.
 class Conversions {
-  // TODO: should we move the zero time to 2000-ish?
   static final _zeroDateTimeUtc = DateTime.utc(1970);
   static final _maxDatetimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
