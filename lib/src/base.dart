@@ -542,6 +542,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   /// Implements the [addAllStartingAt] code path for the situation where the
   /// sorting is not relevant.
+  // ignore: non_constant_identifier_names
   void _addAllStartingAt_NoSortingRequired(Iterable<T> source, int skipItems) {
     final originalLength = length;
     addAllStartingAtUnsafe(source, skipItems);
@@ -560,6 +561,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   /// Implements the [addAllStartingAt] code path for the situation where the
   /// source is a collection.
+  // ignore: non_constant_identifier_names
   void _addAllStartingAt_CollectionSource(
       GpsPointsCollection<T> source, int skipItems) {
     // Stop if there's nothing to add.
