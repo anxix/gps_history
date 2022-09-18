@@ -10,6 +10,9 @@ set -e
 
 git pull
 
+# Update any dependencies
+dart pub update
+
 # See if the analyzer doesn't find anything
 dart analyze
 status=$?
