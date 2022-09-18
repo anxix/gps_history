@@ -33,7 +33,8 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   T operator [](int index) => _points[index];
 
   @override
-  void addUnsafe(T element) {
+  // ignore: non_constant_identifier_names
+  void add_Unsafe(T element) {
     _points.add(element);
   }
 

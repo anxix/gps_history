@@ -451,7 +451,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       // for the common case where additions are typically valid, because if
       // incoming data is mostly invalid the add-and-rollback combo may be more
       // expensive.
-      addUnsafe(element);
+      add_Unsafe(element);
 
       // For the non-empty list, we need to take into consideration sorting
       // requirements.
@@ -498,7 +498,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Internal implementation of [add], which does not do any safety checks
   /// regarding sorting. Only to be overridden in children.
   @protected
-  void addUnsafe(T element);
+  // ignore: non_constant_identifier_names
+  void add_Unsafe(T element);
 
   void addAll(Iterable<T> source) {
     addAllStartingAt(source);

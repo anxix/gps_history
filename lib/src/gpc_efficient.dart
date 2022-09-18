@@ -144,7 +144,8 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   void _writeElementToBytes(T element, int byteIndex);
 
   @override
-  void addUnsafe(T element) {
+  // ignore: non_constant_identifier_names
+  void add_Unsafe(T element) {
     _growCapacity();
     _writeElementToBytes(element, _elementNrToByteOffset(_elementsCount));
     _elementsCount += 1;
@@ -173,8 +174,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
       capacity = _elementsCount + source.length - skipItems;
 
       for (var element in source.skip(skipItems)) {
-        // TODO: should this be add or addUnsafe?
-        addUnsafe(element);
+        add_Unsafe(element);
       }
     }
   }
