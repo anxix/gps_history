@@ -39,9 +39,9 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   group('Test $name - basics:', () {
-    test('Check length empty', () => expect(gpc!.length, 0));
+    test('Length empty', () => expect(gpc!.length, 0));
 
-    test('Check isEmpty/isNotEmpty', () {
+    test('isEmpty/isNotEmpty', () {
       expect(gpc!.isEmpty, true, reason: 'wrong for empty list');
       expect(gpc!.isNotEmpty, false, reason: 'wrong for empty list');
       gpc!.add(itemConstructor(1));
@@ -49,7 +49,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.isNotEmpty, true, reason: 'wrong for non-empty list');
     });
 
-    test('Check simple add and indexing', () {
+    test('Simple add and indexing', () {
       expect(() => gpc!.first, throwsA(isA<StateError>()));
       expect(() => gpc!.last, throwsA(isA<StateError>()));
 
@@ -75,7 +75,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   group('Test $name - addAll* functionality:', () {
-    test('Check addAll', () {
+    test('addAll', () {
       final src = makeList(2);
 
       // Try addAll on different types (src and gpc are not of the
@@ -106,7 +106,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       }
     });
 
-    test('Check addAllStartingAt', () {
+    test('addAllStartingAt', () {
       final src = makeList(5);
 
       // It's valid to call add with skipItems beyond the source boundary.
@@ -154,7 +154,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   group('Test $name - iterator behaviour:', () {
-    test('Check forEach', () {
+    test('forEach', () {
       // Add three points. Start from 1 rather than 0, because we'll use
       // addition to detect if all elements have been traversed, and skipping
       // something with value 0 would obviously not be noticed.
@@ -171,7 +171,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(total, 6.0);
     });
 
-    test('Check skip', () {
+    test('Skip', () {
       for (var i = 1; i < 4; i++) {
         gpc!.add(itemConstructor(i));
       }
@@ -188,11 +188,18 @@ void testGpsPointsCollection<T extends GpsPoint>(
         expect(partialGpc[i], gpc![i + 1],
             reason: 'Invalid point at position $i');
       }
+
+      partialGpc = gpc!.skip(1).skip(1);
+      expect(partialGpc.length, 1);
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc![i + 2],
+            reason: 'Invalid point at position $i');
+      }
     });
   });
 
   group('Test $name - sorting behaviour:', () {
-    test('Check simple sorted states', () {
+    test('Simple sorted states', () {
       expect(gpc!.sortedByTime, true,
           reason: 'empty list should implicitly be sorted');
 
@@ -221,7 +228,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'list with non-incrementing items should be unsorted');
     });
 
-    test('Check skipWrongItems sorting behaviour', () {
+    test('skipWrongItems sorting behaviour', () {
       gpc!.sortingEnforcement = SortingEnforcement.skipWrongItems;
       gpc!.add(itemConstructor(1));
       expect(gpc!.sortedByTime, true,
@@ -245,7 +252,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'list with three incrementing items should be sorted');
     });
 
-    test('Check throwing behaviour in case of sorting violating items', () {
+    test('Throwing behaviour in case of sorting violating items', () {
       gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
       gpc!.add(itemConstructor(1));
       expect(gpc!.sortedByTime, true,
@@ -262,7 +269,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'contents of existing item were changed by failed addition');
     });
 
-    test('Check switching sorting enforcement', () {
+    test('Switching sorting enforcement', () {
       expect(gpc!.sortingEnforcement, SortingEnforcement.throwIfWrongItems,
           reason: 'initial state not as expected');
 
