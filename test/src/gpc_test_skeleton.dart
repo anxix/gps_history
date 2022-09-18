@@ -307,4 +307,30 @@ void testGpsPointsCollection<T extends GpsPoint>(
         reason:
             'contents beyond list are treated as empty list and hence sorted');
   });
+
+  test('Time comparisons', () {
+    // Simple comparisons on standalone entities.
+    expect(gpc!.compareTime(itemConstructor(2), itemConstructor(2)),
+        TimeComparisonResult.same);
+    expect(gpc!.compareTime(itemConstructor(2), itemConstructor(3)),
+        TimeComparisonResult.before);
+    expect(gpc!.compareTime(itemConstructor(3), itemConstructor(2)),
+        TimeComparisonResult.after);
+
+    // Comparisons on all-internal items (may have optimized code paths).
+    gpc!.add(itemConstructor(1));
+    final newItem = itemConstructor(2);
+    gpc!.add(newItem);
+    expect(gpc!.compareElementTime(1, 1), TimeComparisonResult.same);
+    expect(gpc!.compareElementTime(0, 1), TimeComparisonResult.before);
+    expect(gpc!.compareElementTime(1, 0), TimeComparisonResult.after);
+
+    // Comparisons on hybrid internal and standalone points
+    expect(gpc!.compareElementTimeWithSeparateItem(0, newItem),
+        TimeComparisonResult.before);
+    expect(gpc!.compareElementTimeWithSeparateItem(0, itemConstructor(0)),
+        TimeComparisonResult.after);
+    expect(gpc!.compareElementTimeWithSeparateItem(1, newItem),
+        TimeComparisonResult.same);
+  });
 }
