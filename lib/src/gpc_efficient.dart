@@ -163,10 +163,11 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   }
 
   @override
-  void addAllStartingAtUnsafe(Iterable<T> source, [int skipItems = 0]) {
+  // ignore: non_constant_identifier_names
+  void addAllStartingAt_Unsafe(Iterable<T> source, [int skipItems = 0]) {
     // Try the fast algorithm if the data is of the correct type.
     if (runtimeType == source.runtimeType) {
-      addAllStartingAtFast(source as GpcEfficient<T>, skipItems);
+      _addAllStartingAtFast_Unsafe(source as GpcEfficient<T>, skipItems);
     } else {
       // No the same type -> do a slow copy.
       capacity = _elementsCount + source.length - skipItems;
@@ -178,17 +179,12 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     }
   }
 
-  /// Specialized version of [addAll] that can copy from a source of the
-  /// same type as this object, by doing a binary copy of the internal data.
-  void addAllFast(GpcEfficient<T> source) {
-    // TODO: shouldn't this automatically be done by add()?
-    addAllStartingAtFast(source, 0);
-  }
-
-  /// Specialized version of [addAllStartingAtFast] that can copy from a source
+  /// Specialized version of [addAllStartingAt_Unsafe] that can copy from a source
   /// of the same type as this object, by doing a binary copy of the internal
   /// data.
-  void addAllStartingAtFast(GpcEfficient<T> source, [int skipItems = 0]) {
+  // ignore: non_constant_identifier_names
+  void _addAllStartingAtFast_Unsafe(GpcEfficient<T> source,
+      [int skipItems = 0]) {
     // Copying binary data between different types is not safe.
     if (runtimeType != source.runtimeType) {
       throw TypeError();

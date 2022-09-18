@@ -260,22 +260,6 @@ void testGpc<T extends GpsPoint>(
       expect(() => gpc!.addByteData(data), throwsA(isA<Exception>()));
     });
   });
-
-  test('$name: addAllFast', () {
-    final source = collectionConstructor();
-    final target = collectionConstructor();
-
-    for (var i = 0; i < 11; i++) {
-      source.add(itemConstructor(i));
-    }
-
-    target.addAllFast(source);
-    expect(target, source);
-
-    final incompatibleTarget = GpcDummy();
-    expect(
-        () => incompatibleTarget.addAllFast(source), throwsA(isA<TypeError>()));
-  });
 }
 
 void main() {

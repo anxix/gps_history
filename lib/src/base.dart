@@ -545,7 +545,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   // ignore: non_constant_identifier_names
   void _addAllStartingAt_NoSortingRequired(Iterable<T> source, int skipItems) {
     final originalLength = length;
-    addAllStartingAtUnsafe(source, skipItems);
+    addAllStartingAt_Unsafe(source, skipItems);
     // If the collection was originally sorted by time, check if it still is.
     if (sortedByTime) {
       // Start checking including the original last element, because it needs
@@ -589,7 +589,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
           // sortingEnforcement == SortingEnforcement.throwIfWrongItems,
           // the add() will throw an exception if the source[i] item is invalid
           // and the whole addition will (correctly) fail.
-          addAllStartingAtUnsafe(source, i + 1);
+          addAllStartingAt_Unsafe(source, i + 1);
           return;
         }
       }
@@ -618,7 +618,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Internal implementation of [addAllStartingAt], which does not do any
   /// safety checks regarding sorting. Only to be overridden in children.
   @protected
-  void addAllStartingAtUnsafe(Iterable<T> source, [int skipItems = 0]);
+  // ignore: non_constant_identifier_names
+  void addAllStartingAt_Unsafe(Iterable<T> source, [int skipItems = 0]);
 
   /// Collections are typically not read-only.
   @override

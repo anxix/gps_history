@@ -3,6 +3,8 @@
 * Implemented faster versions of several methods in the RandomAccessIterable.
 * Added a sample application for converting Google location history JSON file to
   a SQLite database.
+* Removed the addAll*Fast family of methods from the GpcEfficient classes. The
+  fast implementation is caled automatically by addAll* when possible.
 
 
 # 0.0.5
