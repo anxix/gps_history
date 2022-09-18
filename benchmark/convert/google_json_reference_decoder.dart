@@ -51,10 +51,7 @@ void main() async {
       // capable of storing accuracy information.
       if (accuracy != null) {
         p = GpsMeasurement.fromPoint(p,
-            accuracy: accuracy.toDouble(),
-            heading: null,
-            speed: null,
-            speedAccuracy: null);
+            accuracy: accuracy.toDouble());
       }
       gpsPoints.add(p);
     }

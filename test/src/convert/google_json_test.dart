@@ -14,10 +14,7 @@ final oneDay = 24 * 3600 * 1000; // one day in milliseconds
 /// Create a default point configuration that's used in many tests.
 GpsPoint makeDefaultPoint() {
   return GpsPoint(
-      time: GpsPoint.zeroDateTime,
-      latitude: 1.0E-7,
-      longitude: 2.0E-7,
-      altitude: null);
+      time: GpsPoint.zeroDateTime, latitude: 1.0E-7, longitude: 2.0E-7);
 }
 
 /// Tests the PointParser against the specified sequence of [chunks], ensuring
@@ -145,10 +142,7 @@ void testPointParser() {
   ], [
     makeDefaultPoint(),
     GpsPoint(
-        time: DateTime.utc(1970, 1, 2),
-        latitude: 5.0E-7,
-        longitude: 6.0E-7,
-        altitude: null)
+        time: DateTime.utc(1970, 1, 2), latitude: 5.0E-7, longitude: 6.0E-7)
   ]);
 
   // Test parsing to [GpsMeasurement].
@@ -158,8 +152,7 @@ void testPointParser() {
     '"longitudeE7" : 2,',
     '"accuracy" : 12,',
   ], [
-    GpsMeasurement.fromPoint(makeDefaultPoint(),
-        accuracy: 12, heading: null, speed: null, speedAccuracy: null)
+    GpsMeasurement.fromPoint(makeDefaultPoint(), accuracy: 12)
   ]);
 
   // Test parsing with some real data.
@@ -178,10 +171,7 @@ void testPointParser() {
         latitude: 37.1395513,
         longitude: -7.9376766,
         altitude: 402,
-        accuracy: 20,
-        heading: null,
-        speed: null,
-        speedAccuracy: null)
+        accuracy: 20)
   ]);
 }
 
@@ -247,21 +237,14 @@ void main() {
       [
         onePointGpsPoint,
         GpsPoint(
-            time: DateTime.utc(1970, 1, 2),
-            latitude: 5.0E-7,
-            longitude: 6.0E-7,
-            altitude: null)
+            time: DateTime.utc(1970, 1, 2), latitude: 5.0E-7, longitude: 6.0E-7)
       ],
       1);
 
   // Test that fails parsing without a specific bit of logic in the parser.
   testJsonToGps('Test parsing when last character is part of number',
       '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20', [
-    GpsPoint(
-        time: DateTime.utc(1970),
-        latitude: 1.3E-6,
-        longitude: 2.0E-6,
-        altitude: null)
+    GpsPoint(time: DateTime.utc(1970), latitude: 1.3E-6, longitude: 2.0E-6)
   ]);
 
   // The tests below should not take a large amount of time. They are

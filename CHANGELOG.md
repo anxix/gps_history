@@ -6,7 +6,8 @@
    ```addAll*``` methods when possible (as of version 0.0.5).
   * Made the constructors of all ```GpsPoint``` and children use mandatory 
     named parameters, because reading and writing the long lists of positional
-    arguments is a bit error-prone.
+    arguments is a bit error-prone. Nullable parameters are made optional,
+    in order to reduce pointless noise.
 
 * New features:
   * Implemented faster versions of several methods in the RandomAccessIterable.

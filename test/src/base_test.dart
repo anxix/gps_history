@@ -151,14 +151,7 @@ void main() {
 
   group('Test GpsMeasurement nulls', () {
     final m = GpsMeasurement(
-        time: DateTime.utc(2020),
-        latitude: 10,
-        longitude: 20,
-        altitude: 30,
-        accuracy: null,
-        heading: null,
-        speed: null,
-        speedAccuracy: null);
+        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
 
     test('Check accuracy', () => expect(m.accuracy, null));
     test('Check heading', () => expect(m.heading, null));

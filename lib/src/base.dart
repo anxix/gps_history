@@ -49,7 +49,7 @@ class GpsPoint {
 
   /// A point with all fields set to null if possible, or to zero otherwise.
   static final zeroOrNulls =
-      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0, altitude: null);
+      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0);
 
   /// A point with all fields set to zero.
   static final allZero =
@@ -58,16 +58,21 @@ class GpsPoint {
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
-  const GpsPoint(
-      {required this.time,
-      required this.latitude,
-      required this.longitude,
-      required this.altitude});
+  const GpsPoint({
+    required this.time,
+    required this.latitude,
+    required this.longitude,
+    this.altitude,
+  });
 
   /// Create a copy of the point with optionally one or more of its fields set
   /// to new values.
-  GpsPoint copyWith(
-      {DateTime? time, double? latitude, double? longitude, double? altitude}) {
+  GpsPoint copyWith({
+    DateTime? time,
+    double? latitude,
+    double? longitude,
+    double? altitude,
+  }) {
     return GpsPoint(
       time: time ?? this.time,
       latitude: latitude ?? this.latitude,
@@ -123,8 +128,7 @@ class GpsMeasurement extends GpsPoint {
   final double? speedAccuracy;
 
   /// A measurement with all fields set to null if possible, or to zero otherwise.
-  static final zeroOrNulls = GpsMeasurement.fromPoint(GpsPoint.zeroOrNulls,
-      accuracy: null, heading: null, speed: null, speedAccuracy: null);
+  static final zeroOrNulls = GpsMeasurement.fromPoint(GpsPoint.zeroOrNulls);
 
   /// A measurement with all fields set to zero.
   static final allZero = GpsMeasurement.fromPoint(GpsPoint.allZero,
@@ -133,28 +137,29 @@ class GpsMeasurement extends GpsPoint {
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
-  const GpsMeasurement(
-      {required DateTime time,
-      required double latitude,
-      required double longitude,
-      required double? altitude,
-      required this.accuracy,
-      required this.heading,
-      required this.speed,
-      required this.speedAccuracy})
-      : super(
+  const GpsMeasurement({
+    required DateTime time,
+    required double latitude,
+    required double longitude,
+    double? altitude,
+    this.accuracy,
+    this.heading,
+    this.speed,
+    this.speedAccuracy,
+  }) : super(
           time: time,
           latitude: latitude,
           longitude: longitude,
           altitude: altitude,
         );
 
-  GpsMeasurement.fromPoint(GpsPoint point,
-      {required this.accuracy,
-      required this.heading,
-      required this.speed,
-      required this.speedAccuracy})
-      : super(
+  GpsMeasurement.fromPoint(
+    GpsPoint point, {
+    this.accuracy,
+    this.heading,
+    this.speed,
+    this.speedAccuracy,
+  }) : super(
             time: point.time,
             latitude: point.latitude,
             longitude: point.longitude,

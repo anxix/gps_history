@@ -414,11 +414,7 @@ class PointParser {
       // If we have accuracy specified, return a GpsMeasurement object that's
       // capable of storing accuracy information.
       if (accuracy != null) {
-        p = GpsMeasurement.fromPoint(p,
-            accuracy: accuracy!.toDouble(),
-            heading: null,
-            speed: null,
-            speedAccuracy: null);
+        p = GpsMeasurement.fromPoint(p, accuracy: accuracy!.toDouble());
       }
 
       _prevParsedPoint = p;
