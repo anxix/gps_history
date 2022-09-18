@@ -1,19 +1,31 @@
 # 0.0.6
 
-* Implemented faster versions of several methods in the RandomAccessIterable.
-* Added a sample application for converting Google location history JSON file to
-  a SQLite database.
-* Removed the addAll*Fast family of methods from the GpcEfficient classes. The
-  fast implementation is caled automatically by addAll* when possible.
+* Public API changes:
+  * Removed the ```addAll*Fast``` family of methods from the ```GpcEfficient```
+   classes. The fast implementation was already called automatically by the
+   ```addAll*``` methods when possible (as of version 0.0.5).
+
+* New features:
+  * Implemented faster versions of several methods in the RandomAccessIterable.
+  * Added a sample application for converting Google location history JSON file 
+    to a SQLite database.
+  * Support for tracking and enforcing sorted state of 
+    ```GpsPointsCollection```. This will allow fast binary search queries based
+    on time.
+
+* Fixes:
 
 
 # 0.0.5
 
-* The addAll implementation of GpcEfficient<T> automatically switches to
-  addAllFast when possible.
-* Fixed bugs in the addAll/addAllFast implementations.
-* Added addAllStartingAt. This required some refactoring of the base 
-  classes for the Iterable implementation.
+* New features:
+  * Added addAllStartingAt. This required some refactoring of the base 
+    classes for the Iterable implementation.
+
+* Fixes:
+  * The addAll implementation of GpcEfficient<T> automatically switches to
+    addAllFast when possible.
+  * Fixed bugs in the addAll/addAllFast implementations.
 
 
 # 0.0.4
@@ -25,7 +37,8 @@
 
 # 0.0.3
 
-* Implemented persistence mechanism.
+* New features:
+  * Implemented persistence mechanism.
 
 
 # 0.0.2
