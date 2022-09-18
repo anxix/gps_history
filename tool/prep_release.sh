@@ -27,6 +27,8 @@ status=$?
 
 read -p 'Inspect dart doc output for warnings/errors. Press ENTER if OK to continue.'
 
+rm -rf doc/api
+
 # Do a dryrun
 dart pub publish --dry-run
 read -p 'Release name (e.g. 1.0.2): ' relname
