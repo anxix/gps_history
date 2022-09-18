@@ -62,6 +62,11 @@ void testEqualityOfPoints(PointConstructor makePoint) {
 }
 
 void main() {
+  test('GpsHistoryException', () {
+    expect(GpsHistoryException().toString(), 'GpsHistoryException');
+    expect(GpsHistoryException('test').toString(), 'GpsHistoryException: test');
+  });
+
   group('Test GpsPoint', () {
     makePoint(DateTime date, double latitude, double longitude,
             double? altitude) =>
