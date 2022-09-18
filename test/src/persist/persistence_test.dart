@@ -247,7 +247,7 @@ void testReadWrite() {
     persistence = PersistenceDummy.get();
     persister = persistence!.register(PersisterDummy()) as PersisterDummy;
 
-    gpc = GpcDummy();
+    gpc = GpcDummy()..sortingEnforcement = SortingEnforcement.notRequired;
 
     sink = TestStreamSink();
 

@@ -374,8 +374,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     for (var itemNr = skipItems + 1; itemNr < length; itemNr++) {
       switch (compareElementTime(itemNr - 1, itemNr)) {
         case TimeComparisonResult.before:
-        case TimeComparisonResult.same:
           continue;
+        case TimeComparisonResult.same:
         case TimeComparisonResult.after:
         case TimeComparisonResult.overlapping:
           detectedSorted = false;
@@ -464,8 +464,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
           final comparison = compareElementTime(length - 2, length - 1);
           switch (comparison) {
             case TimeComparisonResult.before:
-            case TimeComparisonResult.same:
               return true;
+            case TimeComparisonResult.same:
             case TimeComparisonResult.after:
             case TimeComparisonResult.overlapping:
               // Disallow adding unsorted item if configured to force sorting.

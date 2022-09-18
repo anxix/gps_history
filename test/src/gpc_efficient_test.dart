@@ -165,8 +165,14 @@ void testGpc<T extends GpsPoint>(
     T Function(int itemIndex) itemConstructor) {
   testGpsPointsCollection<T>(name, collectionConstructor, itemConstructor);
 
+  late GpcEfficient<T> gpc;
+
+  setUp(() {
+    gpc = collectionConstructor()
+      ..sortingEnforcement = SortingEnforcement.notRequired;
+  });
+
   test('$name: capacity', () {
-    final gpc = collectionConstructor();
     const targetCapacity =
         77; // pick a number that's unlikely to be on an increment boundary
 
@@ -209,55 +215,49 @@ void testGpc<T extends GpsPoint>(
   });
 
   group('$name: addByteData', () {
-    GpcEfficient? gpc;
-
-    setUp(() {
-      gpc = collectionConstructor();
-    });
-
     test('add nothing', () {
       final data = ByteData(0);
-      gpc!.addByteData(data);
+      gpc.addByteData(data);
 
-      expect(gpc!.length, 0);
+      expect(gpc.length, 0);
 
-      gpc!.add(itemConstructor(0));
-      gpc!.addByteData(data);
-      expect(gpc!.length, 1);
+      gpc.add(itemConstructor(0));
+      gpc.addByteData(data);
+      expect(gpc.length, 1);
     });
 
     test('add some items', () {
       const nrElements = 10;
-      final data = ByteData(nrElements * gpc!.elementSizeInBytes);
+      final data = ByteData(nrElements * gpc.elementSizeInBytes);
       for (var elemNr = 0; elemNr < nrElements; elemNr++) {
-        for (var byteNr = 0; byteNr < gpc!.elementSizeInBytes; byteNr++) {
+        for (var byteNr = 0; byteNr < gpc.elementSizeInBytes; byteNr++) {
           data.setUint8(
-              byteNr + elemNr * gpc!.elementSizeInBytes, 1 + elemNr + byteNr);
+              byteNr + elemNr * gpc.elementSizeInBytes, 1 + elemNr + byteNr);
         }
       }
 
-      gpc!.addByteData(data);
-      expect(gpc!.length, nrElements);
+      gpc.addByteData(data);
+      expect(gpc.length, nrElements);
 
       // Add some more.
-      gpc!.addByteData(data);
-      expect(gpc!.length, 2 * nrElements);
+      gpc.addByteData(data);
+      expect(gpc.length, 2 * nrElements);
 
       // Check the contents.
-      expect(gpc![0].altitude, 1798.5);
-      expect(gpc![1].altitude, 1927);
-      expect(gpc![9].altitude, 2955);
-      expect(gpc![10].altitude, 1798.5);
-      expect(gpc![11].altitude, 1927);
-      expect(gpc![19].altitude, 2955);
+      expect(gpc[0].altitude, 1798.5);
+      expect(gpc[1].altitude, 1927);
+      expect(gpc[9].altitude, 2955);
+      expect(gpc[10].altitude, 1798.5);
+      expect(gpc[11].altitude, 1927);
+      expect(gpc[19].altitude, 2955);
     });
 
     test('add wrongly sized data', () {
-      var data = ByteData(2 * gpc!.elementSizeInBytes + 1);
-      expect(() => gpc!.addByteData(data), throwsA(isA<Exception>()));
+      var data = ByteData(2 * gpc.elementSizeInBytes + 1);
+      expect(() => gpc.addByteData(data), throwsA(isA<Exception>()));
 
-      data = ByteData(gpc!.elementSizeInBytes - 1);
-      expect(() => gpc!.addByteData(data), throwsA(isA<Exception>()));
+      data = ByteData(gpc.elementSizeInBytes - 1);
+      expect(() => gpc.addByteData(data), throwsA(isA<Exception>()));
     });
   });
 }

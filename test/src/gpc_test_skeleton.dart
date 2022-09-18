@@ -220,17 +220,19 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(gpc!.sortedByTime, true,
           reason: 'list with two incrementing items should be sorted');
 
-      gpc!.add(itemConstructor(2));
-      expect(gpc!.length, 3, reason: 'third item should have been added');
+      // Not allowed to add two items with the same time.
+      expect(() {
+        gpc!.add(itemConstructor(2));
+      }, throwsA(isA<GpsPointsViewSortingException>()));
+      expect(gpc!.length, 2, reason: 'third item should not have been added');
       expect(gpc!.sortedByTime, true,
-          reason:
-              'list with two identical incrementing items should be sorted');
+          reason: 'list should remain sorted after failed addition');
 
       gpc!.sortingEnforcement = SortingEnforcement.notRequired;
       gpc!.add(itemConstructor(1));
-      expect(gpc!.length, 4,
+      expect(gpc!.length, 3,
           reason:
-              'fourth item should have been added even if it breaks sorting');
+              'third item should have been added even if it breaks sorting');
       expect(gpc!.sortedByTime, false,
           reason: 'list with non-incrementing items should be unsorted');
     });
@@ -248,13 +250,13 @@ void testGpsPointsCollection<T extends GpsPoint>(
           reason: 'the invalid value should have been skipped');
 
       gpc!.add(itemConstructor(1));
-      expect(gpc!.length, 2,
-          reason: 'valid duplicate value should have been allowed');
+      expect(gpc!.length, 1,
+          reason: 'duplicate value should have been skipped');
       expect(gpc!.sortedByTime, true,
-          reason: 'list with two identical items should be sorted');
+          reason: 'one-item list should implicitly be sorted');
 
       gpc!.add(itemConstructor(3));
-      expect(gpc!.length, 3, reason: 'valid value should have been allowed');
+      expect(gpc!.length, 2, reason: 'valid value should have been allowed');
       expect(gpc!.sortedByTime, true,
           reason: 'list with three incrementing items should be sorted');
     });
@@ -336,7 +338,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
       }
 
       // Test for adding valid subset of data from overall invalid source.
-      for (var i = 2; i <= source.length; i++) {
+      for (var i = 3; i <= source.length; i++) {
         final target = collectionConstructor();
         target.add(itemConstructor(0));
         target.addAllStartingAt(source, i);
@@ -387,17 +389,26 @@ void testGpsPointsCollection<T extends GpsPoint>(
       }
     }
 
-    test('addAllStartingAt with (partially) unsorted source', () {
-      final source = makeList(0);
+    List<T> makeUnsortedList() {
+      final result = makeList(0);
       // Create a list where the sorting is broken after the second item.
-      source.add(itemConstructor(3));
-      source.add(itemConstructor(4));
-      source.add(itemConstructor(0));
-      source.add(itemConstructor(1));
-      source.add(itemConstructor(2));
-      // There's a separate code path for source of different type than target.
-      runTest(source);
+      result.add(itemConstructor(3));
+      result.add(itemConstructor(4));
+      result.add(itemConstructor(0));
+      result.add(itemConstructor(1));
+      result.add(itemConstructor(2));
 
+      return result;
+    }
+
+    test('with source of different type', () {
+      // There's a separate code path for source of different type than target.
+      final source = makeUnsortedList();
+      runTest(source);
+    });
+
+    test('with source of same type', () {
+      final source = makeUnsortedList();
       final typedSource = collectionConstructor();
       typedSource.sortingEnforcement = SortingEnforcement.notRequired;
       for (final element in source) {
