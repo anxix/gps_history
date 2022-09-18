@@ -9,14 +9,15 @@ import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
 typedef PointConstructor = GpsPoint Function(
-    DateTime date, double latitude, double longitude, double? altitude);
+    {DateTime? time, double? latitude, double? longitude, double? altitude});
 
 /// Perform basic point tests.
 ///
-/// The [makePoint] function should be such that it creates a point that has
-/// different values for all fields.
+/// The [makePoint] function is called to instantiate a point of the correct
+/// type for the current class that's being tested.
 void testBasicPoint(PointConstructor makePoint) {
-  final p = makePoint(DateTime.utc(2020), 10, 20, 30);
+  final p = makePoint(
+      time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
 
   test('Check time', () => expect(p.time, DateTime.utc(2020)));
   test('Check latitude', () => expect(p.latitude, 10));
@@ -27,7 +28,11 @@ void testBasicPoint(PointConstructor makePoint) {
   // fields (testEqualityOfPoints will test for objects that are mostly
   // identical).
   test('Check equality of same object', () => expect(p, p));
-  final p2 = makePoint(p.time, p.latitude, p.longitude, p.altitude);
+  final p2 = makePoint(
+      time: p.time,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      altitude: p.altitude);
   test('Check equality of different object with same values',
       () => expect(p, p2));
   test('Check same hash for different object with same values',
@@ -48,17 +53,17 @@ void testUnequalPoints(String description, GpsPoint p0, GpsPoint p1) {
 void testEqualityOfPoints(PointConstructor makePoint) {
   // Test against an all-zeroes point, so we can vary one field at a time to
   // make sure that the comparisons work properly.
-  final p = makePoint(DateTime.utc(0), 0, 0, 0);
+  final p = makePoint();
 
   test('Check equality of different object with same values',
-      () => expect(p, makePoint(DateTime.utc(0), 0, 0, 0)));
+      () => expect(p, makePoint()));
   test('Check equal hashes of different object with same values',
-      () => expect(p.hashCode, makePoint(DateTime.utc(0), 0, 0, 0).hashCode));
+      () => expect(p.hashCode, makePoint().hashCode));
 
-  testUnequalPoints('date', p, makePoint(DateTime.utc(1), 0, 0, 0));
-  testUnequalPoints('latitude', p, makePoint(DateTime.utc(0), 1, 0, 0));
-  testUnequalPoints('longitude', p, makePoint(DateTime.utc(0), 0, 1, 0));
-  testUnequalPoints('altitude', p, makePoint(DateTime.utc(0), 0, 0, 1));
+  testUnequalPoints('date', p, makePoint(time: DateTime.utc(1)));
+  testUnequalPoints('latitude', p, makePoint(latitude: 1));
+  testUnequalPoints('longitude', p, makePoint(longitude: 1));
+  testUnequalPoints('altitude', p, makePoint(altitude: 1));
 }
 
 void main() {
@@ -68,16 +73,8 @@ void main() {
   });
 
   group('Test GpsPoint', () {
-    makePoint(DateTime time, double latitude, double longitude,
-            double? altitude) =>
-        GpsPoint(
-            time: time,
-            latitude: latitude,
-            longitude: longitude,
-            altitude: altitude);
-
-    testBasicPoint(makePoint);
-    testEqualityOfPoints(makePoint);
+    testBasicPoint(GpsPoint.allZero.copyWith);
+    testEqualityOfPoints(GpsPoint.allZero.copyWith);
   });
 
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
@@ -105,23 +102,21 @@ void main() {
     // For basic point tests we want to have all fields different values, so any
     // mistaken implementation doesn't accidentally pass a test due to the
     // wrong fields being compared, that happen to have the same default value.
-    makeMeasurement(DateTime time, double latitude, double longitude,
-            double? altitude) =>
-        GpsMeasurement(
-            time: time,
-            latitude: latitude,
-            longitude: longitude,
-            altitude: altitude,
-            accuracy: 400,
-            heading: 500,
-            speed: 600,
-            speedAccuracy: 700);
+    final makeMeasurement = GpsMeasurement.allZero
+        .copyWith(
+          accuracy: 400,
+          heading: 500,
+          speed: 600,
+          speedAccuracy: 700,
+        )
+        .copyWith;
     testBasicPoint(makeMeasurement);
 
     testMeasurementFromPoint();
 
     // run specific tests that are not covered by the basic point test
-    final m = makeMeasurement(DateTime.utc(2020), 10, 20, 30);
+    final m = makeMeasurement(
+        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
     test('Check accuracy', () => expect(m.accuracy, 400));
     test('Check heading', () => expect(m.heading, 500));
     test('Check speed', () => expect(m.speed, 600));
@@ -131,14 +126,8 @@ void main() {
     // will vary one field at a time. That way a mistaken implementation doesn't
     // accidentally pass due to fields being unequal just because they're in
     // reality different fields.
-    makeMeasurementWithZeroes(DateTime time, double latitude, double longitude,
-            double? altitude) =>
-        GpsMeasurement.allZero.copyWith(
-            time: time,
-            latitude: latitude,
-            longitude: longitude,
-            altitude: altitude);
-    testEqualityOfPoints(makeMeasurementWithZeroes);
+    testEqualityOfPoints(GpsMeasurement.allZero.copyWith);
+
     final mz = GpsMeasurement.allZero;
     testUnequalPoints(
         'accuracy', mz, GpsMeasurement.allZero.copyWith(accuracy: 1));
