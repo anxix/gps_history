@@ -4,3 +4,6 @@
 
 # Conventional directory for build output.
 build/
+
+# Re-include pubspec.lock that's ignored in the upper directory.
+!pubspec.lock
