@@ -450,24 +450,6 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     _setInt16(byteIndex + _offsetAltitude,
         Conversions.altitudeToInt16(element.altitude));
   }
-}
-
-/// Implements efficient storage for [GpsPoint] elements.
-class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
-  @override
-  GpsPointsCollection<GpsPoint> newEmpty() {
-    return GpcCompactGpsPoint();
-  }
-
-  @override
-  GpsPoint _readElementFromBytes(int byteIndex) {
-    return _readGpsPointFromBytes(byteIndex);
-  }
-
-  @override
-  void _writeElementToBytes(GpsPoint element, int byteIndex) {
-    return _writeGpsPointToBytes(element, byteIndex);
-  }
 
   /// Like the inherited [compareTime], except it works on Uint32 representation
   /// of time that is used internally by the GpcCompact classes.
@@ -499,6 +481,24 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
     final itemTime = Conversions.dateTimeToUint32(item.time);
 
     return _compareUint32Time(elementTime, itemTime);
+  }
+}
+
+/// Implements efficient storage for [GpsPoint] elements.
+class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
+  @override
+  GpsPointsCollection<GpsPoint> newEmpty() {
+    return GpcCompactGpsPoint();
+  }
+
+  @override
+  GpsPoint _readElementFromBytes(int byteIndex) {
+    return _readGpsPointFromBytes(byteIndex);
+  }
+
+  @override
+  void _writeElementToBytes(GpsPoint element, int byteIndex) {
+    return _writeGpsPointToBytes(element, byteIndex);
   }
 }
 
