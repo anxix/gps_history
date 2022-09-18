@@ -155,7 +155,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     // Pretend the last element doesn't exist (decreases the length).
     _elementsCount--;
 
-    // Overwrite the data with all zeroes (this will increas the length again).
+    // Overwrite the data with all zeroes (this will increase the length again).
     addByteData(ByteData(elementSizeInBytes));
 
     // Move the length backwars again.
