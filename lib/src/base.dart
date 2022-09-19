@@ -160,9 +160,7 @@ class GpsStay extends GpsPoint {
     }
   }
 
-  /// Constant constructor, as modifying points while they're part of a
-  /// collection could have bad effects in that collection's meta flags, like
-  /// sorted state.
+  /// Constructor.
   GpsStay(
       {required DateTime time,
       required double latitude,
@@ -178,6 +176,8 @@ class GpsStay extends GpsPoint {
           altitude: altitude,
         );
 
+  /// Constructs a [GpsStay] from the data in [point], with optionally the
+  /// additional information in [accuracy] and [endTime].
   GpsStay.fromPoint(GpsPoint point, {this.accuracy, DateTime? endTime})
       : _endTime = _endTimeToInternal(endTime, point.time),
         super(
@@ -187,6 +187,31 @@ class GpsStay extends GpsPoint {
           altitude: point.altitude,
         );
 
+  /// Create a copy of the point with optionally one or more of its fields set
+  /// to new values.
+  ///
+  /// It's a bit debatable what should happen with the [endTime] when copying
+  /// from an original where [_endTime] == nul and modifying [time] for the
+  /// copy without also modifying [endTime] for the copy.
+  ///
+  /// Options for handling this situation would be:
+  /// - Copy implicitly modifies [endTime] to maintain the duration of the
+  ///   original:
+  ///   ```copy.endTime - copy.time == original.endTime - original.time```
+  /// - Copy keeps [endTime] identical to the original, but shifts it to
+  ///   copy.time if copy would become invalid:
+  ///   ```copy.endTime == max(copy.time, original.endTime)```
+  /// - Maintain ```copy.endTime == original.endTime```, and throw an exception
+  ///   if ```copy.time > original.endTime```.
+  ///
+  /// Additionally there's no way to reset [endTime] to null during the copy
+  /// operation, except by calling the [copyWith] with an explicit [endTime]
+  /// equal to [time]:
+  /// ```c = s.copyWith(time: t, endTime: t);```
+  ///
+  /// There's no obviously superior choice, so the implementation chooses the
+  /// strictest possible mode: leave [endTime] identical to the souce and throw
+  /// an exception if that renders the copy invalid.
   @override
   GpsStay copyWith(
       {DateTime? time,
@@ -195,16 +220,37 @@ class GpsStay extends GpsPoint {
       double? altitude,
       double? accuracy,
       DateTime? endTime}) {
+    // Catch the issue explained in the documentation and throw an exception
+    // here. This way the feedback will be more explicit if it happens at
+    // runtime.
+    final newTime = time ?? this.time;
+    final newEndTime = endTime ?? _endTime;
+
+    // Only perform the check if the caller is trying to modify times (saves
+    // on relatively expensive time comparison).
+    if (time != null || endTime != null) {
+      // Caller is trying to modify times -> catch invalid configuration.
+      if (newEndTime != null && newEndTime.isBefore(newTime)) {
+        throw GpsInvalidValue(
+            'Called $runtimeType.copyWith in a way that generates an invalid situation where endTime < time. Consider specifying the endPoint argument as well in the call.');
+      }
+    }
+
     return GpsStay(
-      time: time ?? this.time,
+      time: newTime,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       altitude: altitude ?? this.altitude,
       accuracy: accuracy ?? this.accuracy,
-      endTime: endTime ?? _endTime,
+      endTime: newEndTime,
     );
   }
 
+  /// Alias [time] to [startTime] because it's easier to think of it as the
+  /// start time of the stay in the specified location.
+  get startTime => time;
+
+  /// End time of the stay in the specified location.
   get endTime => _endTime ?? time;
 
   @override

@@ -96,7 +96,7 @@ void main() {
   }
 
   void testStayEndTime() {
-    test('Correct handling of endTime', () {
+    test('Handling of null endTime (implicitly equal to time)', () {
       // Check that null endTime is regarded as equal to time.
       final s = GpsStay(time: DateTime.utc(1), latitude: 2, longitude: 3);
       expect(s.endTime, DateTime.utc(1),
@@ -105,17 +105,32 @@ void main() {
       // Check that this works even after time is redefined in a copy.
       expect(s2.endTime, DateTime.utc(50),
           reason: 'endTime not determined based on time after copyWith');
+    });
 
-      // Ensure invalid endTime is not accepted.
+    test('Invalid endTime at construction time', () {
       expect(
           () => {
                 GpsStay(
                   time: DateTime.utc(2),
                   latitude: 1,
                   longitude: 2,
+                  // endTime before time should throw an exception
                   endTime: DateTime.utc(1),
                 )
               },
+          throwsA(isA<GpsInvalidValue>()));
+    });
+
+    test('copyWith handling of times', () {
+      // Creating a copy of an item with a fixed endTime such that the time
+      // of the copy is after the original's endTime gives an invalid object
+      // and hence an exception must be thrown.
+      final s = GpsStay(
+          time: DateTime.utc(1),
+          latitude: 2,
+          longitude: 3,
+          endTime: DateTime.utc(2));
+      expect(() => {s.copyWith(time: DateTime.utc(3))},
           throwsA(isA<GpsInvalidValue>()));
     });
   }
