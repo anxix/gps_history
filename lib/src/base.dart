@@ -25,6 +25,134 @@ class GpsHistoryException implements Exception {
   }
 }
 
+/// Compares the time values of two elements and returns the result.
+///
+/// If the time of this is considered before that of [other], the result
+/// will be [TimeComparisonResult.before], etc.
+TimeComparisonResult compareTime(GpsPoint elementA, GpsPoint elementB) {
+  // TODO: this is sensitive to below-second differences, which the Int representation is not. This needs addressing.
+  switch (elementA.time.compareTo(elementB.time)) {
+    case -1:
+      return TimeComparisonResult.before;
+    case 0:
+      return TimeComparisonResult.same;
+    case 1:
+      return TimeComparisonResult.after;
+    default:
+      throw GpsPointsViewSortingException('Unexpected compareTo result!');
+  }
+}
+
+/// Like [compareTime], except it works on Uint32 representation
+/// of time that is used internally by some child classes of GpsCollection.
+TimeComparisonResult compareIntRepresentationTime(int timeA, int timeB) {
+  if (timeA < timeB) {
+    return TimeComparisonResult.before;
+  } else if (timeA == timeB) {
+    return TimeComparisonResult.same;
+  } else {
+    // timeA > timeB
+    return TimeComparisonResult.after;
+  }
+}
+
+/// Compares time spans representing for example two [GpsStay] entities.
+///
+/// Comparison must be defined such that comparing A to B gives the opposite
+/// result than comparing B to A for the before/after results, but it gives
+/// the same result for the same/overlapping results. Without this
+/// inverse commutative behaviour, sorting and searching may give very
+/// strange behaviour.
+///
+/// The following preconditions are given:
+/// - for any item X: X.start <= X.end
+///   Hence it's not needt to check for inverted time segments.
+/// - the stay is defined as being exclusive of X.end itself. That means
+///   that for two points M and N with M.end = N.start, M can be regarded
+///   as being before N (there is no overlap since at the moment of M.end,
+///   i.e. N.start, the position value of N will be valid). However,
+///   if M.start == M.end == N.start, there is overlap as both the position
+///   of M and that of N are valid at time M.start.
+///
+/// the comparison is defined as follows:
+/// ```
+/// -----------+------------------------+----------------------------------
+/// Rule       | Condition              | Result
+/// -----------+------------------------+----------------------------------
+/// 1)      if | (A.end <= B.start &&   | A before B
+///            |  A.start != B.start)   |
+///            |                        |
+///            |   A +---+              |
+///            |           B +---+      |
+///            |                        |
+///            |   A +---+              |
+///            |       B +---+          |
+/// -----------+------------------------+----------------------------------
+/// 2) else if | (B.end <= A.start &&   | A after B (inverse of rule 1)
+///            |  A.start != B.start)   |
+///            |                        |
+///            |   B +---+              |
+///            |           A +---+      |
+///            |                        |
+///            |   B +---+              |
+///            |       A +---+          |
+/// -----------+------------------------+----------------------------------
+/// 3) else if | (A.start == B.start && | A same as B
+///            |  A.end == B.end)       |
+///            |                        |
+///            |   A +---+              |
+///            |   B +---+              |
+///            |                        |
+/// -----------+------------------------+----------------------------------
+/// 4) else    |                        | overlapping (undefined sorting)
+///            |   B +---+              |
+///            |      A +---+           |
+///            |                        |
+///            |   A +---+              |
+///            |      B +---+           |
+///            |                        |
+///            |                        |
+///            |   A +                  |
+///            |   B +---+              |
+///            |                        |
+///            |   B +                  |
+///            |   A +---+              |
+///            |                        |
+/// -----------+------------------------+----------------------------------
+/// ```
+TimeComparisonResult compareTimeSpans(
+    {required int startA,
+    required int endA,
+    required int startB,
+    required int endB}) {
+  final sameStartAB = startA == startB;
+
+  // Rule 1.
+  final cmpEndAStartB = compareIntRepresentationTime(endA, startB);
+  if ((cmpEndAStartB == TimeComparisonResult.same ||
+          cmpEndAStartB == TimeComparisonResult.before) &&
+      !sameStartAB) {
+    return TimeComparisonResult.before;
+  }
+
+  // Rule 2.
+  final cmpEndBStartA = compareIntRepresentationTime(endB, startA);
+  if ((cmpEndBStartA == TimeComparisonResult.same ||
+          cmpEndBStartA == TimeComparisonResult.before) &&
+      !sameStartAB) {
+    return TimeComparisonResult.after;
+  }
+
+  // Rule 3.
+  final sameEndAB = endA == endB;
+  if (sameEndAB) {
+    return TimeComparisonResult.same;
+  }
+
+  // Rule 4.
+  return TimeComparisonResult.overlapping;
+}
+
 /// Represents the most basic GPS location.
 ///
 /// This excludes heading and accuracy information that is typically provided
@@ -101,6 +229,11 @@ class GpsPoint {
         other.altitude == altitude;
   }
 
+  /// Compares the time values of this and [other] and returns the result.
+  TimeComparisonResult compareTo(GpsPoint other) {
+    return compareTime(this, other);
+  }
+
   @override
   int get hashCode {
     return hash4(time, latitude, longitude, altitude);
@@ -124,9 +257,7 @@ class GpsStay extends GpsPoint {
   /// The accuracy of the measurement.
   final double? accuracy;
 
-  /// The end time of the stay in the specified location (should be >= [time]),
-  /// which is seen as the start time of the stay). If unspecified, equivalent
-  /// to being equal to [time]. Internal representation will be kept to null
+  /// Internal representation of [endTime]. Will be kept to null
   /// when it's a zero-length stay ([time] == [endTime]).
   final DateTime? _endTime;
 
@@ -250,7 +381,16 @@ class GpsStay extends GpsPoint {
   /// start time of the stay in the specified location.
   get startTime => time;
 
-  /// End time of the stay in the specified location.
+  /// End time of the stay in the specified location (must be >= [time]).
+  ///
+  /// The stay duration is to be regarded as *exclusive* of [endTime].
+  /// This means that if in a list we have two consecutive [GpsStay] items
+  /// defined (with position being the latitude/longitude components) as:
+  /// ```
+  /// 0: time=1, position=A, endTime=2
+  /// 1: time=2, position=B, endTime=3
+  /// ```
+  /// for time=2 the correct position is B, not A.
   get endTime => _endTime ?? time;
 
   @override
@@ -261,6 +401,19 @@ class GpsStay extends GpsPoint {
     return other is GpsStay &&
         other.accuracy == accuracy &&
         other.endTime == endTime;
+  }
+
+  @override
+  TimeComparisonResult compareTo(GpsPoint other) {
+    if (other is! GpsStay) {
+      return super.compareTo(other);
+    } else {
+      return compareTimeSpans(
+          startA: time.toUtc().millisecondsSinceEpoch ~/ 1000,
+          endA: endTime.toUtc().millisecondsSinceEpoch ~/ 1000,
+          startB: other.time.toUtc().millisecondsSinceEpoch ~/ 1000,
+          endB: other.endTime.toUtc().millisecondsSinceEpoch ~/ 1000);
+    }
   }
 
   @override
@@ -641,34 +794,17 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     return compareTime(this[elementNrA], this[elementNrB]);
   }
 
-  /// Performs [compareTime] for the item in the positions [elementNr]
-  /// and some separate [item] that's presumably not in the list, then returns
-  /// the result.
+  /// Performs [compareTime] for the item in the positions [elementNrA]
+  /// and some separate [elementB] that's presumably not in the list, then
+  ///  returns the result.
   ///
   /// Children my override this method to implement more efficient or custom
-  /// implementations, for example if they support overlapping time or if
+  /// algorithms, for example if they support overlapping time or if
   /// they have a way to do quick time comparisons without doing full item
   /// retrieval.
   TimeComparisonResult compareElementTimeWithSeparateItem(
-      int elementNr, T item) {
-    return compareTime(this[elementNr], item);
-  }
-
-  /// Compares the time values of [itemA] and [itemB] and returns the result.
-  ///
-  /// If the time of [itemA] is considered before that of [itemB], the result
-  /// will be [TimeComparisonResult.before], etc.
-  TimeComparisonResult compareTime(T itemA, T itemB) {
-    switch (itemA.time.compareTo(itemB.time)) {
-      case -1:
-        return TimeComparisonResult.before;
-      case 0:
-        return TimeComparisonResult.same;
-      case 1:
-        return TimeComparisonResult.after;
-      default:
-        throw GpsPointsViewSortingException('Unexpected compareTo result!');
-    }
+      int elementNrA, T elementB) {
+    return compareTime(this[elementNrA], elementB);
   }
 
   /// Add a single [element] to the collection.
@@ -760,6 +896,11 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       _addAllStartingAt_CollectionSource(source, skipItems);
       return;
     }
+
+    //TODO: the approach below is slower by a factor 2 to 4 than just adding one
+    // item at a time when there are no problems with the data sortedness.
+    // However, that has the downside of potentially requiring a rollback after
+    // adding some arbitrary amount of items. This should be improved.
 
     // Source is some random iterable. Convert it to a collection and run it
     // through the procedure again. This is an expensive operation both in time

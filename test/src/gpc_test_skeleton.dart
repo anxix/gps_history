@@ -420,12 +420,14 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   test('Time comparisons', () {
+    // TODO: add comparisons for time spans
+
     // Simple comparisons on standalone entities.
-    expect(gpc!.compareTime(itemConstructor(2), itemConstructor(2)),
+    expect(compareTime(itemConstructor(2), itemConstructor(2)),
         TimeComparisonResult.same);
-    expect(gpc!.compareTime(itemConstructor(2), itemConstructor(3)),
+    expect(compareTime(itemConstructor(2), itemConstructor(3)),
         TimeComparisonResult.before);
-    expect(gpc!.compareTime(itemConstructor(3), itemConstructor(2)),
+    expect(compareTime(itemConstructor(3), itemConstructor(2)),
         TimeComparisonResult.after);
 
     // Comparisons on all-internal items (may have optimized code paths).

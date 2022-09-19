@@ -462,19 +462,6 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
         Conversions.altitudeToInt16(element.altitude));
   }
 
-  /// Like the inherited [compareTime], except it works on Uint32 representation
-  /// of time that is used internally by the GpcCompact classes.
-  TimeComparisonResult _compareUint32Time(int timeA, int timeB) {
-    if (timeA < timeB) {
-      return TimeComparisonResult.before;
-    } else if (timeA == timeB) {
-      return TimeComparisonResult.same;
-    } else {
-      // timeA > timeB
-      return TimeComparisonResult.after;
-    }
-  }
-
   @override
   TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
     // No need to fully parse and instantiate the points, it's enough to
@@ -482,16 +469,16 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     final timeA = _getUint32(_elementNrToByteOffset(elementNrA));
     final timeB = _getUint32(_elementNrToByteOffset(elementNrB));
 
-    return _compareUint32Time(timeA, timeB);
+    return compareIntRepresentationTime(timeA, timeB);
   }
 
   @override
   TimeComparisonResult compareElementTimeWithSeparateItem(
-      int elementNr, GpsPoint item) {
-    final elementTime = _getUint32(_elementNrToByteOffset(elementNr));
-    final itemTime = Conversions.dateTimeToUint32(item.time);
+      int elementNrA, T elementB) {
+    final elementTime = _getUint32(_elementNrToByteOffset(elementNrA));
+    final itemTime = Conversions.dateTimeToUint32(elementB.time);
 
-    return _compareUint32Time(elementTime, itemTime);
+    return compareIntRepresentationTime(elementTime, itemTime);
   }
 }
 
@@ -559,65 +546,35 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
         Conversions.dateTimeToUint32(element.endTime));
   }
 
+  /// Compares the time conditions for the two elements and indices [elementNrA]
+  /// and [elementNrB].
   @override
   TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
-    final startTimeComparison =
-        super.compareElementTime(elementNrA, elementNrB);
+    final startA = _getUint32(_elementNrToByteOffset(elementNrA));
+    final endA =
+        _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
+    final startB = _getUint32(_elementNrToByteOffset(elementNrB));
+    final endB =
+        _getUint32(_elementNrToByteOffset(elementNrB) + _offsetEndTime);
 
-    // If the (start) times are already not in ascending order, don't have to
-    // also compare the end times.
-    if (startTimeComparison == TimeComparisonResult.after) {
-      return startTimeComparison;
-    } else if (startTimeComparison == TimeComparisonResult.before ||
-        startTimeComparison == TimeComparisonResult.same) {
-      // Start time ascending -> check for end time of A overlapping start time of B.
-      final endTimeA =
-          _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
-      final startTimeB = _getUint32(_elementNrToByteOffset(elementNrB));
-
-      final overlapComparison = _compareUint32Time(endTimeA, startTimeB);
-      switch (startTimeComparison) {
-        case TimeComparisonResult.before:
-          // A starts before B -> either A is before B, or they overlap.
-          // A is before B if A.endTime <= B.time
-          if (overlapComparison == TimeComparisonResult.before ||
-              overlapComparison == TimeComparisonResult.same) {
-            return TimeComparisonResult.before;
-          } else {
-            return TimeComparisonResult.overlapping;
-          }
-        case TimeComparisonResult.same:
-          // Start time of A = start time of B. Regard as:
-          // - overlapping if A.endTime >= B.time
-          // - same if A.endTime == B.endTime
-          // - overlapping otherwise
-          if (overlapComparison == TimeComparisonResult.after ||
-              overlapComparison == TimeComparisonResult.same) {
-            return TimeComparisonResult.overlapping;
-          } else {
-            final endTimeB = _getUint32(_elementNrToByteOffset(elementNrB));
-            final endComparison = _compareUint32Time(endTimeA, endTimeB);
-            if (endComparison == TimeComparisonResult.same) {
-              return TimeComparisonResult.same;
-            } else {
-              return TimeComparisonResult.overlapping;
-            }
-          }
-        default:
-          throw GpsPointsViewSortingException(
-              'Unexpected comparison result in inner condition: $startTimeComparison');
-      }
-    } else {
-      throw GpsPointsViewSortingException(
-          'Unexpected comparison result in outer condition: $startTimeComparison');
-    }
+    return compareTimeSpans(
+        startA: startA, endA: endA, startB: startB, endB: endB);
   }
 
   @override
   TimeComparisonResult compareElementTimeWithSeparateItem(
-      int elementNr, GpsPoint item) {
-    throw UnimplementedError();
-    // TODO: fix time comparison
+      int elementNrA, GpsStay elementB) {
+    // See documentation of compareElementTime for what the various rules are.
+    // This implementation is effectively a copypaste operation, for speed
+    // reasons.
+    final startA = _getUint32(_elementNrToByteOffset(elementNrA));
+    final endA =
+        _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
+    final startB = Conversions.dateTimeToUint32(elementB.time);
+    final endB = Conversions.dateTimeToUint32(elementB.endTime);
+
+    return compareTimeSpans(
+        startA: startA, endA: endA, startB: startB, endB: endB);
   }
 }
 
