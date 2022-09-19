@@ -111,6 +111,11 @@ class GpsPoint {
       't: $time\tlat:\t$latitude\tlong: $longitude\talt: $altitude';
 }
 
+/// Exception class for invalid values.
+class GpsInvalidValue extends GpsHistoryException {
+  GpsInvalidValue([message]) : super(message);
+}
+
 /// GPS point representing a stay in that location for some amount of time.
 ///
 /// Some fields may be unavailable (null), depending on data source. The
@@ -121,8 +126,9 @@ class GpsStay extends GpsPoint {
 
   /// The end time of the stay in the specified location (should be >= [time]),
   /// which is seen as the start time of the stay). If unspecified, equivalent
-  /// to being equal to [time].
-  final DateTime? endTime;
+  /// to being equal to [time]. Internal representation will be kept to null
+  /// when it's a zero-length stay ([time] == [endTime]).
+  final DateTime? _endTime;
 
   /// A stay with all fields set to null if possible, or to zero otherwise.
   static final zeroOrNulls = GpsStay.fromPoint(GpsPoint.zeroOrNulls);
@@ -131,25 +137,47 @@ class GpsStay extends GpsPoint {
   static final allZero = GpsStay.fromPoint(GpsPoint.allZero,
       accuracy: 0, endTime: GpsPoint.zeroDateTime);
 
+  /// Converts a specified [endTime] to its required internal representation
+  /// if it's valid, throws [GpsInvalidValue] if not.
+  ///
+  /// The internal representation is:
+  /// - null: if [endTime] == [startTime] (where [startTime] will be the [time]
+  ///         field of [GpsStay])
+  /// - endTime: if [endTime] > [startTime]
+  ///
+  /// An exception is thrown if [endTime] < [startTime] as it would render any
+  /// containers unable to process a negative time duration.
+  static DateTime? _endTimeToInternal(DateTime? endTime, DateTime startTime) {
+    if (endTime == null) {
+      return null;
+    } else if (endTime.isBefore(startTime)) {
+      throw GpsInvalidValue('endTime $endTime is before startTime $startTime');
+    } else {
+      return endTime;
+    }
+  }
+
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
-  const GpsStay(
+  GpsStay(
       {required DateTime time,
       required double latitude,
       required double longitude,
       double? altitude,
       this.accuracy,
-      this.endTime})
-      : super(
+      DateTime? endTime})
+      : _endTime = _endTimeToInternal(endTime, time),
+        super(
           time: time,
           latitude: latitude,
           longitude: longitude,
           altitude: altitude,
         );
 
-  GpsStay.fromPoint(GpsPoint point, {this.accuracy, this.endTime})
-      : super(
+  GpsStay.fromPoint(GpsPoint point, {this.accuracy, DateTime? endTime})
+      : _endTime = _endTimeToInternal(endTime, point.time),
+        super(
           time: point.time,
           latitude: point.latitude,
           longitude: point.longitude,
@@ -173,6 +201,8 @@ class GpsStay extends GpsPoint {
       endTime: endTime ?? this.endTime,
     );
   }
+
+  get endTime => _endTime ?? time;
 
   @override
   bool operator ==(other) {

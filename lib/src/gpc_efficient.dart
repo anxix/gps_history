@@ -513,6 +513,114 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   }
 }
 
+/// Implements efficient storage for [GpsStay] elements.
+///
+/// The basic storage is the same of [GpcCompactGpsPoint], with additional
+/// fields for: accuracy, endTime. One or more of these may be null.
+/// These are stored as follows after the inherited fields, all in
+/// *little endian* representation:
+/// - [GpsStay.accuracy]: [Uint16] representation of accuracy.
+///   For details see [Conversions.smallDoubleToUint16].
+/// - [GpsStay.endTime]: [Uint32] representation of heading.
+///   For details see [Conversions.dateTimeToUint32].
+///
+/// Added together it's 6 bytes per element extra compared to what's needed
+/// for the inherited [GpsPoint] properties.
+class GpcCompactGpsStay extends GpcCompact<GpsStay> {
+  static const int _offsetAccuracy = 14;
+  static const int _offsetEndTime = 16;
+
+  @override
+  GpcCompactGpsStay newEmpty() {
+    return GpcCompactGpsStay();
+  }
+
+  @override
+  int get elementSizeInBytes => 20;
+
+  @override
+  GpsStay _readElementFromBytes(int byteIndex) {
+    final point = _readGpsPointFromBytes(byteIndex);
+
+    return GpsStay.fromPoint(point,
+        accuracy: Conversions.uint16ToSmallDouble(
+            _getUint16(byteIndex + _offsetAccuracy)),
+        endTime: Conversions.uint32ToDateTime(
+            _getUint32(byteIndex + _offsetEndTime)));
+  }
+
+  @override
+  void _writeElementToBytes(GpsStay element, int byteIndex) {
+    _writeGpsPointToBytes(element, byteIndex);
+
+    _setUint16(byteIndex + _offsetAccuracy,
+        Conversions.smallDoubleToUint16(element.accuracy));
+    _setUint32(byteIndex + _offsetEndTime,
+        Conversions.dateTimeToUint32(element.endTime));
+  }
+
+  @override
+  TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
+    final startTimeComparison =
+        super.compareElementTime(elementNrA, elementNrB);
+
+    // If the (start) times are already not in ascending order, don't have to
+    // also compare the end times.
+    if (startTimeComparison == TimeComparisonResult.after) {
+      return startTimeComparison;
+    } else if (startTimeComparison == TimeComparisonResult.before ||
+        startTimeComparison == TimeComparisonResult.same) {
+      // Start time ascending -> check for end time of A overlapping start time of B.
+      final endTimeA =
+          _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
+      final startTimeB = _getUint32(_elementNrToByteOffset(elementNrB));
+
+      final overlapComparison = _compareUint32Time(endTimeA, startTimeB);
+      switch (startTimeComparison) {
+        case TimeComparisonResult.before:
+          // A starts before B -> either A is before B, or they overlap.
+          // A is before B if A.endTime <= B.time
+          if (overlapComparison == TimeComparisonResult.before ||
+              overlapComparison == TimeComparisonResult.same) {
+            return TimeComparisonResult.before;
+          } else {
+            return TimeComparisonResult.overlapping;
+          }
+        case TimeComparisonResult.same:
+          // Start time of A = start time of B. Regard as:
+          // - overlapping if A.endTime >= B.time
+          // - same if A.endTime == B.endTime
+          // - overlapping otherwise
+          if (overlapComparison == TimeComparisonResult.after ||
+              overlapComparison == TimeComparisonResult.same) {
+            return TimeComparisonResult.overlapping;
+          } else {
+            final endTimeB = _getUint32(_elementNrToByteOffset(elementNrB));
+            final endComparison = _compareUint32Time(endTimeA, endTimeB);
+            if (endComparison == TimeComparisonResult.same) {
+              return TimeComparisonResult.same;
+            } else {
+              return TimeComparisonResult.overlapping;
+            }
+          }
+        default:
+          throw GpsPointsViewSortingException(
+              'Unexpected comparison result in inner condition: $startTimeComparison');
+      }
+    } else {
+      throw GpsPointsViewSortingException(
+          'Unexpected comparison result in outer condition: $startTimeComparison');
+    }
+  }
+
+  @override
+  TimeComparisonResult compareElementTimeWithSeparateItem(
+      int elementNr, GpsPoint item) {
+    throw UnimplementedError();
+    // TODO: fix time comparison
+  }
+}
+
 /// Implements efficient storage for [GpsMeasurement] elements.
 ///
 /// The basic storage is the same of [GpcCompactGpsPoint], with additional
