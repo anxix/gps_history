@@ -79,12 +79,12 @@ void main() {
 
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testStayFromPoint() {
-    test('Check correct construction from point', () {
+    test('Correct construction from point', () {
       final p = GpsPoint(
           time: DateTime.utc(1), latitude: 2, longitude: 3, altitude: 4);
-      final m = GpsStay.fromPoint(p, accuracy: 5, endTime: DateTime.utc(6));
+      var s = GpsStay.fromPoint(p, accuracy: 5, endTime: DateTime.utc(6));
       expect(
-          m,
+          s,
           GpsStay(
               time: DateTime.utc(1),
               latitude: 2,
@@ -95,19 +95,42 @@ void main() {
     });
   }
 
+  void testStayEndTime() {
+    test('Correct handling of endTime', () {
+      // Check that null endTime is regarded as equal to time.
+      final s = GpsStay(time: DateTime.utc(1), latitude: 2, longitude: 3);
+      expect(s.endTime, DateTime.utc(1),
+          reason: 'endTime not determined based on time');
+      final s2 = s.copyWith(time: DateTime.utc(50));
+      // Check that this works even after time is redefined in a copy.
+      expect(s2.endTime, DateTime.utc(50),
+          reason: 'endTime not determined based on time after copyWith');
+
+      // Ensure invalid endTime is not accepted.
+      expect(
+          () => {
+                GpsStay(
+                  time: DateTime.utc(2),
+                  latitude: 1,
+                  longitude: 2,
+                  endTime: DateTime.utc(1),
+                )
+              },
+          throwsA(isA<GpsInvalidValue>()));
+    });
+  }
+
   group('Test GpsStay', () {
     // For basic point tests we want to have all fields different values, so any
     // mistaken implementation doesn't accidentally pass a test due to the
     // wrong fields being compared, that happen to have the same default value.
-    final makeStay = GpsStay.allZero
-        .copyWith(
-          accuracy: 400,
-          endTime: GpsPoint.zeroDateTime.add(Duration(seconds: 1)),
-        )
-        .copyWith;
+    final makeStay =
+        GpsStay.allZero.copyWith(accuracy: 400, endTime: null).copyWith;
     testBasicPoint(makeStay);
 
     testStayFromPoint();
+
+    testStayEndTime();
 
     // run specific tests that are not covered by the basic point test
     final s = makeStay(

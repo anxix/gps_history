@@ -135,7 +135,10 @@ class GpsStay extends GpsPoint {
 
   /// A stay with all fields set to zero.
   static final allZero = GpsStay.fromPoint(GpsPoint.allZero,
-      accuracy: 0, endTime: GpsPoint.zeroDateTime);
+      accuracy: 0,
+      // endTime must be null even though we're zeroing out, because it simply
+      // means it's equal to (start)time.
+      endTime: null);
 
   /// Converts a specified [endTime] to its required internal representation
   /// if it's valid, throws [GpsInvalidValue] if not.
@@ -198,7 +201,7 @@ class GpsStay extends GpsPoint {
       longitude: longitude ?? this.longitude,
       altitude: altitude ?? this.altitude,
       accuracy: accuracy ?? this.accuracy,
-      endTime: endTime ?? this.endTime,
+      endTime: endTime ?? _endTime,
     );
   }
 
