@@ -253,8 +253,11 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 /// is written only once, but potentially read many times.
 class Conversions {
   static final _zeroDateTimeUtc = GpsPoint.zeroDateTime;
-  static final _maxDatetimeUtc =
+  // Null datetime encoded as max Uint32.
+  static final _nullDateTimeUtc =
       _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
+  static final _maxDatetimeUtc =
+      _nullDateTimeUtc.subtract(Duration(seconds: 1));
   static final int _extremeAltitude = 32767 ~/ 2; //int16 is -32768..32767
   static final int _maxSmallDouble = 0xffff.toUnsigned(16);
 
@@ -302,20 +305,28 @@ class Conversions {
   /// thereby not supported, and neither are years beyond about 2105.
   /// If values outside the supported range are provided, they will be capped
   /// at the appropriate boundary (no exception will be raised).
-  static int dateTimeToUint32(DateTime value) {
-    final valueUtc = value.toUtc();
-    // Cap the value between zero and the max allowed
-    final cappedValue = valueUtc.isBefore(_zeroDateTimeUtc)
-        ? _zeroDateTimeUtc
-        : valueUtc.isAfter(_maxDatetimeUtc)
-            ? _maxDatetimeUtc
-            : valueUtc;
+  /// Null values are converted to the maximum possible [Uint32] value.
+  static int dateTimeToUint32(DateTime? value) {
+    late DateTime cappedValue;
+    if (value != null) {
+      final valueUtc = value.toUtc();
+      // Cap the value between zero and the max allowed
+      cappedValue = valueUtc.isBefore(_zeroDateTimeUtc)
+          ? _zeroDateTimeUtc
+          : valueUtc.isAfter(_maxDatetimeUtc)
+              ? _maxDatetimeUtc
+              : valueUtc;
+    } else {
+      cappedValue = _nullDateTimeUtc;
+    }
     return cappedValue.difference(_zeroDateTimeUtc).inSeconds;
   }
 
   /// The opposite of [dateTimeToUint32]
-  static DateTime uint32ToDateTime(int value) =>
-      _zeroDateTimeUtc.add(Duration(seconds: value));
+  static DateTime? uint32ToDateTime(int value) {
+    final result = _zeroDateTimeUtc.add(Duration(seconds: value));
+    return result == _nullDateTimeUtc ? null : result;
+  }
 
   /// Convert altitude in meters to an [Int16] value.
   ///
@@ -429,7 +440,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     return GpsPoint(
         // If the time storage method is changed, also modify the compareTime
         // method!
-        time: Conversions.uint32ToDateTime(_getUint32(byteIndex)),
+        time: Conversions.uint32ToDateTime(_getUint32(byteIndex))!,
         latitude: Conversions.uint32ToLatitude(
             _getUint32(byteIndex + _offsetLatitude)),
         longitude: Conversions.uint32ToLongitude(

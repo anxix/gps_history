@@ -81,6 +81,11 @@ void testConversions() {
             Conversions.dateTimeToUint32(DateTime.utc(5000))),
         Conversions.uint32ToDateTime(
             Conversions.dateTimeToUint32(DateTime.utc(2106, 12))));
+
+    // Check null.
+    final nullDateTimeAsInt = 4294967295;
+    expect(Conversions.dateTimeToUint32(null), nullDateTimeAsInt);
+    expect(Conversions.uint32ToDateTime(nullDateTimeAsInt), null);
   });
 
   test('Check altitude to Int16 conversions', () {
