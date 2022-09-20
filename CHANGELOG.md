@@ -1,7 +1,17 @@
 # 0.0.7
 
 * Public API changes:
-  * 
+  * The time values of ```GpsPoint``` have been changed to use an integer 
+    representation with 1 second resolution. This is similar to what the
+    efficient collection implementation already did, and reduces complexity
+    and inconsistencies between the previouw DateTime based versions and
+    integer based versions (two points could be different when stored in a List
+    or list-based collection compared to when stored in an efficient 
+    collection).
+  * Setting time values to values outside the supported range (from 1970 up
+    to around 2106) will by default throw an exception, but can optionally be
+    clamped by the additional ```autoClamp``` paramter accepted by the various
+    methods that can instantiate ```GpsTime``` objects.
 
 * New features:
   * Added ```GpsStay``` to represent a longer period of time spent in one place,
