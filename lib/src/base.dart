@@ -29,8 +29,9 @@ class GpsHistoryException implements Exception {
 /// This excludes heading and accuracy information that is typically provided
 /// by GPS sensors).
 class GpsPoint {
-  /// The datetime for the point record.
-  final DateTime time;
+  /// The time for the point record, measured in seconds since the epoch
+  /// (1/1/1970 UTC).
+  final GpsTime time;
 
   /// The latitude of the point, in degrees.
   final double latitude;
@@ -42,17 +43,13 @@ class GpsPoint {
   /// sources).
   final double? altitude;
 
-  /// The DateTime that is regarded as point zero in various collection/storage
-  /// implementations.
-  static final zeroDateTime = DateTime.utc(1970);
-
   /// A point with all fields set to null if possible, or to zero otherwise.
   static final zeroOrNulls =
-      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0);
+      GpsPoint(time: GpsTime(0), latitude: 0, longitude: 0);
 
   /// A point with all fields set to zero.
   static final allZero =
-      GpsPoint(time: zeroDateTime, latitude: 0, longitude: 0, altitude: 0);
+      GpsPoint(time: GpsTime(0), latitude: 0, longitude: 0, altitude: 0);
 
   /// Constant constructor, as modifying points while they're part of a
   /// collection could have bad effects in that collection's meta flags, like
@@ -67,7 +64,7 @@ class GpsPoint {
   /// Create a copy of the point with optionally one or more of its fields set
   /// to new values.
   GpsPoint copyWith({
-    DateTime? time,
+    GpsTime? time,
     double? latitude,
     double? longitude,
     double? altitude,
@@ -130,7 +127,7 @@ class GpsStay extends GpsPoint {
 
   /// Internal representation of [endTime]. Will be kept to null
   /// when it's a zero-length stay ([time] == [endTime]).
-  final DateTime? _endTime;
+  final GpsTime? _endTime;
 
   /// A stay with all fields set to null if possible, or to zero otherwise.
   static final zeroOrNulls = GpsStay.fromPoint(GpsPoint.zeroOrNulls);
@@ -152,7 +149,7 @@ class GpsStay extends GpsPoint {
   ///
   /// An exception is thrown if [endTime] < [startTime] as it would render any
   /// containers unable to process a negative time duration.
-  static DateTime? _endTimeToInternal(DateTime? endTime, DateTime startTime) {
+  static GpsTime? _endTimeToInternal(GpsTime? endTime, GpsTime startTime) {
     if (endTime == null) {
       return null;
     } else if (endTime.isBefore(startTime)) {
@@ -164,12 +161,12 @@ class GpsStay extends GpsPoint {
 
   /// Constructor.
   GpsStay(
-      {required DateTime time,
+      {required GpsTime time,
       required double latitude,
       required double longitude,
       double? altitude,
       this.accuracy,
-      DateTime? endTime})
+      GpsTime? endTime})
       : _endTime = _endTimeToInternal(endTime, time),
         super(
           time: time,
@@ -180,7 +177,7 @@ class GpsStay extends GpsPoint {
 
   /// Constructs a [GpsStay] from the data in [point], with optionally the
   /// additional information in [accuracy] and [endTime].
-  GpsStay.fromPoint(GpsPoint point, {this.accuracy, DateTime? endTime})
+  GpsStay.fromPoint(GpsPoint point, {this.accuracy, GpsTime? endTime})
       : _endTime = _endTimeToInternal(endTime, point.time),
         super(
           time: point.time,
@@ -216,12 +213,12 @@ class GpsStay extends GpsPoint {
   /// an exception if that renders the copy invalid.
   @override
   GpsStay copyWith(
-      {DateTime? time,
+      {GpsTime? time,
       double? latitude,
       double? longitude,
       double? altitude,
       double? accuracy,
-      DateTime? endTime}) {
+      GpsTime? endTime}) {
     // Catch the issue explained in the documentation and throw an exception
     // here. This way the feedback will be more explicit if it happens at
     // runtime.
@@ -281,10 +278,10 @@ class GpsStay extends GpsPoint {
       return super.compareTo(other);
     } else {
       return compareTimeSpans(
-          startA: time.toUtc().millisecondsSinceEpoch ~/ 1000,
-          endA: endTime.toUtc().millisecondsSinceEpoch ~/ 1000,
-          startB: other.time.toUtc().millisecondsSinceEpoch ~/ 1000,
-          endB: other.endTime.toUtc().millisecondsSinceEpoch ~/ 1000);
+          startA: time.secondsSinceEpoch,
+          endA: endTime.secondsSinceEpoch,
+          startB: other.time.secondsSinceEpoch,
+          endB: other.endTime.secondsSinceEpoch);
     }
   }
 
@@ -324,7 +321,7 @@ class GpsMeasurement extends GpsPoint {
   /// collection could have bad effects in that collection's meta flags, like
   /// sorted state.
   const GpsMeasurement({
-    required DateTime time,
+    required GpsTime time,
     required double latitude,
     required double longitude,
     double? altitude,
@@ -353,7 +350,7 @@ class GpsMeasurement extends GpsPoint {
 
   @override
   GpsMeasurement copyWith(
-      {DateTime? time,
+      {GpsTime? time,
       double? latitude,
       double? longitude,
       double? altitude,

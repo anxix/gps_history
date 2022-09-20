@@ -57,7 +57,7 @@ void main() async {
       print(p);
     }
     if (prevp != null) {
-      final int diff = p.time.difference(prevp.time).inSeconds;
+      final int diff = p.time.difference(prevp.time);
       if (diff > 0) {
         mindiff = min(diff, mindiff);
       }

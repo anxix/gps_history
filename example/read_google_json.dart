@@ -32,7 +32,7 @@ void main() async {
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {
-      final diff = p.time.difference(prevPoint.time).inSeconds;
+      final diff = p.time.difference(prevPoint.time);
       intervals.add(diff);
     }
     prevPoint = p;

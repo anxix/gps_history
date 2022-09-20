@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
 typedef PointConstructor = GpsPoint Function(
-    {DateTime? time, double? latitude, double? longitude, double? altitude});
+    {GpsTime? time, double? latitude, double? longitude, double? altitude});
 
 /// Perform basic point tests.
 ///
@@ -17,9 +17,9 @@ typedef PointConstructor = GpsPoint Function(
 /// type for the current class that's being tested.
 void testBasicPoint(PointConstructor makePoint) {
   final p = makePoint(
-      time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
+      time: GpsTime.fromUtc(2020), latitude: 10, longitude: 20, altitude: 30);
 
-  test('Check time', () => expect(p.time, DateTime.utc(2020)));
+  test('Check time', () => expect(p.time, GpsTime.fromUtc(2020)));
   test('Check latitude', () => expect(p.latitude, 10));
   test('Check longitude', () => expect(p.longitude, 20));
   test('Check altitude', () => expect(p.altitude, 30));
@@ -60,7 +60,7 @@ void testEqualityOfPoints(PointConstructor makePoint) {
   test('Check equal hashes of different object with same values',
       () => expect(p.hashCode, makePoint().hashCode));
 
-  testUnequalPoints('date', p, makePoint(time: DateTime.utc(1)));
+  testUnequalPoints('date', p, makePoint(time: GpsTime(1)));
   testUnequalPoints('latitude', p, makePoint(latitude: 1));
   testUnequalPoints('longitude', p, makePoint(longitude: 1));
   testUnequalPoints('altitude', p, makePoint(altitude: 1));
@@ -80,30 +80,30 @@ void main() {
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testStayFromPoint() {
     test('Correct construction from point', () {
-      final p = GpsPoint(
-          time: DateTime.utc(1), latitude: 2, longitude: 3, altitude: 4);
-      var s = GpsStay.fromPoint(p, accuracy: 5, endTime: DateTime.utc(6));
+      final p =
+          GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3, altitude: 4);
+      var s = GpsStay.fromPoint(p, accuracy: 5, endTime: GpsTime(6));
       expect(
           s,
           GpsStay(
-              time: DateTime.utc(1),
+              time: GpsTime(1),
               latitude: 2,
               longitude: 3,
               altitude: 4,
               accuracy: 5,
-              endTime: DateTime.utc(6)));
+              endTime: GpsTime(6)));
     });
   }
 
   void testStayEndTime() {
     test('Handling of null endTime (implicitly equal to time)', () {
       // Check that null endTime is regarded as equal to time.
-      final s = GpsStay(time: DateTime.utc(1), latitude: 2, longitude: 3);
-      expect(s.endTime, DateTime.utc(1),
+      final s = GpsStay(time: GpsTime(1), latitude: 2, longitude: 3);
+      expect(s.endTime, GpsTime(1),
           reason: 'endTime not determined based on time');
-      final s2 = s.copyWith(time: DateTime.utc(50));
+      final s2 = s.copyWith(time: GpsTime(50));
       // Check that this works even after time is redefined in a copy.
-      expect(s2.endTime, DateTime.utc(50),
+      expect(s2.endTime, GpsTime(50),
           reason: 'endTime not determined based on time after copyWith');
     });
 
@@ -111,11 +111,11 @@ void main() {
       expect(
           () => {
                 GpsStay(
-                  time: DateTime.utc(2),
+                  time: GpsTime(2),
                   latitude: 1,
                   longitude: 2,
                   // endTime before time should throw an exception
-                  endTime: DateTime.utc(1),
+                  endTime: GpsTime(1),
                 )
               },
           throwsA(isA<GpsInvalidValue>()));
@@ -126,11 +126,8 @@ void main() {
       // of the copy is after the original's endTime gives an invalid object
       // and hence an exception must be thrown.
       final s = GpsStay(
-          time: DateTime.utc(1),
-          latitude: 2,
-          longitude: 3,
-          endTime: DateTime.utc(2));
-      expect(() => {s.copyWith(time: DateTime.utc(3))},
+          time: GpsTime(1), latitude: 2, longitude: 3, endTime: GpsTime(2));
+      expect(() => {s.copyWith(time: GpsTime(3))},
           throwsA(isA<GpsInvalidValue>()));
     });
   }
@@ -149,13 +146,13 @@ void main() {
 
     // run specific tests that are not covered by the basic point test
     final s = makeStay(
-        time: DateTime.utc(2020),
+        time: GpsTime(2020),
         latitude: 10,
         longitude: 20,
         altitude: 30,
-        endTime: DateTime.utc(2022));
+        endTime: GpsTime(2022));
     test('Check accuracy', () => expect(s.accuracy, 400));
-    test('Check endTime', () => expect(s.endTime, DateTime.utc(2022)));
+    test('Check endTime', () => expect(s.endTime, GpsTime(2022)));
 
     // For equality tests we want all fields as equal as possible, because we
     // will vary one field at a time. That way a mistaken implementation doesn't
@@ -165,21 +162,21 @@ void main() {
 
     final sz = GpsStay.allZero;
     testUnequalPoints('accuracy', sz, GpsStay.allZero.copyWith(accuracy: 1));
-    testUnequalPoints('heading', sz,
-        GpsMeasurement.allZero.copyWith(time: DateTime.utc(2022)));
+    testUnequalPoints(
+        'heading', sz, GpsMeasurement.allZero.copyWith(time: GpsTime(2022)));
   });
 
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testMeasurementFromPoint() {
     test('Check correct construction from point', () {
-      final p = GpsPoint(
-          time: DateTime.utc(1), latitude: 2, longitude: 3, altitude: 4);
+      final p =
+          GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3, altitude: 4);
       final m = GpsMeasurement.fromPoint(p,
           accuracy: 5, heading: 6, speed: 7, speedAccuracy: 8);
       expect(
           m,
           GpsMeasurement(
-              time: DateTime.utc(1),
+              time: GpsTime(1),
               latitude: 2,
               longitude: 3,
               altitude: 4,
@@ -192,7 +189,7 @@ void main() {
 
   group('Test GpsMeasurement nulls', () {
     final m = GpsMeasurement(
-        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
+        time: GpsTime(2020), latitude: 10, longitude: 20, altitude: 30);
 
     test('Check accuracy', () => expect(m.accuracy, null));
     test('Check heading', () => expect(m.heading, null));
@@ -218,7 +215,7 @@ void main() {
 
     // run specific tests that are not covered by the basic point test
     final m = makeMeasurement(
-        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
+        time: GpsTime(2020), latitude: 10, longitude: 20, altitude: 30);
     test('Check accuracy', () => expect(m.accuracy, 400));
     test('Check heading', () => expect(m.heading, 500));
     test('Check speed', () => expect(m.speed, 600));
@@ -242,7 +239,7 @@ void main() {
 
   group('Test GpsMeasurement nulls', () {
     final m = GpsMeasurement(
-        time: DateTime.utc(2020), latitude: 10, longitude: 20, altitude: 30);
+        time: GpsTime(2020), latitude: 10, longitude: 20, altitude: 30);
 
     test('Check accuracy', () => expect(m.accuracy, null));
     test('Check heading', () => expect(m.heading, null));

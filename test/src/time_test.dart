@@ -9,10 +9,21 @@ import 'package:gps_history/src/time.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('Invalid times', () {
+    expect(() {
+      GpsTime(-1);
+    }, throwsA(isA<RangeError>()),
+        reason: 'Pre-epoch value should throw exception');
+    expect(() {
+      GpsTime.fromUtc(2110);
+    }, throwsA(isA<RangeError>()),
+        reason: 'Value higher than max should throw exception');
+  });
+
   test('Time comparisons', () {
     // Simple comparisons on standalone entities.
-    DateTime intToDateTime(int time) {
-      return DateTime.utc(time);
+    GpsTime intToDateTime(int time) {
+      return GpsTime(time);
     }
 
     expect(compareTime(intToDateTime(1), intToDateTime(2)),
