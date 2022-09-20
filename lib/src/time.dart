@@ -197,36 +197,47 @@ class GpsTime {
 
   /// Constructor.
   ///
-  /// Will throw [RangeError] if called with an out-of-range argument.
-  GpsTime(int secondsSinceEpoch)
-      : secondsSinceEpoch =
-            _validSecondsSinceEpochOrException(secondsSinceEpoch);
-
-  /// Constructor that clamps invalid argument to be within the valid range.
-  GpsTime.clamped(int secondsSinceEpoch)
-      : secondsSinceEpoch = _clampValidSecondsSinceEpoch(secondsSinceEpoch);
+  /// The [autoClamp] parameter indicates the behaviour in case of an value
+  /// for [secondsSinceEpoch] that's outside the supported range:
+  ///   - [autoClamp] = false: throw [RangeError] if out-of-range value given.
+  ///   - [autoClamp] = true: clamp the value witin the allowed boundaries.
+  GpsTime(int secondsSinceEpoch, {bool autoClamp = false})
+      : secondsSinceEpoch = !autoClamp
+            ? _validSecondsSinceEpochOrException(secondsSinceEpoch)
+            : _clampValidSecondsSinceEpoch(secondsSinceEpoch);
 
   /// Factory constructor from number of [milliseconds] since the epoch.
-  factory GpsTime.fromMillisecondsSinceEpochUtc(int milliseconds) {
-    return GpsTime((milliseconds / 1000).round());
+  ///
+  /// For [autoClamp] parameter see the standard [GpsTime] constructor.
+  factory GpsTime.fromMillisecondsSinceEpochUtc(int milliseconds,
+      {bool autoClamp = false}) {
+    return GpsTime((milliseconds / 1000).round(), autoClamp: autoClamp);
   }
 
   /// Factory constructor from a [DateTime] object.
-  factory GpsTime.fromDateTime(DateTime dateTime) {
+  ///
+  /// For [autoClamp] parameter see the standard [GpsTime] constructor.
+  factory GpsTime.fromDateTime(DateTime dateTime, {bool autoClamp = false}) {
     return GpsTime.fromMillisecondsSinceEpochUtc(
-        dateTime.millisecondsSinceEpoch);
+        dateTime.millisecondsSinceEpoch,
+        autoClamp: autoClamp);
   }
 
   /// Factory constructor from a UTC date specified by [year] and optionally
   /// [month], [day], [hour], [minute] and [second].
-  factory GpsTime.fromUtc(int year,
-      [int month = 1,
-      int day = 1,
-      int hour = 0,
-      int minute = 0,
-      int second = 0]) {
+  ///
+  /// For [autoClamp] parameter see the standard [GpsTime] constructor.
+  factory GpsTime.fromUtc(
+    int year, {
+    int month = 1,
+    int day = 1,
+    int hour = 0,
+    int minute = 0,
+    int second = 0,
+    bool autoClamp = false,
+  }) {
     final dateTime = DateTime.utc(year, month, day, hour, minute, second);
-    return GpsTime.fromDateTime(dateTime);
+    return GpsTime.fromDateTime(dateTime, autoClamp: autoClamp);
   }
 
   /// Returns a new [GpsTime] that is [days], [hours], [minutes] and [seconds]
@@ -234,17 +245,22 @@ class GpsTime {
   ///
   /// See the [GpsTime] default constructor for behaviour if the result is
   /// outside the valid range.
+  ///
+  /// For [autoClamp] parameter see the standard [GpsTime] constructor.
   GpsTime add({
     int days = 0,
     int hours = 0,
     int minutes = 0,
     int seconds = 0,
+    bool autoClamp = false,
   }) {
-    return GpsTime(secondsSinceEpoch +
-        seconds +
-        secondsPerMinute * minutes +
-        secondsPerHour * hours +
-        secondsPerDay * days);
+    return GpsTime(
+        secondsSinceEpoch +
+            seconds +
+            secondsPerMinute * minutes +
+            secondsPerHour * hours +
+            secondsPerDay * days,
+        autoClamp: autoClamp);
   }
 
   /// Calculates [this] - [other] and returns the outcome in seconds.

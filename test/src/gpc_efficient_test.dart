@@ -59,7 +59,7 @@ void testConversions() {
     // Check that converting back and forth gives the same value.
     for (var year = 2000; year <= 2020; year++) {
       for (var month = 1; month <= 12; month += 3) {
-        final t = GpsTime.fromUtc(year, month);
+        final t = GpsTime.fromUtc(year, month: month);
         expect(Conversions.uint32ToGpsTime(Conversions.gpsTimeToUint32(t)), t);
       }
     }
@@ -69,7 +69,8 @@ void testConversions() {
     expect(Conversions.gpsTimeToUint32(GpsTime.fromUtc(1970)), 0);
     expect(
         // 1 second after t=0
-        Conversions.gpsTimeToUint32(GpsTime.fromUtc(1970, 1, 1, 0, 0, 1)),
+        Conversions.gpsTimeToUint32(GpsTime.fromUtc(1970,
+            month: 1, day: 1, hour: 0, minute: 0, second: 1)),
         1);
 
     // Check the caps.

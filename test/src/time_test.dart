@@ -105,9 +105,10 @@ void main() {
 
     test('Constructors and factories', () {
       // Clamped constuctor.
-      expect(GpsTime(0), GpsTime.clamped(-1), reason: 'wrong for clamped');
+      expect(GpsTime(0), GpsTime(-1, autoClamp: true),
+          reason: 'wrong for clamped');
       expect(GpsTime(GpsTime.maxSecondsSinceEpoch),
-          GpsTime.clamped(GpsTime.maxSecondsSinceEpoch + 1),
+          GpsTime(GpsTime.maxSecondsSinceEpoch + 1, autoClamp: true),
           reason: 'wrong for clamped');
 
       // fromDateTime
@@ -121,12 +122,14 @@ void main() {
 
       // fromUtc
       expect(
-          GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
+          GpsTime.fromUtc(1971,
+              month: 2, day: 3, hour: 4, minute: 5, second: 6),
           // a datetime with some extra milliseconds/microseconds should be rounded
           GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 6, 123, 456)),
           reason: 'wrong for fromUtc rounding down');
       expect(
-          GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
+          GpsTime.fromUtc(1971,
+              month: 2, day: 3, hour: 4, minute: 5, second: 6),
           // a datetime with some extra milliseconds/microseconds should be rounded
           GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 5, 567, 890)),
           reason: 'wrong for fromUtc rounding up');
@@ -161,7 +164,10 @@ void main() {
       expect(GpsTime(0).hashCode != GpsTime(1).hashCode, true,
           reason: 'different time values should have different hashes');
 
-      expect(GpsTime(0).hashCode == GpsTime.clamped(0).hashCode, true,
+      expect(
+          GpsTime(0).hashCode ==
+              GpsTime.fromMillisecondsSinceEpochUtc(0).hashCode,
+          true,
           reason: 'same time values should have same hash');
     });
 
