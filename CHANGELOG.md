@@ -4,10 +4,12 @@
   * 
 
 * New features:
-  * 
+  * Added ```GpsStay``` to represent a longer period of time spent in one place,
+    without requiring a bunch of separate ```GpsPoint``` instances.
 
 * Fixes:
-  *
+  * The various time comparison functions for ```GpcCompactGpsMeasurement```
+    would not use fast comparisons on the binary representation. They do now.
 
 
 # 0.0.6
