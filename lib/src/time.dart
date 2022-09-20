@@ -27,7 +27,6 @@ enum TimeComparisonResult {
 /// If [timeA] is considered before [timeB], the result
 /// will be [TimeComparisonResult.before], etc.
 TimeComparisonResult compareTime(GpsTime timeA, GpsTime timeB) {
-  // TODO: this is sensitive to below-second differences, which the Int representation is not. This needs addressing.
   return compareIntRepresentationTime(
       timeA.secondsSinceEpoch, timeB.secondsSinceEpoch);
 }
@@ -93,7 +92,6 @@ TimeComparisonResult compareIntRepresentationTime(int timeA, int timeB) {
 ///            |                        |
 ///            |   A +---+              |
 ///            |   B +---+              |
-///            |                        |
 /// -----------+------------------------+----------------------------------
 /// 4) else    |                        | overlapping (undefined sorting)
 ///            |   B +---+              |
@@ -109,6 +107,11 @@ TimeComparisonResult compareIntRepresentationTime(int timeA, int timeB) {
 ///            |   B +                  |
 ///            |   A +---+              |
 ///            |                        |
+///            |   A +-------+          |
+///            |   B   +--+             |
+///            |                        |
+///            |   B +-------+          |
+///            |   A   +--+             |
 /// -----------+------------------------+----------------------------------
 /// ```
 TimeComparisonResult compareTimeSpans(
@@ -136,7 +139,7 @@ TimeComparisonResult compareTimeSpans(
 
   // Rule 3.
   final sameEndAB = endA == endB;
-  if (sameEndAB) {
+  if (sameStartAB && sameEndAB) {
     return TimeComparisonResult.same;
   }
 
