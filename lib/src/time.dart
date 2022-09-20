@@ -1,5 +1,3 @@
-import 'hash.dart';
-
 /// Utilities for dealing with time related tasks.
 
 /* Copyright (c)
@@ -8,6 +6,8 @@ import 'hash.dart';
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
+import 'hash.dart';
 
 /// Used as result type for time comparison.
 ///
@@ -155,6 +155,13 @@ class GpsTime {
   /// Number of seconds sinds the epoch (UTC).
   final int secondsSinceEpoch;
 
+  /// Maximum allowed seconds since epoch, so that the value fits in an Uint32.
+  /// The -1 is to allow the storage system to use that for null representations.
+  static final maxSecondsSinceEpoch = 0xffffffff.toUnsigned(32) - 1;
+
+  /// A quasi-constant zero [GpsTime].
+  static final zero = GpsTime(0);
+
   static const secondsPerMinute = 60;
   static const minutesPerHour = 60;
   static const secondsPerHour = secondsPerMinute * minutesPerHour;
@@ -162,20 +169,42 @@ class GpsTime {
   static const secondsPerDay = secondsPerHour * hoursPerDay;
   static const minutesPerday = minutesPerHour * hoursPerDay;
 
-  /// Checks that the specified value is valid for [secondsSinceEpoch] and
+  /// Checks that the specified [value] is valid for [secondsSinceEpoch] and
   /// throws a [RangeError] if that is not the case, returns it otherwise.
-  static int _validateSecondsSinceEpoch(int value) {
+  ///
+  /// In order to get a version clamped within the boundaries instead of
+  /// throwing an exception, use [_clampValidSecondsSinceEpoch].
+  static int _validSecondsSinceEpochOrException(int value) {
     if (value < 0 || maxSecondsSinceEpoch < value) {
       throw RangeError('Invalid time specified: $value');
     }
     return value;
   }
 
+  /// Checks that the specified [value] is valid for [secondsSinceEpoch] and
+  /// clamps it to the lower/upper boundary if that's not the case,
+  /// returning the potentially clamped value as result.
+  ///
+  /// In order to throw an exception in case of invalid [value] instead of
+  /// clamping it, see [_validSecondsSinceEpochOrException].
+  static int _clampValidSecondsSinceEpoch(int value) {
+    return value < 0
+        ? 0
+        : value > maxSecondsSinceEpoch
+            ? maxSecondsSinceEpoch
+            : value;
+  }
+
   /// Constructor.
   ///
   /// Will throw [RangeError] if called with an out-of-range argument.
   GpsTime(int secondsSinceEpoch)
-      : secondsSinceEpoch = _validateSecondsSinceEpoch(secondsSinceEpoch);
+      : secondsSinceEpoch =
+            _validSecondsSinceEpochOrException(secondsSinceEpoch);
+
+  /// Constructor that clamps invalid argument to be within the valid range.
+  GpsTime.clamped(int secondsSinceEpoch)
+      : secondsSinceEpoch = _clampValidSecondsSinceEpoch(secondsSinceEpoch);
 
   /// Factory constructor from number of [milliseconds] since the epoch.
   factory GpsTime.fromMillisecondsSinceEpochUtc(int milliseconds) {
@@ -202,6 +231,9 @@ class GpsTime {
 
   /// Returns a new [GpsTime] that is [days], [hours], [minutes] and [seconds]
   /// later than the current one.
+  ///
+  /// See the [GpsTime] default constructor for behaviour if the result is
+  /// outside the valid range.
   GpsTime add({
     int days = 0,
     int hours = 0,
@@ -220,19 +252,14 @@ class GpsTime {
     return secondsSinceEpoch - other.secondsSinceEpoch;
   }
 
-  /// The DateTime that is regarded as zero.
-  static final zeroDateTime = DateTime.utc(1970);
-
-  /// Maximum allowed seconds since epoch, so that the value fits in an Uint32.
-  /// The -1 is to allow the storage system to use that for null representations.
-  static final maxSecondsSinceEpoch = 0xffffffff.toUnsigned(32) - 1;
-
-  /// A quasi-constant zero [GpsTime].
-  static final zero = GpsTime(0);
-
   /// Wrapper method for [compareTime].
   TimeComparisonResult compareTo(GpsTime other) {
     return compareTime(this, other);
+  }
+
+  /// Returns true if [this] is before [other].
+  bool isBefore(GpsTime other) {
+    return secondsSinceEpoch < other.secondsSinceEpoch;
   }
 
   /// Returns true if [this] is after [other].
@@ -240,10 +267,10 @@ class GpsTime {
     return secondsSinceEpoch > other.secondsSinceEpoch;
   }
 
-  /// Returns true if [this] is before [other].
-  bool isBefore(GpsTime other) {
-    return secondsSinceEpoch < other.secondsSinceEpoch;
-  }
+  /// Converts to a [DateTime] object, in UTC.
+  DateTime toDateTimeUtc() =>
+      DateTime.fromMillisecondsSinceEpoch(secondsSinceEpoch * 1000,
+          isUtc: true);
 
   @override
   bool operator ==(other) {
@@ -257,5 +284,5 @@ class GpsTime {
   }
 
   @override
-  int get hashCode => hash2(super.hashCode, secondsSinceEpoch);
+  int get hashCode => hash1(secondsSinceEpoch);
 }

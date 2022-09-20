@@ -104,16 +104,80 @@ void main() {
     });
 
     test('Constructors and factories', () {
+      // Clamped constuctor.
+      expect(GpsTime(0), GpsTime.clamped(-1), reason: 'wrong for clamped');
+      expect(GpsTime(GpsTime.maxSecondsSinceEpoch),
+          GpsTime.clamped(GpsTime.maxSecondsSinceEpoch + 1),
+          reason: 'wrong for clamped');
+
+      // fromDateTime
       expect(
           GpsTime(10), GpsTime.fromDateTime(DateTime.utc(1970, 1, 1, 0, 0, 10)),
           reason: 'wrong for fromDateTime');
 
+      // fromMillisecondsSinceEpochUtc
       expect(GpsTime(10), GpsTime.fromMillisecondsSinceEpochUtc(10000),
           reason: 'wrong for fromMillisecondsSinceEpochUtc');
 
-      expect(GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
-          GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 6)),
-          reason: 'wrong for fromUtc');
+      // fromUtc
+      expect(
+          GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
+          // a datetime with some extra milliseconds/microseconds should be rounded
+          GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 6, 123, 456)),
+          reason: 'wrong for fromUtc rounding down');
+      expect(
+          GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
+          // a datetime with some extra milliseconds/microseconds should be rounded
+          GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 5, 567, 890)),
+          reason: 'wrong for fromUtc rounding up');
+    });
+
+    test('Comparisons', () {
+      // compareTo
+      expect(GpsTime(1).compareTo(GpsTime(2)), TimeComparisonResult.before,
+          reason: '1 < 2');
+      expect(GpsTime(2).compareTo(GpsTime(2)), TimeComparisonResult.same,
+          reason: '2 = 2');
+      expect(GpsTime(3).compareTo(GpsTime(2)), TimeComparisonResult.after,
+          reason: '3 > 2');
+
+      // isAfter
+      expect(GpsTime(1).isAfter(GpsTime(0)), true, reason: '1 > 0');
+      expect(GpsTime(1).isAfter(GpsTime(2)), false, reason: '1 < 2');
+      expect(GpsTime(1).isAfter(GpsTime(1)), false, reason: '1 = 1');
+
+      // isBefore
+      expect(GpsTime(0).isBefore(GpsTime(1)), true, reason: '0 < 1');
+      expect(GpsTime(2).isBefore(GpsTime(1)), false, reason: '2 < 1');
+      expect(GpsTime(0).isBefore(GpsTime(0)), false, reason: '0 = 0');
+
+      // ==
+      expect(GpsTime(0) == (GpsTime(0)), true, reason: '0 = 0');
+      expect(GpsTime(4) == (GpsTime(5)), false, reason: '4 != 5');
+      expect(GpsTime(4) == (GpsTime(3)), false, reason: '4 != 3');
+    });
+
+    test('Hash', () {
+      expect(GpsTime(0).hashCode != GpsTime(1).hashCode, true,
+          reason: 'different time values should have different hashes');
+
+      expect(GpsTime(0).hashCode == GpsTime.clamped(0).hashCode, true,
+          reason: 'same time values should have same hash');
+    });
+
+    test('Add', () {
+      expect(GpsTime.zero.add(days: 1, hours: 2, minutes: 3, seconds: 4),
+          GpsTime(24 * 3600 + 2 * 3600 + 3 * 60 + 4));
+      expect(GpsTime(1).add(seconds: -1), GpsTime(0));
+    });
+
+    test('Difference', () {
+      expect(GpsTime(10).difference(GpsTime(7)), 3);
+    });
+
+    test('toDateTime', () {
+      expect(GpsTime(10).toDateTimeUtc(),
+          DateTime.fromMillisecondsSinceEpoch(10000, isUtc: true));
     });
   });
 }
