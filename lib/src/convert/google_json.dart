@@ -392,7 +392,8 @@ class PointParser {
       return;
     }
 
-    var time = GpsTime.fromMillisecondsSinceEpochUtc(timestampMs!);
+    var time =
+        GpsTime.fromMillisecondsSinceEpochUtc(timestampMs!, autoClamp: true);
 
     if (_prevParsedPoint != null &&
         _minSecondsBetweenDatapoints != null &&

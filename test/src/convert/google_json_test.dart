@@ -70,37 +70,6 @@ void _testPointParserStrings(
   _testPointParser(testName, chunks, expectedPoints);
 }
 
-void _testInvalidTimeValue() {
-  test('', () {
-    final foundPoints = <GpsPoint>[];
-    pointsCollector(GpsPoint point) {
-      foundPoints.add(point);
-    }
-
-    final chunks = List<List<int>>.filled(0, [], growable: true);
-    for (var string in [
-      // time would correspond to (1969, 12, 31), but since it's befor the epoch it's an error
-      '"timestampMs" : -$oneDay,',
-      '"latitudeE7" : -5,',
-      '"longitudeE7" : -6,',
-      '"altitude" : -80,'
-    ]) {
-      chunks.add(string.codeUnits);
-    }
-
-    final parser = PointParser(null, null, pointsCollector);
-
-    expect(() {
-      for (var chunk in chunks) {
-        parser.parseUpdate(chunk, 0, chunk.length);
-      }
-      // Force outputting of any final point the parser is unsure of whether it's
-      // been fully parsed or not.
-      parser.toGpsPointAndReset();
-    }, throwsA(isA<RangeError>()));
-  });
-}
-
 /// Test various cases for the [PointParser] class.
 void testPointParser() {
   // Test the empty cases.
@@ -141,13 +110,25 @@ void testPointParser() {
     '"altitude" : 8,'
   ], [
     GpsPoint(
-        time: GpsTime.fromUtc(1970, 1, 2),
+        time: GpsTime.fromUtc(1970, month: 1, day: 2),
         latitude: 5.0E-7,
         longitude: 6.0E-7,
         altitude: 8.0)
   ]);
 
-  _testInvalidTimeValue();
+  // Test negative values (time gets clamped)
+  _testPointParserStrings('Parse negative values', [
+    '"timestampMs" : -$oneDay,', // this should lead to the above two being discarded
+    '"latitudeE7" : -5,',
+    '"longitudeE7" : -6,',
+    '"altitude" : -80,'
+  ], [
+    GpsPoint(
+        time: GpsTime.zero,
+        latitude: -5.0E-7,
+        longitude: -6.0E-7,
+        altitude: -80.0)
+  ]);
 
   // Test parsing of multiple points.
   _testPointParserStrings('Parse two consecutive points', [
@@ -160,7 +141,9 @@ void testPointParser() {
   ], [
     makeDefaultPoint(),
     GpsPoint(
-        time: GpsTime.fromUtc(1970, 1, 2), latitude: 5.0E-7, longitude: 6.0E-7)
+        time: GpsTime.fromUtc(1970, month: 1, day: 2),
+        latitude: 5.0E-7,
+        longitude: 6.0E-7)
   ]);
 
   // Test parsing to [GpsMeasurement].
@@ -185,7 +168,8 @@ void testPointParser() {
         '}, {'
   ], [
     GpsMeasurement(
-        time: GpsTime.fromUtc(2021, 3, 26, 20, 14, 51),
+        time: GpsTime.fromUtc(2021,
+            month: 3, day: 26, hour: 20, minute: 14, second: 51),
         latitude: 37.1395513,
         longitude: -7.9376766,
         altitude: 402,
@@ -255,7 +239,7 @@ void main() {
       [
         onePointGpsPoint,
         GpsPoint(
-            time: GpsTime.fromUtc(1970, 1, 2),
+            time: GpsTime.fromUtc(1970, month: 1, day: 2),
             latitude: 5.0E-7,
             longitude: 6.0E-7)
       ],
