@@ -413,10 +413,6 @@ abstract class GpsPointsView<T extends GpsPoint>
     extends RandomAccessIterable<T> {
   /// Indicate if the view is read-only and cannot be modified.
   bool get isReadonly => true;
-
-  // Other
-//  GpsPointsView<T> selectInBoundingBox(double minLatitude, double minLongitude,
-//      double maxLatitude, double maxLongitude);
 }
 
 /// Used as result type for time comparison.
