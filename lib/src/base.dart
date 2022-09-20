@@ -25,6 +25,11 @@ class GpsHistoryException implements Exception {
   }
 }
 
+/// Exception class for issues in time comparison related issues.
+class TimeComparisonException extends GpsHistoryException {
+  TimeComparisonException([message]) : super(message);
+}
+
 /// Compares two time values and returns the result.
 ///
 /// If [timeA] is considered before [timeB], the result
@@ -39,7 +44,7 @@ TimeComparisonResult compareTime(DateTime timeA, DateTime timeB) {
     case 1:
       return TimeComparisonResult.after;
     default:
-      throw GpsPointsViewSortingException('Unexpected compareTo result!');
+      throw TimeComparisonException('Unexpected compareTo result!');
   }
 }
 
