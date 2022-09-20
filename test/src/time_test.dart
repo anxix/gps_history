@@ -5,16 +5,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/gps_history.dart';
+import 'package:gps_history/src/time.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('GpsHistoryException', () {
-    expect(TimeComparisonException().toString(), 'TimeComparisonException');
-    expect(TimeComparisonException('test').toString(),
-        'TimeComparisonException: test');
-  });
-
   test('Time comparisons', () {
     // Simple comparisons on standalone entities.
     DateTime intToDateTime(int time) {

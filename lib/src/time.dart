@@ -7,11 +7,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'base.dart';
-
-/// Exception class for issues in time comparison related issues.
-class TimeComparisonException extends GpsHistoryException {
-  TimeComparisonException([message]) : super(message);
+/// Used as result type for time comparison.
+///
+/// The enumeration values of [before], [same] and [after] are self-explanatory.
+/// [overlapping] is used in situations where the compared times are time
+/// spans rather than moments, meaning that the time spans may overlap partially
+/// or completely.
+enum TimeComparisonResult {
+  before,
+  same,
+  after,
+  overlapping,
 }
 
 /// Compares two time values and returns the result.
@@ -20,7 +26,8 @@ class TimeComparisonException extends GpsHistoryException {
 /// will be [TimeComparisonResult.before], etc.
 TimeComparisonResult compareTime(DateTime timeA, DateTime timeB) {
   // TODO: this is sensitive to below-second differences, which the Int representation is not. This needs addressing.
-  switch (timeA.compareTo(timeB)) {
+  final cmpResult = timeA.compareTo(timeB);
+  switch (cmpResult) {
     case -1:
       return TimeComparisonResult.before;
     case 0:
@@ -28,7 +35,7 @@ TimeComparisonResult compareTime(DateTime timeA, DateTime timeB) {
     case 1:
       return TimeComparisonResult.after;
     default:
-      throw TimeComparisonException('Unexpected compareTo result!');
+      throw RangeError('Unexpected compareTo result: $cmpResult!');
   }
 }
 

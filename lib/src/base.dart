@@ -415,19 +415,6 @@ abstract class GpsPointsView<T extends GpsPoint>
   bool get isReadonly => true;
 }
 
-/// Used as result type for time comparison.
-///
-/// The enumeration values of [before], [same] and [after] are self-explanatory.
-/// [overlapping] is used in situations where the compared times are time
-/// spans rather than moments, meaning that the time spans may overlap partially
-/// or completely.
-enum TimeComparisonResult {
-  before,
-  same,
-  after,
-  overlapping,
-}
-
 /// Indicates how the sorting requirement for [GpsPointsCollection] should
 /// behave.
 ///
