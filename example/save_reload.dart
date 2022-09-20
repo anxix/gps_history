@@ -14,7 +14,7 @@ GpcCompactGpsPoint generatePoints(int nrPoints) {
   final result = GpcCompactGpsPoint();
   for (var i = 1; i <= nrPoints; i++) {
     final point = GpsPoint(
-        time: DateTime.utc(1970).add(Duration(minutes: i)),
+        time: GpsTime.zero.add(minutes: i),
         latitude: i / 150.0,
         longitude: i / 250.0,
         altitude: i / 350.0);

@@ -49,9 +49,7 @@ void main() async {
   final gpcSource = GpcCompactGpsPoint()..capacity = source.length;
   for (var i = 0; i < nrPoints; i++) {
     final p = GpsPoint(
-        time: DateTime.fromMillisecondsSinceEpoch(i * 1000),
-        latitude: i.toDouble(),
-        longitude: i.toDouble());
+        time: GpsTime(i), latitude: i.toDouble(), longitude: i.toDouble());
     if (runFromBasicList) source.add(p);
     if (runFromGpc) gpcSource.add(p);
   }

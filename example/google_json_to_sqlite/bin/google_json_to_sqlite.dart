@@ -78,9 +78,8 @@ void main() async {
       await for (var p in points) {
         // Insert the point in the SQLite database.
         await txn.insert('Points', {
-          'datetime': p.time.toIso8601String(),
-          'datetime_s_from_epoch':
-              (p.time.millisecondsSinceEpoch / 1000).round(),
+          'datetime': p.time.toDateTimeUtc().toIso8601String(),
+          'datetime_s_from_epoch': (p.time.secondsSinceEpoch),
           'latitude': p.latitude,
           'longitude': p.longitude,
           'altitude': p.altitude,

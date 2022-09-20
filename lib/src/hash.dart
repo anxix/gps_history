@@ -20,6 +20,9 @@
 int hashObjects(Iterable objects) =>
     _finish(objects.fold(0, (h, i) => _combine(h, i.hashCode)));
 
+/// Generates a hash code for a single object.
+int hash1(a) => _finish(_combine(0, a.hashCode));
+
 /// Generates a hash code for two objects.
 int hash2(a, b) => _finish(_combine(_combine(0, a.hashCode), b.hashCode));
 

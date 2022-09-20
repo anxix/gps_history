@@ -1,11 +1,13 @@
 # GPS History for Dart
-Module intended to represent histories of GPS points. Features:
+Module intended to represent recorded histories of GPS points recorded at a
+frequency >= 1 second. Features:
 
-  * Two types of GPS point: a lean one with just the bare minimums and one
+  * Three types of GPS point: a lean one with just the bare minimums and one
     with more meta information such as heading, speed, etc. that's useful for
-    GPX files for example.
+    GPX files for example. Additionally a point that represents a longer stay
+    at a location, which can be used to reduce duplicate entries in a database.
   * Different in-memory storage systems for GPS points: either simply 
-    list-based, or efficient binary representation of just 14 or 22 bytes per
+    list-based, or efficient binary representation of just 14 to 22 bytes per
     point (at the cost of small loss of accuracy that's below what GPS sensors
     provide anyway).
   * Extremely low-memory and fast parser for Google location history JSON
@@ -19,7 +21,8 @@ Module intended to represent histories of GPS points. Features:
     containers or persistence mechanisms.
   * Many unit tests, examples and lots of documentation.
   * Null safety.
-  * No dependencies on third party libraries.
+  * Dependencies on third party libraries are limited to superficial 
+    functionality, and then only very mainstream well supported ones.
 
 ## Example
 Reading a JSON file containing location history exported from Google:
@@ -51,7 +54,7 @@ void main() async {
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {
-      final diff = p.time.difference(prevPoint.time).inSeconds;
+      final diff = p.time.difference(prevPoint.time);
       intervals.add(diff);
     }
     prevPoint = p;

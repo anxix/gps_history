@@ -13,8 +13,7 @@ final oneDay = 24 * 3600 * 1000; // one day in milliseconds
 
 /// Create a default point configuration that's used in many tests.
 GpsPoint makeDefaultPoint() {
-  return GpsPoint(
-      time: GpsPoint.zeroDateTime, latitude: 1.0E-7, longitude: 2.0E-7);
+  return GpsPoint(time: GpsTime.zero, latitude: 1.0E-7, longitude: 2.0E-7);
 }
 
 /// Tests the PointParser against the specified sequence of [chunks], ensuring
@@ -111,13 +110,13 @@ void testPointParser() {
     '"altitude" : 8,'
   ], [
     GpsPoint(
-        time: DateTime.utc(1970, 1, 2),
+        time: GpsTime.fromUtc(1970, month: 1, day: 2),
         latitude: 5.0E-7,
         longitude: 6.0E-7,
         altitude: 8.0)
   ]);
 
-  // Test negative values
+  // Test negative values (time gets clamped)
   _testPointParserStrings('Parse negative values', [
     '"timestampMs" : -$oneDay,', // this should lead to the above two being discarded
     '"latitudeE7" : -5,',
@@ -125,7 +124,7 @@ void testPointParser() {
     '"altitude" : -80,'
   ], [
     GpsPoint(
-        time: DateTime.utc(1969, 12, 31),
+        time: GpsTime.zero,
         latitude: -5.0E-7,
         longitude: -6.0E-7,
         altitude: -80.0)
@@ -142,7 +141,9 @@ void testPointParser() {
   ], [
     makeDefaultPoint(),
     GpsPoint(
-        time: DateTime.utc(1970, 1, 2), latitude: 5.0E-7, longitude: 6.0E-7)
+        time: GpsTime.fromUtc(1970, month: 1, day: 2),
+        latitude: 5.0E-7,
+        longitude: 6.0E-7)
   ]);
 
   // Test parsing to [GpsMeasurement].
@@ -167,7 +168,8 @@ void testPointParser() {
         '}, {'
   ], [
     GpsMeasurement(
-        time: DateTime.utc(2021, 3, 26, 20, 14, 50, 748),
+        time: GpsTime.fromUtc(2021,
+            month: 3, day: 26, hour: 20, minute: 14, second: 51),
         latitude: 37.1395513,
         longitude: -7.9376766,
         altitude: 402,
@@ -237,15 +239,17 @@ void main() {
       [
         onePointGpsPoint,
         GpsPoint(
-            time: DateTime.utc(1970, 1, 2), latitude: 5.0E-7, longitude: 6.0E-7)
+            time: GpsTime.fromUtc(1970, month: 1, day: 2),
+            latitude: 5.0E-7,
+            longitude: 6.0E-7)
       ],
       1);
 
   // Test that fails parsing without a specific bit of logic in the parser.
-  testJsonToGps('Test parsing when last character is part of number',
-      '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20', [
-    GpsPoint(time: DateTime.utc(1970), latitude: 1.3E-6, longitude: 2.0E-6)
-  ]);
+  testJsonToGps(
+      'Test parsing when last character is part of number',
+      '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20',
+      [GpsPoint(time: GpsTime.zero, latitude: 1.3E-6, longitude: 2.0E-6)]);
 
   // The tests below should not take a large amount of time. They are
   // aimed at checking that feeding a large amount of garbage data doesn't

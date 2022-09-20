@@ -43,15 +43,14 @@ void main() async {
       var altitude = lm.containsKey('altitude') ? lm['altitude'] as int : null;
 
       var p = GpsPoint(
-          time: DateTime.fromMillisecondsSinceEpoch(time, isUtc: true),
+          time: GpsTime.fromMillisecondsSinceEpochUtc(time),
           latitude: latE7 / 1E7,
           longitude: longE7 / 1E7,
           altitude: altitude?.toDouble());
       // If we have accuracy specified, return a GpsMeasurement object that's
       // capable of storing accuracy information.
       if (accuracy != null) {
-        p = GpsMeasurement.fromPoint(p,
-            accuracy: accuracy.toDouble());
+        p = GpsMeasurement.fromPoint(p, accuracy: accuracy.toDouble());
       }
       gpsPoints.add(p);
     }
@@ -73,7 +72,7 @@ void main() async {
         print(p);
       }
       if (prevp != null) {
-        final int diff = p.time.difference(prevp.time).inSeconds;
+        final int diff = p.time.difference(prevp.time);
         if (diff > 0) {
           mindiff = min(diff, mindiff);
         }

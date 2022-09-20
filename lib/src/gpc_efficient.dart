@@ -11,7 +11,9 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:gps_history/src/base.dart';
+import 'base.dart';
+import 'base_containers.dart';
+import 'time.dart';
 
 /// A space-efficient [GpsPointsCollection] implementation.
 ///
@@ -252,12 +254,14 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 /// Ranges of data will be ensured only at writing time. This because the data
 /// is written only once, but potentially read many times.
 class Conversions {
-  static final _zeroDateTimeUtc = GpsPoint.zeroDateTime;
+  static final _zeroDateTimeUtc = 0;
+
   // Null datetime encoded as max Uint32.
-  static final _nullDateTimeUtc =
-      _zeroDateTimeUtc.add(Duration(seconds: 0xffffffff.toUnsigned(32)));
-  static final _maxDatetimeUtc =
-      _nullDateTimeUtc.subtract(Duration(seconds: 1));
+  static final _nullDateTimeUtc = _zeroDateTimeUtc + 0xffffffff.toUnsigned(32);
+
+  // Max datetime is then one below the null datetime.
+  static final _maxDatetimeUtc = GpsTime.maxSecondsSinceEpoch;
+
   static final int _extremeAltitude = 32767 ~/ 2; //int16 is -32768..32767
   static final int _maxSmallDouble = 0xffff.toUnsigned(16);
 
@@ -306,26 +310,26 @@ class Conversions {
   /// If values outside the supported range are provided, they will be capped
   /// at the appropriate boundary (no exception will be raised).
   /// Null values are converted to the maximum possible [Uint32] value.
-  static int dateTimeToUint32(DateTime? value) {
-    late DateTime cappedValue;
+  static int gpsTimeToUint32(GpsTime? value) {
+    late int cappedValue;
     if (value != null) {
-      final valueUtc = value.toUtc();
+      final valueUtc = value.secondsSinceEpoch;
       // Cap the value between zero and the max allowed
-      cappedValue = valueUtc.isBefore(_zeroDateTimeUtc)
+      cappedValue = valueUtc < _zeroDateTimeUtc
           ? _zeroDateTimeUtc
-          : valueUtc.isAfter(_maxDatetimeUtc)
+          : valueUtc > _maxDatetimeUtc
               ? _maxDatetimeUtc
               : valueUtc;
     } else {
       cappedValue = _nullDateTimeUtc;
     }
-    return cappedValue.difference(_zeroDateTimeUtc).inSeconds;
+    return cappedValue - _zeroDateTimeUtc;
   }
 
-  /// The opposite of [dateTimeToUint32]
-  static DateTime? uint32ToDateTime(int value) {
-    final result = _zeroDateTimeUtc.add(Duration(seconds: value));
-    return result == _nullDateTimeUtc ? null : result;
+  /// The opposite of [gpsTimeToUint32]
+  static GpsTime? uint32ToGpsTime(int value) {
+    final result = _zeroDateTimeUtc + value;
+    return result == _nullDateTimeUtc ? null : GpsTime(result);
   }
 
   /// Convert altitude in meters to an [Int16] value.
@@ -404,7 +408,7 @@ class Conversions {
 /// In order to improve the storage efficiency, these are stored as follows,
 /// all in *little endian* representation:
 /// - [GpsPoint.time]: [Uint32] representation of time. For details see
-///   [Conversions.dateTimeToUint32].
+///   [Conversions.gpsTimeToUint32].
 /// - [GpsPoint.latitude]: [Uint32] in PosE7-spec. For details see
 ///   [Conversions.latitudeToUint32].
 /// - [GpsPoint.longitude]: [Uint32] in PosE7-spec. For details see
@@ -440,7 +444,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     return GpsPoint(
         // If the time storage method is changed, also modify the compareTime
         // method!
-        time: Conversions.uint32ToDateTime(_getUint32(byteIndex))!,
+        time: Conversions.uint32ToGpsTime(_getUint32(byteIndex))!,
         latitude: Conversions.uint32ToLatitude(
             _getUint32(byteIndex + _offsetLatitude)),
         longitude: Conversions.uint32ToLongitude(
@@ -453,7 +457,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   ///
   /// Useful to use in children's [_writeElementToBytes] implmentations.
   void _writeGpsPointToBytes(T element, int byteIndex) {
-    _setUint32(byteIndex, Conversions.dateTimeToUint32(element.time));
+    _setUint32(byteIndex, Conversions.gpsTimeToUint32(element.time));
     _setUint32(byteIndex + _offsetLatitude,
         Conversions.latitudeToUint32(element.latitude));
     _setUint32(byteIndex + _offsetLongitude,
@@ -476,7 +480,7 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   TimeComparisonResult compareElementTimeWithSeparateItem(
       int elementNrA, T elementB) {
     final elementTime = _getUint32(_elementNrToByteOffset(elementNrA));
-    final itemTime = Conversions.dateTimeToUint32(elementB.time);
+    final itemTime = Conversions.gpsTimeToUint32(elementB.time);
 
     return compareIntRepresentationTime(elementTime, itemTime);
   }
@@ -509,7 +513,7 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
 /// - [GpsStay.accuracy]: [Uint16] representation of accuracy.
 ///   For details see [Conversions.smallDoubleToUint16].
 /// - [GpsStay.endTime]: [Uint32] representation of heading.
-///   For details see [Conversions.dateTimeToUint32].
+///   For details see [Conversions.gpsTimeToUint32].
 ///
 /// Added together it's 6 bytes per element extra compared to what's needed
 /// for the inherited [GpsPoint] properties.
@@ -532,7 +536,7 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
     return GpsStay.fromPoint(point,
         accuracy: Conversions.uint16ToSmallDouble(
             _getUint16(byteIndex + _offsetAccuracy)),
-        endTime: Conversions.uint32ToDateTime(
+        endTime: Conversions.uint32ToGpsTime(
             _getUint32(byteIndex + _offsetEndTime)));
   }
 
@@ -543,7 +547,7 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
     _setUint16(byteIndex + _offsetAccuracy,
         Conversions.smallDoubleToUint16(element.accuracy));
     _setUint32(byteIndex + _offsetEndTime,
-        Conversions.dateTimeToUint32(element.endTime));
+        Conversions.gpsTimeToUint32(element.endTime));
   }
 
   /// Compares the time conditions for the two elements and indices [elementNrA]
@@ -570,8 +574,8 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
     final startA = _getUint32(_elementNrToByteOffset(elementNrA));
     final endA =
         _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
-    final startB = Conversions.dateTimeToUint32(elementB.time);
-    final endB = Conversions.dateTimeToUint32(elementB.endTime);
+    final startB = Conversions.gpsTimeToUint32(elementB.time);
+    final endB = Conversions.gpsTimeToUint32(elementB.endTime);
 
     return compareTimeSpans(
         startA: startA, endA: endA, startB: startB, endB: endB);

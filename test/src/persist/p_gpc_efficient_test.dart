@@ -69,7 +69,7 @@ void main() async {
       () => PGpcCompactGpsPoint(),
       () => GpcCompactGpsPoint(),
       (i) => GpsPoint(
-          time: DateTime.utc(1970).add(Duration(hours: i)),
+          time: GpsTime.zero.add(hours: i),
           latitude: (i + 1) / 1000.0,
           longitude: (i + 1) / 2000.0,
           altitude: (i + 1) / 100));
@@ -79,7 +79,7 @@ void main() async {
       () => PGpcCompactGpsMeasurement(),
       () => GpcCompactGpsMeasurement(),
       (i) => GpsMeasurement(
-          time: DateTime.utc(1970).add(Duration(hours: i)),
+          time: GpsTime.zero.add(hours: i),
           latitude: (i + 1) / 1000.0,
           longitude: (i + 1) / 2000.0,
           altitude: (i + 1) / 100,

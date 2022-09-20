@@ -59,33 +59,34 @@ void testConversions() {
     // Check that converting back and forth gives the same value.
     for (var year = 2000; year <= 2020; year++) {
       for (var month = 1; month <= 12; month += 3) {
-        final t = DateTime.utc(year, month);
-        expect(
-            Conversions.uint32ToDateTime(Conversions.dateTimeToUint32(t)), t);
+        final t = GpsTime.fromUtc(year, month: month);
+        expect(Conversions.uint32ToGpsTime(Conversions.gpsTimeToUint32(t)), t);
       }
     }
 
     // Check that converting one way gives the correct value (the back and
     // forth test ensures implicitly that the other direction is correct too).
-    expect(Conversions.dateTimeToUint32(DateTime.utc(1970)), 0);
+    expect(Conversions.gpsTimeToUint32(GpsTime.fromUtc(1970)), 0);
     expect(
-        // 1.002003 seconds after t=0
-        Conversions.dateTimeToUint32(DateTime.utc(1970, 1, 1, 0, 0, 1, 2, 3)),
+        // 1 second after t=0
+        Conversions.gpsTimeToUint32(GpsTime.fromUtc(1970,
+            month: 1, day: 1, hour: 0, minute: 0, second: 1)),
         1);
 
     // Check the caps.
-    expect(Conversions.dateTimeToUint32(DateTime.utc(1969)), 0);
-    expect(
-        // Two values after the max should both encode to the same integer.
-        Conversions.uint32ToDateTime(
-            Conversions.dateTimeToUint32(DateTime.utc(5000))),
-        Conversions.uint32ToDateTime(
-            Conversions.dateTimeToUint32(DateTime.utc(2106, 12))));
+    expect(() {
+      Conversions.gpsTimeToUint32(GpsTime.fromUtc(1969));
+    }, throwsA(isA<RangeError>()));
+    expect(() {
+      // Two values after the max should both encode to the same integer.
+      Conversions.uint32ToGpsTime(
+          Conversions.gpsTimeToUint32(GpsTime.fromUtc(5000)));
+    }, throwsA(isA<RangeError>()));
 
     // Check null.
     final nullDateTimeAsInt = 4294967295;
-    expect(Conversions.dateTimeToUint32(null), nullDateTimeAsInt);
-    expect(Conversions.uint32ToDateTime(nullDateTimeAsInt), null);
+    expect(Conversions.gpsTimeToUint32(null), nullDateTimeAsInt);
+    expect(Conversions.uint32ToGpsTime(nullDateTimeAsInt), null);
   });
 
   test('Check altitude to Int16 conversions', () {
@@ -276,7 +277,7 @@ void main() {
       (int i) => GpsPoint(
           // The constraints of GpcEfficientGpsPoint mean the date must be
           // somewhat reasonable, so we can't just use year 1.
-          time: DateTime.utc(2000 + i),
+          time: GpsTime.fromUtc(2100).add(days: i),
           latitude: i.toDouble(), // required to be equal to i
           longitude: i.toDouble(),
           altitude: i.toDouble()));
@@ -287,7 +288,7 @@ void main() {
       (int i) => GpsPoint(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          time: DateTime.utc(2100 + i),
+          time: GpsTime.fromUtc(2100).add(days: i),
           latitude: i.toDouble(), // required to be equal to i
           longitude: 175.0 + i,
           altitude: 16E3 + i));
@@ -298,7 +299,7 @@ void main() {
       (int i) => GpsMeasurement(
           // Repeat the test with values close to the maximum date range, to
           // check that storage works OK near the boundaries.
-          time: DateTime.utc(2100 + i),
+          time: GpsTime.fromUtc(2100).add(days: i),
           latitude: i.toDouble(), // required to be equal to i
           longitude: 175.0 + i,
           altitude: 16E3 + i,

@@ -392,11 +392,12 @@ class PointParser {
       return;
     }
 
-    var time = DateTime.fromMillisecondsSinceEpoch(timestampMs!, isUtc: true);
+    var time =
+        GpsTime.fromMillisecondsSinceEpochUtc(timestampMs!, autoClamp: true);
 
     if (_prevParsedPoint != null &&
         _minSecondsBetweenDatapoints != null &&
-        time.difference(_prevParsedPoint!.time).inSeconds <=
+        time.difference(_prevParsedPoint!.time) <=
             _minSecondsBetweenDatapoints!) {
       // Don't do anything, we don't want this point.
     } else if (_accuracyThreshold != null &&

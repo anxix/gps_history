@@ -59,7 +59,7 @@ class PersisterDummy extends Persister {
         }
         // Should only be called for GpcDummy.
         (view as GpsPointsCollection).add(GpsPoint(
-            time: DateTime.utc(readByte ~/ 10, readByte % 10),
+            time: GpsTime.fromUtc(2000 + readByte ~/ 10, month: readByte % 10),
             latitude: readByte.toDouble(),
             longitude: readByte.toDouble(),
             altitude: readByte.toDouble()));
