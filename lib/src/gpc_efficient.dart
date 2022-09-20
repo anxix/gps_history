@@ -11,8 +11,9 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:gps_history/src/base.dart';
-import 'package:gps_history/src/time.dart';
+import 'base.dart';
+import 'base_containers.dart';
+import 'time.dart';
 
 /// A space-efficient [GpsPointsCollection] implementation.
 ///

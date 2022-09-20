@@ -8,7 +8,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/src/base.dart';
+import 'base.dart';
+import 'base_containers.dart';
 
 /// A collection that internally stores the points in a basic list.
 ///

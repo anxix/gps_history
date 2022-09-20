@@ -9,7 +9,9 @@
  */
 
 import 'dart:typed_data';
-import 'package:gps_history/src/base.dart';
+
+import 'base.dart';
+import 'base_containers.dart';
 
 /// A view that internally only stores indices in a referenced
 /// collections, and queries the collection for the points when required.
