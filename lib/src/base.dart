@@ -25,13 +25,13 @@ class GpsHistoryException implements Exception {
   }
 }
 
-/// Compares the time values of two elements and returns the result.
+/// Compares two time values and returns the result.
 ///
-/// If the time of this is considered before that of [other], the result
+/// If [timeA] is considered before [timeB], the result
 /// will be [TimeComparisonResult.before], etc.
-TimeComparisonResult compareTime(GpsPoint elementA, GpsPoint elementB) {
+TimeComparisonResult compareTime(DateTime timeA, DateTime timeB) {
   // TODO: this is sensitive to below-second differences, which the Int representation is not. This needs addressing.
-  switch (elementA.time.compareTo(elementB.time)) {
+  switch (timeA.compareTo(timeB)) {
     case -1:
       return TimeComparisonResult.before;
     case 0:
@@ -231,7 +231,7 @@ class GpsPoint {
 
   /// Compares the time values of this and [other] and returns the result.
   TimeComparisonResult compareTo(GpsPoint other) {
-    return compareTime(this, other);
+    return compareTime(time, other.time);
   }
 
   @override
@@ -405,6 +405,7 @@ class GpsStay extends GpsPoint {
 
   @override
   TimeComparisonResult compareTo(GpsPoint other) {
+    // TODO: add test code
     if (other is! GpsStay) {
       return super.compareTo(other);
     } else {
@@ -791,7 +792,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// they have a way to do quick time comparisons without doing full item
   /// retrieval.
   TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
-    return compareTime(this[elementNrA], this[elementNrB]);
+    return compareTime(this[elementNrA].time, this[elementNrB].time);
   }
 
   /// Performs [compareTime] for the item in the positions [elementNrA]
@@ -804,7 +805,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// retrieval.
   TimeComparisonResult compareElementTimeWithSeparateItem(
       int elementNrA, T elementB) {
-    return compareTime(this[elementNrA], elementB);
+    return compareTime(this[elementNrA].time, elementB.time);
   }
 
   /// Add a single [element] to the collection.
