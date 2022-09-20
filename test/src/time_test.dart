@@ -91,10 +91,29 @@ void main() {
         GpsTime(-1);
       }, throwsA(isA<RangeError>()),
           reason: 'Pre-epoch value should throw exception');
+
       expect(() {
         GpsTime.fromUtc(2110);
       }, throwsA(isA<RangeError>()),
           reason: 'Value higher than max should throw exception');
+
+      expect(() {
+        GpsTime(4294967295);
+      }, throwsA(isA<RangeError>()),
+          reason: 'Value higher than max should throw exception');
+    });
+
+    test('Constructors and factories', () {
+      expect(
+          GpsTime(10), GpsTime.fromDateTime(DateTime.utc(1970, 1, 1, 0, 0, 10)),
+          reason: 'wrong for fromDateTime');
+
+      expect(GpsTime(10), GpsTime.fromMillisecondsSinceEpochUtc(10000),
+          reason: 'wrong for fromMillisecondsSinceEpochUtc');
+
+      expect(GpsTime.fromUtc(1971, 2, 3, 4, 5, 6),
+          GpsTime.fromDateTime(DateTime.utc(1971, 2, 3, 4, 5, 6)),
+          reason: 'wrong for fromUtc');
     });
   });
 }
