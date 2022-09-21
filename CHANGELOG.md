@@ -20,6 +20,11 @@
 * Fixes:
   * The various time comparison functions for ```GpcCompactGpsMeasurement```
     would not use fast comparisons on the binary representation. They do now.
+  * 3-4x faster ```addAll``` implementation when dealing with a generic iterable 
+    source that has millions upon millions of items. OF course copying from 
+    efficient collection to an efficient collection of the same time is even 
+    faster, by a factor 10 or so.
+  * Rearranged internals into a few smaller files for easier navigation.
 
 
 # 0.0.6
