@@ -35,15 +35,11 @@ void main() {
           reason: 'Wrong for time span ($start1, $end1), ($start2, $end2)');
 
       // Test calling in the opposite order (span 2, then 1).
-      final expectedInverted = expected == TimeComparisonResult.after
-          ? TimeComparisonResult.before // before is opposite of after
-          : expected == TimeComparisonResult.before
-              ? TimeComparisonResult.after // after is opopsite of before
-              : expected; // same and overlapping are identical in inverse
+      final expectedOpposite = opposite(expected);
       expect(
           compareTimeSpans(
               startA: start2, endA: end2, startB: start1, endB: end1),
-          expectedInverted,
+          expectedOpposite,
           reason: 'Wrong for time span ($start2, $end2), ($start1, $end1)');
     }
 

@@ -22,6 +22,15 @@ enum TimeComparisonResult {
   overlapping,
 }
 
+/// Returns the opposite of [r].
+TimeComparisonResult opposite(TimeComparisonResult r) {
+  return r == TimeComparisonResult.after
+      ? TimeComparisonResult.before // before is opposite of after
+      : r == TimeComparisonResult.before
+          ? TimeComparisonResult.after // after is opopsite of before
+          : r; // same and overlapping are identical in inverse
+}
+
 /// Compares two time values and returns the result.
 ///
 /// If [timeA] is considered before [timeB], the result
