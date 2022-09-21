@@ -24,6 +24,32 @@ class GpsHistoryException implements Exception {
   }
 }
 
+/// Compares the time values of this and [other] and returns the result.
+///
+/// Implemented to handle correct comparisons for types that have just one
+/// time field ([GpsPoint], [GpsMeasurement]) and types that have a secondary
+/// time field as well ([GpsStay]).
+TimeComparisonResult comparePointTimes(GpsPoint itemA, GpsPoint itemB) {
+  // Comparing GpsStay to non-stay items requires special care, because a stay
+  // may overlap a GpsPoint, but the GpsPoint doesn't know about overlapping.
+  if (itemA is GpsStay) {
+    final startA = itemA.time.secondsSinceEpoch;
+    final endA = itemA.endTime.secondsSinceEpoch;
+    final startB = itemB.time.secondsSinceEpoch;
+    final endB = (itemB is GpsStay)
+        ? itemB.endTime.secondsSinceEpoch
+        : itemB.time.secondsSinceEpoch; // non-stay same as zero length stay
+    return compareTimeSpans(
+        startA: startA, endA: endA, startB: startB, endB: endB);
+  } else if (itemB is GpsStay) {
+    // Put itemB in the lead of the comparison and simply invert the result.
+    return opposite(comparePointTimes(itemB, itemA));
+  }
+
+  // Non-GpsStay items can be compared simply.
+  return compareTime(itemA.time, itemB.time);
+}
+
 /// Represents the most basic GPS location.
 ///
 /// This excludes heading and accuracy information that is typically provided
@@ -95,11 +121,6 @@ class GpsPoint {
         other.latitude == latitude &&
         other.longitude == longitude &&
         other.altitude == altitude;
-  }
-
-  /// Compares the time values of this and [other] and returns the result.
-  TimeComparisonResult compareTo(GpsPoint other) {
-    return compareTime(time, other.time);
   }
 
   @override
@@ -269,20 +290,6 @@ class GpsStay extends GpsPoint {
     return other is GpsStay &&
         other.accuracy == accuracy &&
         other.endTime == endTime;
-  }
-
-  @override
-  TimeComparisonResult compareTo(GpsPoint other) {
-    // TODO: add test code
-    if (other is! GpsStay) {
-      return super.compareTo(other);
-    } else {
-      return compareTimeSpans(
-          startA: time.secondsSinceEpoch,
-          endA: endTime.secondsSinceEpoch,
-          startB: other.time.secondsSinceEpoch,
-          endB: other.endTime.secondsSinceEpoch);
-    }
   }
 
   @override

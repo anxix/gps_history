@@ -26,7 +26,8 @@ void main() {
   });
 
   group('Timespan comparisons', () {
-    testFor(int start1, int end1, int start2, int end2, expected) {
+    testFor(int start1, int end1, int start2, int end2,
+        TimeComparisonResult expected) {
       // Test in the specified order.
       expect(
           compareTimeSpans(

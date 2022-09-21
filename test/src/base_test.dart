@@ -246,4 +246,67 @@ void main() {
     test('Check speed', () => expect(m.speed, null));
     test('Check speedAccuracy', () => expect(m.speedAccuracy, null));
   });
+
+  group('Time-based point compraison', () {
+    testFor(GpsPoint itemA, GpsPoint itemB, TimeComparisonResult expected) {
+      // Test in the specified order.
+      expect(comparePointTimes(itemA, itemB), expected,
+          reason: 'Wrong for $itemA and $itemB)');
+
+      // Test calling in the opposite order (point B, then A).
+      final expectedOpposite = opposite(expected);
+      expect(comparePointTimes(itemB, itemA), expectedOpposite,
+          reason: 'Wrong for $itemB and $itemA)');
+    }
+
+    /// Execute comparisons between a point with just one time component
+    /// [pOneTime] and one with two components [pTwoTimes].
+    ///
+    /// The two arguments must be all-zero.
+    testPointsWithOneVsTwoTimeComponents(GpsPoint pOneTime, GpsStay pTwoTimes) {
+      // Requires thorough testing due to it being a special code path.
+      testFor(pOneTime, pTwoTimes, TimeComparisonResult.same);
+      testFor(pOneTime, pTwoTimes.copyWith(endTime: GpsTime(1)),
+          TimeComparisonResult.overlapping);
+      testFor(
+          pOneTime,
+          pTwoTimes.copyWith(time: GpsTime(2), endTime: GpsTime(5)),
+          TimeComparisonResult.before);
+      testFor(
+          pOneTime.copyWith(time: GpsTime(10)),
+          pTwoTimes.copyWith(time: GpsTime(2), endTime: GpsTime(5)),
+          TimeComparisonResult.after);
+      testFor(
+          pOneTime.copyWith(time: GpsTime(3)),
+          pTwoTimes.copyWith(time: GpsTime(2), endTime: GpsTime(5)),
+          TimeComparisonResult.overlapping);
+    }
+
+    test('GpsPoint to GpsPoint', () {
+      testFor(GpsPoint.allZero, GpsPoint.allZero, TimeComparisonResult.same);
+      testFor(GpsPoint.allZero, GpsPoint.allZero.copyWith(time: GpsTime(1)),
+          TimeComparisonResult.before);
+    });
+
+    test('GpsPoint to GpsStay', () {
+      testPointsWithOneVsTwoTimeComponents(GpsPoint.allZero, GpsStay.allZero);
+    });
+
+    test('GpsStay to GpsStay', () {
+      // Only needs basic testing of overlap, to make sure the correct code path
+      // is used. There are thorough tests for the behaviour in time_test.dart.
+      testFor(GpsStay.allZero, GpsStay.allZero, TimeComparisonResult.same);
+      testFor(
+          // Check two points that would be regarded as same if compared as
+          // basic GpsPoint rather than as time spans.
+          GpsStay.allZero.copyWith(endTime: GpsTime(2)),
+          GpsStay.allZero.copyWith(endTime: GpsTime(3)),
+          TimeComparisonResult.overlapping);
+    });
+
+    test('GpsMeasurement to GpsStay', () {
+      testPointsWithOneVsTwoTimeComponents(
+          GpsMeasurement.allZero, GpsStay.allZero);
+    });
+  });
 }
