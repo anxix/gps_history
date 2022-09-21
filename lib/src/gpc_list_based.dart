@@ -23,7 +23,7 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
   GpcListBased();
 
   @override
-  GpcListBased<T> newEmpty() {
+  GpcListBased<T> newEmpty({int? capacity}) {
     return GpcListBased<T>();
   }
 

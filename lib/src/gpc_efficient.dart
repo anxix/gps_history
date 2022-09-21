@@ -489,8 +489,8 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
 /// Implements efficient storage for [GpsPoint] elements.
 class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   @override
-  GpsPointsCollection<GpsPoint> newEmpty() {
-    return GpcCompactGpsPoint();
+  GpsPointsCollection<GpsPoint> newEmpty({int? capacity}) {
+    return GpcCompactGpsPoint()..capacity = capacity ?? 0;
   }
 
   @override
@@ -522,8 +522,8 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
   static const int _offsetEndTime = 16;
 
   @override
-  GpcCompactGpsStay newEmpty() {
-    return GpcCompactGpsStay();
+  GpcCompactGpsStay newEmpty({int? capacity}) {
+    return GpcCompactGpsStay()..capacity = capacity ?? 0;
   }
 
   @override
@@ -607,8 +607,8 @@ class GpcCompactGpsMeasurement extends GpcCompact<GpsMeasurement> {
   static const int _offsetSpeedAccuracy = 20;
 
   @override
-  GpcCompactGpsMeasurement newEmpty() {
-    return GpcCompactGpsMeasurement();
+  GpcCompactGpsMeasurement newEmpty({int? capacity}) {
+    return GpcCompactGpsMeasurement()..capacity = capacity ?? 0;
   }
 
   @override

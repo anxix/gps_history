@@ -63,11 +63,14 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   bool _sortedByTime = true;
 
-  /// Creates a collection of the same type as this.
+  /// Creates a collection of the same type as this, optionally with
+  /// a starting [capacity] for children that support that.
   ///
-  /// To be overridden and implemented in children.
+  /// Setting the capacity at the correct value can for huge lists with
+  /// millions of items have a significant impact on the performance
+  /// of filling the list.
   @protected
-  GpsPointsCollection<T> newEmpty();
+  GpsPointsCollection<T> newEmpty({int? capacity});
 
   /// Whether the list is will disallow modifications that render it
   /// in a state that's not sorted by time. Setting this property to true
@@ -253,16 +256,16 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       return;
     }
 
-    //TODO: the approach below is slower by a factor 2 to 4 than just adding one
-    // item at a time when there are no problems with the data sortedness.
-    // However, that has the downside of potentially requiring a rollback after
-    // adding some arbitrary amount of items. This should be improved.
-
     // Source is some random iterable. Convert it to a collection and run it
     // through the procedure again. This is an expensive operation both in time
     // and in terms of memory. Memory could possibly be reduced by using an
     // async stream-based approach, but that's not worth the effort for now.
-    final copiedSource = newEmpty();
+
+    // Pre-setting the capacity has a massive effect on speed - the benchmark
+    // in point_addition.dart is about 3-4x faster with preset capacity than if
+    // the list is grown incrementally with the natural capacity increasing
+    // algo.
+    final copiedSource = newEmpty(capacity: source.length - skipItems);
     // Use same enforcement strategy as the target collection. That way if the
     // data is incorrect, it can be detected already while copying from the
     // iterable to the list.
