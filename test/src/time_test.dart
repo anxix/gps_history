@@ -26,20 +26,24 @@ void main() {
   });
 
   group('Timespan comparisons', () {
-    testFor(int start1, int end1, int start2, int end2, expectedResult,
-        expectedResultOpposite) {
+    testFor(int start1, int end1, int start2, int end2, expected) {
       // Test in the specified order.
       expect(
           compareTimeSpans(
               startA: start1, endA: end1, startB: start2, endB: end2),
-          expectedResult,
+          expected,
           reason: 'Wrong for time span ($start1, $end1), ($start2, $end2)');
 
       // Test calling in the opposite order (span 2, then 1).
+      final expectedInverted = expected == TimeComparisonResult.after
+          ? TimeComparisonResult.before // before is opposite of after
+          : expected == TimeComparisonResult.before
+              ? TimeComparisonResult.after // after is opopsite of before
+              : expected; // same and overlapping are identical in inverse
       expect(
           compareTimeSpans(
               startA: start2, endA: end2, startB: start1, endB: end1),
-          expectedResultOpposite,
+          expectedInverted,
           reason: 'Wrong for time span ($start2, $end2), ($start1, $end1)');
     }
 
@@ -48,40 +52,32 @@ void main() {
       // tests B before A.
 
       // Separated spans.
-      testFor(
-          1, 2, 3, 4, TimeComparisonResult.before, TimeComparisonResult.after);
+      testFor(1, 2, 3, 4, TimeComparisonResult.before);
 
       // Adjacent spans.
-      testFor(
-          1, 2, 2, 4, TimeComparisonResult.before, TimeComparisonResult.after);
+      testFor(1, 2, 2, 4, TimeComparisonResult.before);
 
       // Meeting at end point
-      testFor(
-          1, 3, 3, 3, TimeComparisonResult.before, TimeComparisonResult.after);
+      testFor(1, 3, 3, 3, TimeComparisonResult.before);
     });
     test('A equal to B', () {
       // Test nonzero span.
-      testFor(1, 2, 1, 2, TimeComparisonResult.same, TimeComparisonResult.same);
+      testFor(1, 2, 1, 2, TimeComparisonResult.same);
       // Test moment.
-      testFor(1, 1, 1, 1, TimeComparisonResult.same, TimeComparisonResult.same);
+      testFor(1, 1, 1, 1, TimeComparisonResult.same);
     });
 
     test('A overlapping B', () {
       // Overlap from start.
-      testFor(1, 2, 1, 3, TimeComparisonResult.overlapping,
-          TimeComparisonResult.overlapping);
+      testFor(1, 2, 1, 3, TimeComparisonResult.overlapping);
       // Overlap to the end.
-      testFor(1, 3, 2, 3, TimeComparisonResult.overlapping,
-          TimeComparisonResult.overlapping);
+      testFor(1, 3, 2, 3, TimeComparisonResult.overlapping);
       // Overlap at start point.
-      testFor(1, 3, 1, 1, TimeComparisonResult.overlapping,
-          TimeComparisonResult.overlapping);
+      testFor(1, 3, 1, 1, TimeComparisonResult.overlapping);
       // Overlap in the middle.
-      testFor(1, 4, 2, 3, TimeComparisonResult.overlapping,
-          TimeComparisonResult.overlapping);
+      testFor(1, 4, 2, 3, TimeComparisonResult.overlapping);
       // Overlap in the middle point.
-      testFor(1, 4, 2, 2, TimeComparisonResult.overlapping,
-          TimeComparisonResult.overlapping);
+      testFor(1, 4, 2, 2, TimeComparisonResult.overlapping);
     });
   });
 
