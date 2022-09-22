@@ -310,4 +310,7 @@ class GpsTime {
 
   @override
   int get hashCode => hash1(secondsSinceEpoch);
+
+  @override
+  String toString() => '$secondsSinceEpoch';
 }
