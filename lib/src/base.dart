@@ -24,7 +24,7 @@ class GpsHistoryException implements Exception {
   }
 }
 
-/// Compares the time values of this and [other] and returns the result.
+/// Compares the time values of [itemA] and [itemB] and returns the result.
 ///
 /// Implemented to handle correct comparisons for types that have just one
 /// time field ([GpsPoint], [GpsMeasurement]) and types that have a secondary
