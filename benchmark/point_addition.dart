@@ -28,9 +28,6 @@ Future<void> runPerformanceTest(
     final startTime = DateTime.now();
 
     target.addAll(source);
-    // for (final p in source) {
-    //   target.add(p);
-    // }
 
     final endTime = DateTime.now();
     final deltaTime = endTime.difference(startTime);
