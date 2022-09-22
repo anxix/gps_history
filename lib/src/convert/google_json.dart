@@ -60,7 +60,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
@@ -457,14 +456,6 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
     _accuracyThreshold = accuracyThreshold;
   }
 
-  @override
-  Stream<GpsPoint> bind(Stream<List<int>> stream) {
-    return Stream.eventTransformed(
-        stream,
-        (EventSink<GpsPoint> outputSink) => _GpsPointParserEventSink(
-            outputSink, _minSecondsBetweenDatapoints, _accuracyThreshold));
-  }
-
   /// Override [Converter.convert] that returns the last point that is fully
   /// defined by the [bytes].
   ///
@@ -600,20 +591,5 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
     _pointParser!.toGpsPointAndReset();
 
     _outputSink.close();
-  }
-}
-
-class _GpsPointParserEventSink extends _GpsPointParserSink
-    implements EventSink<List<int>> {
-  final EventSink<GpsPoint> _eventOutputSink;
-
-  _GpsPointParserEventSink(EventSink<GpsPoint> eventOutputSink,
-      double? minSecondsBetweenDatapoints, double? accuracyThreshold)
-      : _eventOutputSink = eventOutputSink,
-        super(eventOutputSink, minSecondsBetweenDatapoints, accuracyThreshold);
-
-  @override
-  void addError(Object o, [StackTrace? stackTrace]) {
-    _eventOutputSink.addError(o, stackTrace);
   }
 }
