@@ -35,9 +35,21 @@ class PointsToStaysDecoder<GpsPoint>
 class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
   final Sink<GpsStay> _outputSink;
 
+  // Maximum amount of time in seconds between two measurements that are still
+  // allowed to be merged into one stay. This is because the data may contain
+  // huge time gaps during which no recording was performed.
+  final int _maxTimeGapSeconds;
+
+  // Maximum distance between two measurements that are still allowed to be
+  // merged into one stay.
+  final double _maxDistanceGapMeters;
+
   GpsStay? _currentStay;
 
-  _GpsPointsToStaysSink(this._outputSink);
+  _GpsPointsToStaysSink(this._outputSink,
+      {int? maxTimeGapSeconds, double? maxDistanceGapMeters})
+      : _maxTimeGapSeconds = maxTimeGapSeconds ?? GpsTime.resolutionSeconds,
+        _maxDistanceGapMeters = maxDistanceGapMeters ?? 1.0;
 
   @override
   void add(chunk) {
@@ -69,6 +81,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
         _resetCurrentStayTo(point);
       }
       // We have some previous stay state -> requires checking times etc.
+      // TODO: implement
       if (point is GpsStay) {
       } else {}
     }
@@ -85,6 +98,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
 
   @override
   void close() {
+    // If we have an active stay, this is the time to emit and reset it.
     if (_currentStay != null) {
       _outputSink.add(_currentStay!);
       _currentStay = null;

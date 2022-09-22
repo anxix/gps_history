@@ -164,6 +164,8 @@ class GpsTime {
   /// Number of seconds sinds the epoch (UTC).
   final int secondsSinceEpoch;
 
+  static const resolutionSeconds = 1;
+
   /// Maximum allowed seconds since epoch, so that the value fits in an Uint32.
   /// The -1 is to allow the storage system to use that for null representations.
   static final maxSecondsSinceEpoch = 0xffffffff.toUnsigned(32) - 1;
