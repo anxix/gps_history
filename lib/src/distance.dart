@@ -109,7 +109,7 @@ double distanceCoordsSuperFast(
   return distLongMeter + distLatMeter;
 }
 
-/// Calculates the distance in meters between point A at polar
+/// Calculates the distance in meters between point A at spherical
 /// (latitude, longitude) coordinates ([latADeg], [longADeg]) and B at
 /// ([latBDeg], [longBDeg]) - all in degrees, using the haversine formula.
 ///
@@ -130,6 +130,55 @@ double distanceCoordsHaversine(
   final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
   return earthRadiusMeters * c;
+}
+
+// Calculate the flattening, being (1 - polarRadius/equatorRadius),
+// with the radii provided by https://en.wikipedia.org/wiki/Earth_radius#Extrema:_equatorial_and_polar_radii.
+const earthEquatorialRadiusMeters = 6378.1370E3;
+const earthPolarRadiusMeters = 6356.7523E3;
+const earthFlattening =
+    1 - earthPolarRadiusMeters / earthEquatorialRadiusMeters;
+
+/// Calculates the distance in meters between point A at spherical
+/// (latitude, longitude) coordinates ([latADeg], [longADeg]) and B at
+/// ([latBDeg], [longBDeg]) - all in degrees, using Lambert's formula for
+/// maximum accuracy, taking into account the earth's ellipsoid shape.
+///
+/// The result is very accurate, tens of meters over thousands of kilometers.
+/// Based on https://www.calculator.net/distance-calculator.html,
+/// https://en.wikipedia.org/wiki/Geographical_distance#Lambert's_formula_for_long_lines
+/// and https://python.algorithms-library.com/geodesy/lamberts_ellipsoidal_distance.
+double distanceCoordsLambert(
+    double latADeg, double longADeg, double latBDeg, double longBDeg) {
+  // Calculate the reduced latitudes.
+  final latARad = degToRad(latADeg);
+  final beta1 = atan((1 - earthFlattening) * tan(degToRad(latARad)));
+  final latBRad = degToRad(latBDeg);
+  final beta2 = atan((1 - earthFlattening) * tan(degToRad(latBRad)));
+
+  // Calculate the haversine distance and with that the central angle sigma.
+  final sigma = distanceCoordsHaversine(latADeg, longADeg, latBDeg, longBDeg) /
+      earthEquatorialRadiusMeters;
+  final sinSigma = sin(sigma);
+  final sinHalfSigma = sin(sigma / 2);
+  final cosHalfSigma = cos(sigma / 2);
+
+  // Calculate various components of the final formula.
+  final p = (beta1 + beta2) / 2;
+  final q = (beta2 - beta1) / 2;
+  final sinP = sin(p);
+  final cosP = cos(p);
+  final sinQ = sin(q);
+  final cosQ = cos(q);
+  final x = (sigma - sinSigma) *
+      (sinP * sinP * cosQ * cosQ / (cosHalfSigma * cosHalfSigma));
+  final y = (sigma + sinSigma) *
+      (cosP * cosP * sinQ * sinQ / (sinHalfSigma * sinHalfSigma));
+
+  // Calculate and return the distance.
+  final distance =
+      earthEquatorialRadiusMeters * (sigma - (earthFlattening / 2) * (x + y));
+  return distance;
 }
 
 double distanceCoords(double latADeg, double longADeg, double latBDeg,
