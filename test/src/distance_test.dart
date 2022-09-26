@@ -37,7 +37,7 @@ void main() {
     expect(deltaLongitudeAbs(-1, 2), 3);
     expect(deltaLongitudeAbs(1, -2), 3);
 
-    // Cases that span the seam at -180/180 degrees.
+    // Cases that span the antimeridian at -180/180 degrees.
     expect(deltaLongitudeAbs(178, -177), 5);
     expect(deltaLongitudeAbs(-177, 178), 5);
   });
@@ -106,5 +106,12 @@ void main() {
         0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
     runTestWithVariations(
         0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
+    runTestWithVariations(0, 179, 0, -178, 3 * oneDegLatitudeDist,
+        'three degree longitude spanning the antimeridian');
+
+    // Test some predefined points. Validated against
+    // https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance.
+    runTestWithVariations(1, 2, 3, 4, 314402.95102362486, 'predefined A');
+    runTestWithVariations(10, 20, 30, 40, 3040602.8180682, 'predefined B');
   });
 }
