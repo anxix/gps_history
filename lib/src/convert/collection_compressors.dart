@@ -12,10 +12,14 @@
 import 'dart:convert';
 
 import '../base.dart';
+import '../distance.dart';
 import '../time.dart';
 
 typedef GpsPointIterable = Iterable<GpsPoint>;
 
+/// Decoder that merges entities in a source stream to [GpsStay] entities, which
+/// will typically reduce the total number of entries in the stream
+/// significantly.
 class PointsToStaysDecoder<GpsPoint>
     extends Converter<GpsPointIterable, GpsStay> {
   @override
@@ -33,6 +37,7 @@ class PointsToStaysDecoder<GpsPoint>
 
 /// Sink for converting chunks of [GpsPoint] or child classes to [GpsStay].
 class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
+  /// Target for the identified [GpsStay] instances.
   final Sink<GpsStay> _outputSink;
 
   // Maximum amount of time in seconds between two measurements that are still
@@ -68,7 +73,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
   void _processPoint(GpsPoint point) {
     // Handle initial state: no stay yet, accept whatever comes in as initial.
     if (_currentStay == null) {
-      _resetCurrentStayTo(point);
+      _outputCurrentStayAndReset(point);
     } else {
       // If point is not after currentStay (this should typically not happen,
       // but it's not forbidden as such), it cannot be merged. Conceptually
@@ -77,17 +82,34 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
       if (comparePointTimes(_currentStay!, point) !=
           TimeComparisonResult.before) {
         // The current stay is finished -> output it and start a new one.
-        _outputSink.add(_currentStay!);
-        _resetCurrentStayTo(point);
+        _outputCurrentStayAndReset(point);
       }
-      // We have some previous stay state -> requires checking times etc.
+      // We have some previous stay state -> requires checking times and mutual
+      // distances.
       // TODO: implement
+      // If the current and new position are not sufficiently close together
+      // in terms of time and space, output the current position and set point
+      // as current stay.
+      if (point.time.difference(_currentStay!.time) >= _maxTimeGapSeconds ||
+          distance(_currentStay!, point, DistanceCalcMode.approximate) >=
+              _maxDistanceGapMeters) {
+        _outputCurrentStayAndReset(point);
+        return;
+      }
       if (point is GpsStay) {
+        // We have two stays -> merge if
+        // TODO: implement
       } else {}
     }
   }
 
-  void _resetCurrentStayTo(GpsPoint point) {
+  /// Output the [_currentStay] to the output sink (if it's not null), then
+  /// resets [_currentStay] to [point].
+  void _outputCurrentStayAndReset(GpsPoint point) {
+    if (_currentStay != null) {
+      _outputSink.add(_currentStay!);
+    }
+
     if (point is GpsStay) {
       _currentStay = point.copyWith();
     } else {
