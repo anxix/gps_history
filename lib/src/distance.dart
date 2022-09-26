@@ -12,7 +12,7 @@ import 'dart:math';
 import 'base.dart';
 
 const earthRadiusMeters = 6371E3; // https://en.wikipedia.org/wiki/Earth_radius
-const metersPerDegreeLongitude = earthRadiusMeters * 2 * pi / 360;
+const metersPerDegreeLatitude = earthRadiusMeters * 2 * pi / 360;
 
 enum DistanceCalcMode {
   superfast, // rough approximation with only add/subtract/multiply operations
@@ -27,83 +27,83 @@ double degToRad(double deg) {
 }
 
 /// On-demand filling list that indicates at a given index representing the
-/// longitude (in degrees, rounded down towards zero), how many meters are in
-/// one degree of latitude.
-final _metersPerLatitudeDegreeAtLongitude = List<double?>.filled(90, null);
+/// latitude (in degrees, rounded down towards zero), how many meters are in
+/// one degree of longitude.
+final _metersPerLongitudeDegreeAtLatitude = List<double?>.filled(90, null);
 
-double getMetersPerLatitudeDegAtLongitudeDeg(longitudeDeg) {
-  // Slice the earth in cylinders of 1 degree longitude, where the radius of
+double getMetersPerLongitudeDegAtLatitudeDeg(latitudeDeg) {
+  // Slice the earth in cylinders of 1 degree latitude, where the radius of
   // each cylinder is taken equal to the radius at the bottom of the cylinder
   // (assuming the Northern hemisphere).
   // This will overestimate the radius at the top of the cylinder.
 
   // Symmetry in the equator -> only deal with positive angles.
-  var i = longitudeDeg.truncate().abs();
+  var i = latitudeDeg.truncate().abs();
 
   // Prevent index out of bounds for the case of abs(latitude)==90 deg.
   i = i < 90 ? i : 89;
 
   // We may have a memoized value.
-  var res = _metersPerLatitudeDegreeAtLongitude[i];
+  var res = _metersPerLongitudeDegreeAtLatitude[i];
 
   if (res == null) {
     // No memoized value -> calculate and memoize.
 
     // With the earth being symmetric at the equator, only work in the
     // positive angles domain.
-    final longitudeRad = degToRad(longitudeDeg.abs());
+    final latitudeRad = degToRad(latitudeDeg.abs());
 
-    // Radius of the circle of latitude at the specified longitude.
-    final radiusOfParallel = earthRadiusMeters * cos(longitudeRad);
+    // Radius of the parallel at the specified latitude.
+    final radiusOfParallel = earthRadiusMeters * cos(latitudeRad);
 
     // Calculate how many meters is one degree of latitude.
     final circumferenceOfParallel = radiusOfParallel * 2 * pi;
     res = circumferenceOfParallel / 360;
 
     // Memoize.
-    _metersPerLatitudeDegreeAtLongitude[i] = res;
+    _metersPerLongitudeDegreeAtLatitude[i] = res;
   }
   return res;
 }
 
-/// Returns the shortest latitude angle distance (in degrees) between two points
-/// A and B with latitudes given by [latADeg] respectively [latBDeg], both in
-/// degrees.
-///
-/// The result is always positive, in the range of 0..180 (both inclusive).
-double deltaLatitudeAbs(double latADeg, double latBDeg) {
-  // Latitude calculations require a bit of care as it's expressed in the
-  // range -180..180, so LatA=-179 and LatB=179 is just 2 degrees difference,
-  // not 358 degrees.
-  var diffLatDeg = (latADeg - latBDeg).abs();
-  return diffLatDeg <= 180 ? diffLatDeg : 360 - diffLatDeg;
-}
-
 /// Returns the shortest longitude angle distance (in degrees) between two
-/// points A and B with latitudes given by [latADeg] respectively [latBDeg],
+/// points A and B with longitudes given by [longADeg] respectively [longBDeg],
 /// both in degrees.
 ///
 /// The result is always positive, in the range of 0..180 (both inclusive).
 double deltaLongitudeAbs(double longADeg, double longBDeg) {
-  return (longADeg - longBDeg).abs();
+  // Longitude calculations require a bit of care as it's expressed in the
+  // range -180..180, so LongA=-179 and LongB=179 is just 2 degrees difference,
+  // not 358 degrees.
+  var diffLongDeg = (longADeg - longBDeg).abs();
+  return diffLongDeg <= 180 ? diffLongDeg : 360 - diffLongDeg;
+}
+
+/// Returns the shortest latitude angle distance (in degrees) between two
+/// points A and B with latitudes given by [latADeg] respectively [latBDeg],
+/// both in degrees.
+///
+/// The result is always positive, in the range of 0..180 (both inclusive).
+double deltaLatitudeAbs(double latADeg, double latBDeg) {
+  return (latADeg - latBDeg).abs();
 }
 
 /// Calculates an approximation of the distance in meters between point A
-/// at polar (latitude, longitude) coordinates ([latADeg], [longADeg]) and B at
-/// ([latBDeg], [longBDeg]) - all in degrees.
+/// at spherical (latitude, longitude) coordinates ([latADeg], [longADeg]) and
+/// B at ([latBDeg], [longBDeg]) - all in degrees.
 ///
 /// The result is an upper bound and is within a factor of about sqrt(2)
 /// accuracy if the two points are "sufficiently" close together.
 double distanceCoordsSuperFast(
     double latADeg, double longADeg, double latBDeg, double longBDeg) {
-  final meterPerDegLatA = getMetersPerLatitudeDegAtLongitudeDeg(longADeg);
-  final meterPerLatB = getMetersPerLatitudeDegAtLongitudeDeg(longBDeg);
-  final averageMeterPerLatDeg = (meterPerDegLatA + meterPerLatB) / 2;
-  final distLatMeter =
-      averageMeterPerLatDeg * deltaLatitudeAbs(latADeg, latBDeg);
+  final meterPerDegLongA = getMetersPerLongitudeDegAtLatitudeDeg(latADeg);
+  final meterPerLongB = getMetersPerLongitudeDegAtLatitudeDeg(latBDeg);
+  final averageMeterPerLongDeg = (meterPerDegLongA + meterPerLongB) / 2;
+  final distLongMeter =
+      averageMeterPerLongDeg * deltaLongitudeAbs(longADeg, longBDeg);
 
-  var diffLongDeg = deltaLongitudeAbs(longADeg, longBDeg);
-  final distLongMeter = metersPerDegreeLongitude * diffLongDeg;
+  var diffLatDeg = deltaLatitudeAbs(latADeg, latBDeg);
+  final distLatMeter = metersPerDegreeLatitude * diffLatDeg;
 
   // Rough approximation, don't even do Pythagoras, so it's an upper bound.
   return distLongMeter + distLatMeter;
@@ -120,14 +120,13 @@ double distanceCoordsHaversine(
     double latADeg, double longADeg, double latBDeg, double longBDeg) {
   final latARad = degToRad(latADeg);
   final latBRad = degToRad(latBDeg);
-  final deltaLatRad = degToRad(latADeg - latBDeg);
+  final deltaLatRad = latBRad - latARad;
   final deltaLongRad = degToRad(longBDeg - longADeg);
 
-  final a = sin(deltaLatRad / 2) * sin(deltaLatRad / 2) +
-      cos(latARad) *
-          cos(latBRad) *
-          sin(deltaLongRad / 2) *
-          sin(deltaLongRad / 2);
+  final sinHalfDeltaLatRad = sin(deltaLatRad / 2);
+  final sinHalfDeltaLongRad = sin(deltaLongRad / 2);
+  final a = sinHalfDeltaLatRad * sinHalfDeltaLatRad +
+      cos(latARad) * cos(latBRad) * sinHalfDeltaLongRad * sinHalfDeltaLongRad;
   final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
   return earthRadiusMeters * c;

@@ -21,28 +21,28 @@ void main() {
     expect(degToRad(-180), closeTo(-pi, delta));
   });
 
-  test('deltaLatitudeAbs', () {
+  test('deltaLongitudeAbs', () {
     // Various zero distance configurations.
-    expect(deltaLatitudeAbs(0, 0), 0);
-    expect(deltaLatitudeAbs(1, 1), 0);
-    expect(deltaLatitudeAbs(-1, -1), 0);
-    expect(deltaLatitudeAbs(180, 180), 0);
-    expect(deltaLatitudeAbs(-180, -180), 0);
-    expect(deltaLatitudeAbs(-180, 180), 0);
-    expect(deltaLatitudeAbs(180, -180), 0);
+    expect(deltaLongitudeAbs(0, 0), 0);
+    expect(deltaLongitudeAbs(1, 1), 0);
+    expect(deltaLongitudeAbs(-1, -1), 0);
+    expect(deltaLongitudeAbs(180, 180), 0);
+    expect(deltaLongitudeAbs(-180, -180), 0);
+    expect(deltaLongitudeAbs(-180, 180), 0);
+    expect(deltaLongitudeAbs(180, -180), 0);
 
     // Various nonzero distance configurations.
-    expect(deltaLatitudeAbs(0, 1), 1);
-    expect(deltaLatitudeAbs(1, 0), 1);
-    expect(deltaLatitudeAbs(-1, 2), 3);
-    expect(deltaLatitudeAbs(1, -2), 3);
+    expect(deltaLongitudeAbs(0, 1), 1);
+    expect(deltaLongitudeAbs(1, 0), 1);
+    expect(deltaLongitudeAbs(-1, 2), 3);
+    expect(deltaLongitudeAbs(1, -2), 3);
 
     // Cases that span the seam at -180/180 degrees.
-    expect(deltaLatitudeAbs(178, -177), 5);
-    expect(deltaLatitudeAbs(-177, 178), 5);
+    expect(deltaLongitudeAbs(178, -177), 5);
+    expect(deltaLongitudeAbs(-177, 178), 5);
   });
 
-  test('deltaLongitudeAbs', () {
+  test('deltaLatitudeAbs', () {
     // Various zero distance configurations.
     expect(deltaLatitudeAbs(0, 0), 0);
     expect(deltaLatitudeAbs(1, 1), 0);
@@ -62,10 +62,11 @@ void main() {
   });
 
   test('distanceCoordsHaversine', () {
-    const delta = 1E-9;
+    const relDelta = 1E-9;
 
-    _runTest(double latA, double longA, double latB, double longB,
+    runTestWithVariations(double latA, double longA, double latB, double longB,
         double expected, String reason) {
+      final delta = relDelta * expected;
       expect(distanceCoordsHaversine(latA, longA, latB, longB),
           closeTo(expected, delta),
           reason: reason);
@@ -84,18 +85,26 @@ void main() {
           reason: '(long-mirrored) $reason');
     }
 
-    final oneDegLongitudeDist = earthRadiusMeters * 2 * pi / 360;
-    // On the prime meridian one degree longitude.
-    _runTest(
-        0, 0, 0, 1, oneDegLongitudeDist, 'one degree longitude from origin');
-    _runTest(
-        0, 2, 0, 3, oneDegLongitudeDist, 'one degree longitude from offset');
-    _runTest(0, -1, 0, 1, 2 * oneDegLongitudeDist,
-        'one degree longitude from offset');
+    final oneDegLatitudeDist = earthRadiusMeters * 2 * pi / 360;
+    // On the prime meridian one degree latitude.
+    runTestWithVariations(
+        0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
+    runTestWithVariations(
+        2, 0, 3, 0, oneDegLatitudeDist, 'one degree latitude from offset');
+    runTestWithVariations(-1, 0, 1, 0, 2 * oneDegLatitudeDist,
+        'two degree longitude spanning the equator');
+    // Offset to a non-zero longitude, shouldn't affect results for constant
+    // longitude.
+    runTestWithVariations(5, 3, 7, 3, 2 * oneDegLatitudeDist,
+        'two degree latitude from offset at low non-standard longitude');
+    runTestWithVariations(5, 89, 7, 89, 2 * oneDegLatitudeDist,
+        'two degree latitude from offset at high non-standard longitude');
 
-    // On the equator 1 degree latitude (at equator one degree latitude or
-    // longitude give the same distance).
-    _runTest(
-        0, 0, 1, 0, oneDegLongitudeDist, 'one degree latitude from origin');
+    // On the equator 1 degree longitude (at equator one degree longitude or
+    // latitude give the same distance).
+    runTestWithVariations(
+        0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
+    runTestWithVariations(
+        0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
   });
 }
