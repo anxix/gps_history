@@ -24,7 +24,7 @@ abstract class EarthRadiusMeters {
 const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 
 enum DistanceCalcMode {
-  superfast, // rough approximation with only add/subtract/multiply operations
+  superFast, // rough approximation with only add/subtract/multiply operations
   equirectangularApproximation, // equirectangular approximation
   haversine, // very accurate
   lamberts, // most accurate
@@ -107,9 +107,11 @@ double deltaLatitudeAbs(double latADeg, double latBDeg) {
 /// B at ([latBDeg], [longBDeg]) - all in degrees.
 ///
 /// The result is an upper bound and is within a factor of about sqrt(2)
-/// accuracy if the two points are "sufficiently" close together.
+/// accuracy if the two points are "sufficiently" close together if [superRough]
+/// is set to true, and closer if it's set to true (but that is slower).
 double distanceCoordsSuperFast(
-    double latADeg, double longADeg, double latBDeg, double longBDeg) {
+    double latADeg, double longADeg, double latBDeg, double longBDeg,
+    {bool superRough = false}) {
   final meterPerDegLongA = getMetersPerLongitudeDegAtLatitudeDeg(latADeg);
   final meterPerLongB = getMetersPerLongitudeDegAtLatitudeDeg(latBDeg);
   final averageMeterPerLongDeg = (meterPerDegLongA + meterPerLongB) / 2;
@@ -120,7 +122,11 @@ double distanceCoordsSuperFast(
   final distLatMeter = metersPerDegreeLatitude * diffLatDeg;
 
   // Rough approximation, don't even do Pythagoras, so it's an upper bound.
-  return distLongMeter + distLatMeter;
+  if (superRough) {
+    return distLongMeter + distLatMeter;
+  } else {
+    return sqrt(distLongMeter * distLongMeter + distLatMeter * distLatMeter);
+  }
 }
 
 /// Calculates an approximation of the distance in meters between point A

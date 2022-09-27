@@ -100,6 +100,57 @@ void main() {
       };
     }
 
+    test('distanceSuperfast', () {
+      final runner = makeTestRunnerWithVariations(distanceCoordsSuperFast);
+      final oneDegLatitudeDist = EarthRadiusMeters.mean * 2 * pi / 360;
+
+      // Zero-cases.
+      runner(0, 0, 0, 0, 0, 'zero');
+      runner(1, 2, 1, 2, 0, 'identical coords');
+      runner(90, 90, 90, 90, 0, 'all 90');
+      runner(90, 180, 90, 180, 0, 'etremes');
+
+      // On the prime meridian one degree latitude.
+      runner(0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
+      runner(2, 0, 3, 0, oneDegLatitudeDist, 'one degree latitude from offset');
+      runner(-1, 0, 1, 0, 2 * oneDegLatitudeDist,
+          'two degree longitude spanning the equator');
+      // Offset to a non-zero longitude, shouldn't affect results for constant
+      // longitude.
+      runner(5, 3, 7, 3, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at low non-standard longitude');
+      runner(5, 89, 7, 89, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at high non-standard longitude');
+
+      // On the equator 1 degree longitude (at equator one degree longitude or
+      // latitude give the same distance).
+      runner(
+          0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
+      runner(
+          0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
+      runner(0, 179, 0, -178, 3 * oneDegLatitudeDist,
+          'three degree longitude spanning the antimeridian');
+
+      // Test some predefined points.
+      runner(1, 2, 3, 4, 314387.0390878873, 'predefined A');
+      runner(10, 20, 30, 40, 3030053.258269024, 'predefined B');
+
+      // And some points that span the meridian, equator and antimeridian.
+      runner(1, 179, -1, -179, 314482.797117213, 'meridian spanning A');
+      runner(-1, 179, 1, -179, 314482.797117213, 'meridian spanning B');
+    });
+
+    test('distanceSuperfast-superRough', () {
+      final runner = makeTestRunnerWithVariations((double latA, double longA,
+              double latB, double longB) =>
+          distanceCoordsSuperFast(latA, longA, latB, longB, superRough: true));
+      // The basic, axis-aligned test cases are the same as the version that is
+      // not super-rough, so skip those and focus just on a case that does
+      // show the deviation in accuracy.
+      final inaccuracyFactor = sqrt(2) * 0.999999927481405411163618323214;
+      runner(1, 2, 3, 4, 314387.0390878873 * inaccuracyFactor, 'predefined A');
+    });
+
     test('distanceEquirectangular', () {
       final runner =
           makeTestRunnerWithVariations(distanceCoordsEquirectangular);
