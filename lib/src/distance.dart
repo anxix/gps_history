@@ -11,19 +11,34 @@ import 'dart:math';
 
 import 'base.dart';
 
-const earthRadiusMeters = 6371E3; // https://en.wikipedia.org/wiki/Earth_radius
-const metersPerDegreeLatitude = earthRadiusMeters * 2 * pi / 360;
+/// Class that operates as just a container for different types of Earth radii,
+/// expressed in meters.
+abstract class EarthRadiusMeters {
+  // Values based on https://en.wikipedia.org/wiki/Earth_radius and
+  // https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version.
+  static const mean = 6371E3;
+  static const equatorial = 6378.1370E3;
+  static const polar = 6356.752314245E3;
+}
+
+const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 
 enum DistanceCalcMode {
   superfast, // rough approximation with only add/subtract/multiply operations
   approximate, // equirectangular approximation
   sphericalLawCosines, // spherical law of cosines
-  haversine, // most accurate
+  haversine, // very accurate
+  lamberts, // most accurate
 }
 
 /// Converts a value [deg] specified in degrees to radians.
 double degToRad(double deg) {
   return pi * deg / 180;
+}
+
+/// Converts a value [rad] specified in radians to degrees.
+double radToDeg(double rad) {
+  return rad / pi * 180;
 }
 
 /// On-demand filling list that indicates at a given index representing the
@@ -54,7 +69,7 @@ double getMetersPerLongitudeDegAtLatitudeDeg(latitudeDeg) {
     final latitudeRad = degToRad(latitudeDeg.abs());
 
     // Radius of the parallel at the specified latitude.
-    final radiusOfParallel = earthRadiusMeters * cos(latitudeRad);
+    final radiusOfParallel = EarthRadiusMeters.mean * cos(latitudeRad);
 
     // Calculate how many meters is one degree of latitude.
     final circumferenceOfParallel = radiusOfParallel * 2 * pi;
@@ -113,11 +128,15 @@ double distanceCoordsSuperFast(
 /// (latitude, longitude) coordinates ([latADeg], [longADeg]) and B at
 /// ([latBDeg], [longBDeg]) - all in degrees, using the haversine formula.
 ///
+/// [earthRadiusMeters] can be used to specify a radius to be used other than
+/// the mean earth radius.
+///
 /// The result is very accurate for a perfectly spherical earth and has up to
 /// about 0.3% error compared to the ellipsoidal shape of the earth.
 /// Based on https://www.movable-type.co.uk/scripts/latlong.html.
 double distanceCoordsHaversine(
-    double latADeg, double longADeg, double latBDeg, double longBDeg) {
+    double latADeg, double longADeg, double latBDeg, double longBDeg,
+    {earthRadiusMeters = EarthRadiusMeters.mean}) {
   final latARad = degToRad(latADeg);
   final latBRad = degToRad(latBDeg);
   final deltaLatRad = latBRad - latARad;
@@ -133,11 +152,8 @@ double distanceCoordsHaversine(
 }
 
 // Calculate the flattening, being (1 - polarRadius/equatorRadius),
-// with the radii provided by https://en.wikipedia.org/wiki/Earth_radius#Extrema:_equatorial_and_polar_radii.
-const earthEquatorialRadiusMeters = 6378.1370E3;
-const earthPolarRadiusMeters = 6356.7523E3;
 const earthFlattening =
-    1 - earthPolarRadiusMeters / earthEquatorialRadiusMeters;
+    1 - EarthRadiusMeters.polar / EarthRadiusMeters.equatorial;
 
 /// Calculates the distance in meters between point A at spherical
 /// (latitude, longitude) coordinates ([latADeg], [longADeg]) and B at
@@ -152,16 +168,30 @@ double distanceCoordsLambert(
     double latADeg, double longADeg, double latBDeg, double longBDeg) {
   // Calculate the reduced latitudes.
   final latARad = degToRad(latADeg);
-  final beta1 = atan((1 - earthFlattening) * tan(degToRad(latARad)));
+  final beta1 = atan((1 - earthFlattening) * tan(latARad));
   final latBRad = degToRad(latBDeg);
-  final beta2 = atan((1 - earthFlattening) * tan(degToRad(latBRad)));
+  final beta2 = atan((1 - earthFlattening) * tan(latBRad));
+
+  // The correct value for the radius to use in the haversine calculation is
+  // not clear, but the implementations at
+  // https://www.calculator.net/distance-calculator.html and
+  // https://python.algorithms-library.com/geodesy/lamberts_ellipsoidal_distance
+  // use the radius at the equator rather than the mean radius.
+  const haversineEarthRadius = EarthRadiusMeters.equatorial;
 
   // Calculate the haversine distance and with that the central angle sigma.
-  final sigma = distanceCoordsHaversine(latADeg, longADeg, latBDeg, longBDeg) /
-      earthEquatorialRadiusMeters;
+  final sigma = distanceCoordsHaversine(
+          radToDeg(beta1), longADeg, radToDeg(beta2), longBDeg,
+          earthRadiusMeters: haversineEarthRadius) /
+      haversineEarthRadius;
   final sinSigma = sin(sigma);
   final sinHalfSigma = sin(sigma / 2);
   final cosHalfSigma = cos(sigma / 2);
+
+  // Prevent division by zero further down.
+  if (sinHalfSigma == 0 || cosHalfSigma == 0) {
+    return 0;
+  }
 
   // Calculate various components of the final formula.
   final p = (beta1 + beta2) / 2;
@@ -177,7 +207,7 @@ double distanceCoordsLambert(
 
   // Calculate and return the distance.
   final distance =
-      earthEquatorialRadiusMeters * (sigma - (earthFlattening / 2) * (x + y));
+      EarthRadiusMeters.equatorial * (sigma - (earthFlattening / 2) * (x + y));
   return distance;
 }
 

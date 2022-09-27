@@ -21,6 +21,16 @@ void main() {
     expect(degToRad(-180), closeTo(-pi, delta));
   });
 
+  test('radToDeg', () {
+    const delta = 180 / 1E9;
+
+    expect(radToDeg(0), 0);
+    expect(radToDeg(pi), closeTo(180, delta));
+    expect(radToDeg(2 * pi), closeTo(360, delta));
+
+    expect(radToDeg(-pi), closeTo(-180, delta));
+  });
+
   test('deltaLongitudeAbs', () {
     // Various zero distance configurations.
     expect(deltaLongitudeAbs(0, 0), 0);
@@ -73,13 +83,16 @@ void main() {
       return (double latA, double longA, double latB, double longB,
           double expected, String reason) {
         final delta = relDelta * expected;
+
         expect(distCalc(latA, longA, latB, longB), closeTo(expected, delta),
             reason: reason);
+
         expect(distCalc(latB, longB, latA, longA), closeTo(expected, delta),
             reason: '(inverted) $reason');
 
         expect(distCalc(-latA, -longA, -latB, -longB), closeTo(expected, delta),
             reason: '(mirrored) $reason');
+
         expect(distCalc(-latA, longA, -latB, longB), closeTo(expected, delta),
             reason: '(lat-mirrored) $reason');
         expect(distCalc(latA, -longA, latB, -longB), closeTo(expected, delta),
@@ -89,7 +102,13 @@ void main() {
 
     test('distanceCoordsHaversine', () {
       final runner = makeTestRunnerWithVariations(distanceCoordsHaversine);
-      final oneDegLatitudeDist = earthRadiusMeters * 2 * pi / 360;
+      final oneDegLatitudeDist = EarthRadiusMeters.mean * 2 * pi / 360;
+
+      // Zero-cases.
+      runner(0, 0, 0, 0, 0, 'zero');
+      runner(1, 2, 1, 2, 0, 'identical coords');
+      runner(90, 90, 90, 90, 0, 'all 90');
+      runner(90, 180, 90, 180, 0, 'etremes');
 
       // On the prime meridian one degree latitude.
       runner(0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
@@ -116,6 +135,32 @@ void main() {
       // https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance.
       runner(1, 2, 3, 4, 314402.95102362486, 'predefined A');
       runner(10, 20, 30, 40, 3040602.8180682, 'predefined B');
+    });
+
+    test('distanceCoordsLambert', () {
+      final runner = makeTestRunnerWithVariations(distanceCoordsLambert);
+
+      // Zero-cases.
+      runner(0, 0, 0, 0, 0, 'zero');
+      runner(1, 2, 1, 2, 0, 'identical coords');
+      runner(90, 90, 90, 90, 0, 'all 90');
+      runner(90, 180, 90, 180, 0, 'extremes');
+
+      // Test cases from https://python.algorithms-library.com/geodesy/lamberts_ellipsoidal_distance,
+      // and compared with results from https://www.calculator.net/distance-calculator.html.
+      final sanFrancisco = [37.774856, -122.424227];
+      final yosemite = [37.864742, -119.537521];
+      final newYork = [40.713019, -74.012647];
+      final venice = [45.443012, 12.313071];
+
+      runner(sanFrancisco[0], sanFrancisco[1], sanFrancisco[0], sanFrancisco[1],
+          0, 'San Francisco to San Francisco');
+      runner(sanFrancisco[0], sanFrancisco[1], yosemite[0], yosemite[1],
+          254351.21287678572, 'San Francisco to Yosemite');
+      runner(sanFrancisco[0], sanFrancisco[1], newYork[0], newYork[1],
+          4138992.0167704853, 'San Francisco to New York');
+      runner(sanFrancisco[0], sanFrancisco[1], venice[0], venice[1],
+          9737326.376993028, 'San Francisco to Venice');
     });
   });
 }
