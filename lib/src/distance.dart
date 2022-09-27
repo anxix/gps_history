@@ -50,9 +50,9 @@ const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 enum DistanceCalcMode {
   auto, // autoselects a method based on input values
   superFast, // approximation with minimum operations
-  equirectangularApproximation, // equirectangular approximation
+  equirectangular, // equirectangular approximation
   haversine, // very accurate
-  lamberts, // most accurate
+  lambert, // most accurate
 }
 
 /// Converts a value [deg] specified in degrees to radians.
@@ -258,12 +258,12 @@ double distanceCoords(double latADeg, double longADeg, double latBDeg,
   switch (mode) {
     case DistanceCalcMode.superFast:
       return distanceCoordsSuperFast(latADeg, longADeg, latBDeg, longBDeg);
-    case DistanceCalcMode.equirectangularApproximation:
+    case DistanceCalcMode.equirectangular:
       return distanceCoordsEquirectangular(
           latADeg, longADeg, latBDeg, longBDeg);
     case DistanceCalcMode.haversine:
       return distanceCoordsHaversine(latADeg, longADeg, latBDeg, longBDeg);
-    case DistanceCalcMode.lamberts:
+    case DistanceCalcMode.lambert:
       return distanceCoordsLambert(latADeg, longADeg, latBDeg, longBDeg);
     case DistanceCalcMode.auto:
       {

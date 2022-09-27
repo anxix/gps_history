@@ -255,6 +255,22 @@ void main() {
       runner(-1, 179, 1, -179, 313798.6941713983, 'meridian spanning B');
     });
 
-    // TODO: add test for distanceCoords, in partcular the auto behaviour
+    test('distanceCoords', () {
+      // Check the various explicit behaviours.
+      expect(distanceCoords(1, 179, -1, -179, DistanceCalcMode.superFast),
+          distanceCoordsSuperFast(1, 179, -1, -179));
+      expect(distanceCoords(1, 179, -1, -179, DistanceCalcMode.equirectangular),
+          distanceCoordsEquirectangular(1, 179, -1, -179));
+      expect(distanceCoords(1, 179, -1, -179, DistanceCalcMode.haversine),
+          distanceCoordsHaversine(1, 179, -1, -179));
+      expect(distanceCoords(1, 179, -1, -179, DistanceCalcMode.lambert),
+          distanceCoordsLambert(1, 179, -1, -179));
+
+      // Check the auto behaviour.
+      expect(distanceCoords(1, 179, -1, -179, DistanceCalcMode.auto),
+          distanceCoordsSuperFast(1, 179, -1, -179));
+      expect(distanceCoords(10, 159, 10, -177, DistanceCalcMode.auto),
+          distanceCoordsHaversine(10, 159, 10, -177));
+    });
   });
 }
