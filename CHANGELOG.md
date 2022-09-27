@@ -1,3 +1,15 @@
+# 0.0.8
+
+* Public API changes:
+  * 
+
+* New features:
+  * Distance calculations between GPS coordinates.
+
+* Fixes:
+  * ```GpsTime.toString``` implemented.
+
+
 # 0.0.7
 
 * Public API changes:
