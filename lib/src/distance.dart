@@ -11,6 +11,9 @@ import 'dart:math';
 
 import 'base.dart';
 
+typedef DistanceCalculateFunc = double Function(
+    double latADeg, double longADeg, double latBDeg, double longBDeg);
+
 /// Class that operates as just a container for different types of Earth radii,
 /// expressed in meters.
 abstract class EarthRadiusMeters {

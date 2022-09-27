@@ -77,25 +77,28 @@ void main() {
     /// Creates and returns a test runner that will execute the specified
     /// distance calculation function [distCalc] with the provided parameters,
     /// and various variations thereof.
-    makeTestRunnerWithVariations(
-        double Function(double latA, double longA, double latB, double longB)
-            distCalc) {
-      return (double latA, double longA, double latB, double longB,
+    makeTestRunnerWithVariations(DistanceCalculateFunc distCalc) {
+      return (double latADeg, double longADeg, double latBDeg, double longBDeg,
           double expected, String reason) {
         final delta = relDelta * expected;
 
-        expect(distCalc(latA, longA, latB, longB), closeTo(expected, delta),
+        expect(distCalc(latADeg, longADeg, latBDeg, longBDeg),
+            closeTo(expected, delta),
             reason: reason);
 
-        expect(distCalc(latB, longB, latA, longA), closeTo(expected, delta),
+        expect(distCalc(latBDeg, longBDeg, latADeg, longADeg),
+            closeTo(expected, delta),
             reason: '(inverted) $reason');
 
-        expect(distCalc(-latA, -longA, -latB, -longB), closeTo(expected, delta),
+        expect(distCalc(-latADeg, -longADeg, -latBDeg, -longBDeg),
+            closeTo(expected, delta),
             reason: '(mirrored) $reason');
 
-        expect(distCalc(-latA, longA, -latB, longB), closeTo(expected, delta),
+        expect(distCalc(-latADeg, longADeg, -latBDeg, longBDeg),
+            closeTo(expected, delta),
             reason: '(lat-mirrored) $reason');
-        expect(distCalc(latA, -longA, latB, -longB), closeTo(expected, delta),
+        expect(distCalc(latADeg, -longADeg, latBDeg, -longBDeg),
+            closeTo(expected, delta),
             reason: '(long-mirrored) $reason');
       };
     }
