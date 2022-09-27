@@ -108,13 +108,8 @@ double deltaLatitudeAbs(double latADeg, double latBDeg) {
 /// Calculates an approximation of the distance in meters between point A
 /// at spherical (latitude, longitude) coordinates ([latADeg], [longADeg]) and
 /// B at ([latBDeg], [longBDeg]) - all in degrees.
-///
-/// The result is an upper bound and is within a factor of about sqrt(2)
-/// accuracy if the two points are "sufficiently" close together if [superRough]
-/// is set to true, and closer if it's set to true (but that is slower).
 double distanceCoordsSuperFast(
-    double latADeg, double longADeg, double latBDeg, double longBDeg,
-    {bool superRough = false}) {
+    double latADeg, double longADeg, double latBDeg, double longBDeg) {
   final meterPerDegLongA = getMetersPerLongitudeDegAtLatitudeDeg(latADeg);
   final meterPerLongB = getMetersPerLongitudeDegAtLatitudeDeg(latBDeg);
   final averageMeterPerLongDeg = (meterPerDegLongA + meterPerLongB) / 2;
@@ -124,12 +119,7 @@ double distanceCoordsSuperFast(
   var diffLatDeg = deltaLatitudeAbs(latADeg, latBDeg);
   final distLatMeter = metersPerDegreeLatitude * diffLatDeg;
 
-  // Rough approximation, don't even do Pythagoras, so it's an upper bound.
-  if (superRough) {
-    return distLongMeter + distLatMeter;
-  } else {
-    return sqrt(distLongMeter * distLongMeter + distLatMeter * distLatMeter);
-  }
+  return sqrt(distLongMeter * distLongMeter + distLatMeter * distLatMeter);
 }
 
 /// Calculates an approximation of the distance in meters between point A

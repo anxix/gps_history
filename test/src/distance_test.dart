@@ -143,17 +143,6 @@ void main() {
       runner(-1, 179, 1, -179, 314482.797117213, 'meridian spanning B');
     });
 
-    test('distanceSuperfast-superRough', () {
-      final runner = makeTestRunnerWithVariations((double latA, double longA,
-              double latB, double longB) =>
-          distanceCoordsSuperFast(latA, longA, latB, longB, superRough: true));
-      // The basic, axis-aligned test cases are the same as the version that is
-      // not super-rough, so skip those and focus just on a case that does
-      // show the deviation in accuracy.
-      final inaccuracyFactor = sqrt(2) * 0.999999927481405411163618323214;
-      runner(1, 2, 3, 4, 314387.0390878873 * inaccuracyFactor, 'predefined A');
-    });
-
     test('distanceEquirectangular', () {
       final runner =
           makeTestRunnerWithVariations(distanceCoordsEquirectangular);
