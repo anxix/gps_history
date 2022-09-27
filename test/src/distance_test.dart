@@ -135,6 +135,10 @@ void main() {
       // https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance.
       runner(1, 2, 3, 4, 314402.95102362486, 'predefined A');
       runner(10, 20, 30, 40, 3040602.8180682, 'predefined B');
+
+      // And some points that span the meridian, equator and antimeridian.
+      runner(1, 179, -1, -179, 314498.76254388725, 'meridian spanning A');
+      runner(-1, 179, 1, -179, 314498.76254388725, 'meridian spanning B');
     });
 
     test('distanceCoordsLambert', () {
@@ -161,6 +165,10 @@ void main() {
           4138992.0167704853, 'San Francisco to New York');
       runner(sanFrancisco[0], sanFrancisco[1], venice[0], venice[1],
           9737326.376993028, 'San Francisco to Venice');
+
+      // And some points that span the meridian, equator and antimeridian.
+      runner(1, 179, -1, -179, 313798.6941713983, 'meridian spanning A');
+      runner(-1, 179, 1, -179, 313798.6941713983, 'meridian spanning B');
     });
   });
 }
