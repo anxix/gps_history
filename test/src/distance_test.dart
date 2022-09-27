@@ -254,5 +254,7 @@ void main() {
       runner(1, 179, -1, -179, 313798.6941713983, 'meridian spanning A');
       runner(-1, 179, 1, -179, 313798.6941713983, 'meridian spanning B');
     });
+
+    // TODO: add test for distanceCoords, in partcular the auto behaviour
   });
 }

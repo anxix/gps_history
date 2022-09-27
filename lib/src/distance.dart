@@ -32,8 +32,6 @@
 
 import 'dart:math';
 
-import 'base.dart';
-
 typedef DistanceCalculateFunc = double Function(
     double latADeg, double longADeg, double latBDeg, double longBDeg);
 
@@ -50,6 +48,7 @@ abstract class EarthRadiusMeters {
 const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 
 enum DistanceCalcMode {
+  auto, // autoselects a method based on input values
   superFast, // approximation with minimum operations
   equirectangularApproximation, // equirectangular approximation
   haversine, // very accurate
@@ -177,8 +176,10 @@ double distanceCoordsHaversine(
     {earthRadiusMeters = EarthRadiusMeters.mean}) {
   final latARad = degToRad(latADeg);
   final latBRad = degToRad(latBDeg);
-  final deltaLatRad = latBRad - latARad;
-  final deltaLongRad = degToRad(longBDeg - longADeg);
+  final deltaLatRad =
+      degToRad(deltaLatitudeAbs(latADeg, latBDeg)); // latBRad - latARad;
+  final deltaLongRad =
+      degToRad(deltaLongitudeAbs(longADeg, longBDeg)); //longBDeg - longADeg);
 
   final sinHalfDeltaLatRad = sin(deltaLatRad / 2);
   final sinHalfDeltaLongRad = sin(deltaLongRad / 2);
@@ -249,13 +250,35 @@ double distanceCoordsLambert(
   return distance;
 }
 
+/// Up to what angle (roughly) is the fast method regarded as reliable (see
+/// documentation of this module for the considerations).
+const maxAngleForSuperFastDeg = 5;
 double distanceCoords(double latADeg, double longADeg, double latBDeg,
     double longBDeg, DistanceCalcMode mode) {
-  // TODO: implement
-  return 0.0;
-}
-
-double distance(GpsPoint pointA, GpsPoint pointB, DistanceCalcMode mode) {
-  return distanceCoords(pointA.latitude, pointA.longitude, pointB.latitude,
-      pointB.longitude, mode);
+  switch (mode) {
+    case DistanceCalcMode.superFast:
+      return distanceCoordsSuperFast(latADeg, longADeg, latBDeg, longBDeg);
+    case DistanceCalcMode.equirectangularApproximation:
+      return distanceCoordsEquirectangular(
+          latADeg, longADeg, latBDeg, longBDeg);
+    case DistanceCalcMode.haversine:
+      return distanceCoordsHaversine(latADeg, longADeg, latBDeg, longBDeg);
+    case DistanceCalcMode.lamberts:
+      return distanceCoordsLambert(latADeg, longADeg, latBDeg, longBDeg);
+    case DistanceCalcMode.auto:
+      {
+        // For points that are relatively close together, choose super fast as
+        // it's sufficiently accurate (< 0.5%).
+        if (deltaLatitudeAbs(latADeg, latBDeg) <= maxAngleForSuperFastDeg &&
+            deltaLongitudeAbs(longADeg, longBDeg) <= maxAngleForSuperFastDeg) {
+          return distanceCoords(
+              latADeg, longADeg, latBDeg, longBDeg, DistanceCalcMode.superFast);
+        } else {
+          // For points that are less close together, the chances increase that
+          // the much slower haversine does give better accuracy.
+          return distanceCoords(
+              latADeg, longADeg, latBDeg, longBDeg, DistanceCalcMode.haversine);
+        }
+      }
+  }
 }
