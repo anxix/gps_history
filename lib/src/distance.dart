@@ -1,4 +1,27 @@
 /// Utilities for dealing with time related tasks.
+///
+/// This module implements several algorithms for calculating distances between
+/// points on Earth. Benchmarking on Linux running on an Intel Core i7-8565U
+/// (plugged in) shows roughly the following runtime relationships:
+/// - SuperFast: 1x (reference speed, fastest, 10M calcs in 0.2s)
+/// - Equirectangular: 1.25x
+/// - Haversine: 3x
+/// - Lambert: 6x (slowest)
+///
+/// The accuracy on the other hand, with Lambert being the most accurate and
+/// hence taken as benchmark, depends on the location and the distance between
+/// points. Typically, for small distances of <= 1 degree (roughly 100-150km),
+/// all methods are within 0.5% of Lambert. At large distances, such as 60 deg,
+/// Haversine stays wihin 0.5% of Lambert, but the other two can show deviations
+/// of e.g. 12% (SuperFast tends to be similar or better than Equirectangular).
+///
+/// This leads to the following recommendations:
+/// - Use Lambert only if the best possible accuracy is required, as it's
+///   2x slower than Haversine and only gives max ~0.5% extra accuracy.
+///   Distances in reality are probably to come out differently anyway due to
+///   local relief, which Lambert also doesn't know about.
+/// - Use SuperFast for the best speed and decent accuracy as long as the points
+///   are reasonably close together.
 
 /* Copyright (c)
  *
@@ -27,7 +50,7 @@ abstract class EarthRadiusMeters {
 const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 
 enum DistanceCalcMode {
-  superFast, // rough approximation with only add/subtract/multiply operations
+  superFast, // approximation with minimum operations
   equirectangularApproximation, // equirectangular approximation
   haversine, // very accurate
   lamberts, // most accurate
