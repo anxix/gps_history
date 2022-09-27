@@ -91,7 +91,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
       // in terms of time and space, output the current position and set point
       // as current stay.
       if (point.time.difference(_currentStay!.time) >= _maxTimeGapSeconds ||
-          distance(_currentStay!, point, DistanceCalcMode.approximate) >=
+          distance(_currentStay!, point, DistanceCalcMode.auto) >=
               _maxDistanceGapMeters) {
         _outputCurrentStayAndReset(point);
         return;
@@ -126,4 +126,9 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
       _currentStay = null;
     }
   }
+}
+
+distance(GpsPoint pointA, GpsPoint pointB, DistanceCalcMode mode) {
+  return distanceCoords(pointA.latitude, pointA.longitude, pointB.latitude,
+      pointB.longitude, mode);
 }
