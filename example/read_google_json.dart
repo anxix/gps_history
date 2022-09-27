@@ -28,19 +28,33 @@ void main() async {
 
   // Calculate with what frequency the points have been recorded.
   var intervals = <int>[];
+  var distances = <double>[];
   GpsPoint? prevPoint;
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {
       final diff = p.time.difference(prevPoint.time);
       intervals.add(diff);
+
+      final dist = distance(prevPoint, p);
+      distances.add(dist);
     }
     prevPoint = p;
   }
 
   intervals.sort();
+  distances.sort();
 
   if (intervals.isNotEmpty) {
-    print('Median interval = ${intervals[intervals.length ~/ 2]} s');
+    print('Intervals:');
+    print('  min    = ${intervals[0]} s');
+    print('  median = ${intervals[intervals.length ~/ 2]} s');
+    print('  max    = ${intervals[intervals.length - 1]} s');
+  }
+  if (distances.isNotEmpty) {
+    print('Distances:');
+    print('  min    = ${distances[0]} m');
+    print('  median = ${distances[distances.length ~/ 2]} m');
+    print('  max    = ${distances[distances.length - 1]} m');
   }
 }

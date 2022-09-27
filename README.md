@@ -19,7 +19,8 @@ frequency >= 1 second. Features:
     mobile devices without any worries about running out of RAM.
   * Modular and extensible architecture: add your own points definitions, 
     containers or persistence mechanisms.
-  * Many unit tests, examples and lots of documentation.
+  * Many unit tests, examples, benchmarks and lots of documentation.
+  * Utility functions for dealing with time and distance.
   * Null safety.
   * Dependencies on third party libraries are limited to superficial 
     functionality, and then only very mainstream well supported ones.
@@ -50,20 +51,35 @@ void main() async {
 
   // Calculate with what frequency the points have been recorded.
   var intervals = <int>[];
+  var distances = <double>[];
   GpsPoint? prevPoint;
+  // TODO: add something with distance, and add it to the README.md too.
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {
       final diff = p.time.difference(prevPoint.time);
       intervals.add(diff);
+
+      final dist = distance(prevPoint, p);
+      distances.add(dist);
     }
     prevPoint = p;
   }
 
   intervals.sort();
+  distances.sort();
 
   if (intervals.isNotEmpty) {
-    print('Median interval = ${intervals[intervals.length ~/ 2]} s');
+    print('Intervals:');
+    print('  min    = ${intervals[0]} s');
+    print('  median = ${intervals[intervals.length ~/ 2]} s');
+    print('  max    = ${intervals[intervals.length - 1]} s');
+  }
+  if (distances.isNotEmpty) {
+    print('Distances:');
+    print('  min    = ${distances[0]} m');
+    print('  median = ${distances[distances.length ~/ 2]} m');
+    print('  max    = ${distances[distances.length - 1]} m');
   }
 }
 ```
