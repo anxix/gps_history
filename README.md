@@ -41,7 +41,7 @@ void main() async {
   var fileStream = file.openRead();
 
   var points = fileStream.transform(GoogleJsonHistoryDecoder(
-      minSecondsBetweenDatapoints: 240, accuracyThreshold: 500));
+      minSecondsBetweenDatapoints: 1, accuracyThreshold: 500));
 
   await for (var p in points) {
     gpsPoints.add(p);
@@ -53,7 +53,6 @@ void main() async {
   var intervals = <int>[];
   var distances = <double>[];
   GpsPoint? prevPoint;
-  // TODO: add something with distance, and add it to the README.md too.
 
   for (var p in gpsPoints) {
     if (prevPoint != null) {
