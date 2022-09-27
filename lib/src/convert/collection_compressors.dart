@@ -127,8 +127,3 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
     }
   }
 }
-
-distance(GpsPoint pointA, GpsPoint pointB, DistanceCalcMode mode) {
-  return distanceCoords(pointA.latitude, pointA.longitude, pointB.latitude,
-      pointB.longitude, mode);
-}

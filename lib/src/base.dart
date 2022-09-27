@@ -8,6 +8,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'distance.dart';
 import 'hash.dart';
 import 'time.dart';
 
@@ -48,6 +49,14 @@ TimeComparisonResult comparePointTimes(GpsPoint itemA, GpsPoint itemB) {
 
   // Non-GpsStay items can be compared simply.
   return compareTime(itemA.time, itemB.time);
+}
+
+/// Calculates the distance between [pointA] and [pointB], optionally using
+/// a specific calculation [mode] to balance speed and accuracy.
+double distance(GpsPoint pointA, GpsPoint pointB,
+    [DistanceCalcMode mode = DistanceCalcMode.auto]) {
+  return distanceCoords(pointA.latitude, pointA.longitude, pointB.latitude,
+      pointB.longitude, mode);
 }
 
 /// Represents the most basic GPS location.
