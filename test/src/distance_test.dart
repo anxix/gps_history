@@ -100,6 +100,47 @@ void main() {
       };
     }
 
+    test('distanceEquirectangular', () {
+      final runner =
+          makeTestRunnerWithVariations(distanceCoordsEquirectangular);
+      final oneDegLatitudeDist = EarthRadiusMeters.mean * 2 * pi / 360;
+
+      // Zero-cases.
+      runner(0, 0, 0, 0, 0, 'zero');
+      runner(1, 2, 1, 2, 0, 'identical coords');
+      runner(90, 90, 90, 90, 0, 'all 90');
+      runner(90, 180, 90, 180, 0, 'etremes');
+
+      // On the prime meridian one degree latitude.
+      runner(0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
+      runner(2, 0, 3, 0, oneDegLatitudeDist, 'one degree latitude from offset');
+      runner(-1, 0, 1, 0, 2 * oneDegLatitudeDist,
+          'two degree longitude spanning the equator');
+      // Offset to a non-zero longitude, shouldn't affect results for constant
+      // longitude.
+      runner(5, 3, 7, 3, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at low non-standard longitude');
+      runner(5, 89, 7, 89, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at high non-standard longitude');
+
+      // On the equator 1 degree longitude (at equator one degree longitude or
+      // latitude give the same distance).
+      runner(
+          0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
+      runner(
+          0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
+      runner(0, 179, 0, -178, 3 * oneDegLatitudeDist,
+          'three degree longitude spanning the antimeridian');
+
+      // Test some predefined points.
+      runner(1, 2, 3, 4, 314410.96674274624, 'predefined A');
+      runner(10, 20, 30, 40, 3051705.9954734594, 'predefined B');
+
+      // And some points that span the meridian, equator and antimeridian.
+      runner(1, 179, -1, -179, 314506.74665563274, 'meridian spanning A');
+      runner(-1, 179, 1, -179, 314506.74665563274, 'meridian spanning B');
+    });
+
     test('distanceCoordsHaversine', () {
       final runner = makeTestRunnerWithVariations(distanceCoordsHaversine);
       final oneDegLatitudeDist = EarthRadiusMeters.mean * 2 * pi / 360;

@@ -25,8 +25,7 @@ const metersPerDegreeLatitude = EarthRadiusMeters.mean * 2 * pi / 360;
 
 enum DistanceCalcMode {
   superfast, // rough approximation with only add/subtract/multiply operations
-  approximate, // equirectangular approximation
-  sphericalLawCosines, // spherical law of cosines
+  equirectangularApproximation, // equirectangular approximation
   haversine, // very accurate
   lamberts, // most accurate
 }
@@ -122,6 +121,23 @@ double distanceCoordsSuperFast(
 
   // Rough approximation, don't even do Pythagoras, so it's an upper bound.
   return distLongMeter + distLatMeter;
+}
+
+/// Calculates an approximation of the distance in meters between point A
+/// at spherical (latitude, longitude) coordinates ([latADeg], [longADeg]) and
+/// B at ([latBDeg], [longBDeg]) - all in degrees, using the equirectangular
+/// approximation.
+///
+/// The accuracy depends on the distance between the points and the latitude.
+double distanceCoordsEquirectangular(
+    double latADeg, double longADeg, double latBDeg, double longBDeg) {
+  final latARad = degToRad(latADeg);
+  final latBRad = degToRad(latBDeg);
+  final deltaLongRad = degToRad(deltaLongitudeAbs(longADeg, longBDeg));
+  final x = deltaLongRad * cos((latARad + latBRad) / 2);
+  final y =
+      degToRad(deltaLatitudeAbs(latADeg, latBDeg)); // (latBRad - latARad);
+  return sqrt(x * x + y * y) * EarthRadiusMeters.mean;
 }
 
 /// Calculates the distance in meters between point A at spherical
