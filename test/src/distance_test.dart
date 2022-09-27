@@ -61,57 +61,61 @@ void main() {
     expect(deltaLatitudeAbs(-90, 90), 180);
   });
 
-  test('distanceCoordsHaversine', () {
+  group('Distance checking methods', () {
     const relDelta = 1E-9;
 
-    runTestWithVariations(double latA, double longA, double latB, double longB,
-        double expected, String reason) {
-      final delta = relDelta * expected;
-      expect(distanceCoordsHaversine(latA, longA, latB, longB),
-          closeTo(expected, delta),
-          reason: reason);
-      expect(distanceCoordsHaversine(latB, longB, latA, longA),
-          closeTo(expected, delta),
-          reason: '(inverted) $reason');
+    /// Creates and returns a test runner that will execute the specified
+    /// distance calculation function [distCalc] with the provided parameters,
+    /// and various variations thereof.
+    makeTestRunnerWithVariations(
+        double Function(double latA, double longA, double latB, double longB)
+            distCalc) {
+      return (double latA, double longA, double latB, double longB,
+          double expected, String reason) {
+        final delta = relDelta * expected;
+        expect(distCalc(latA, longA, latB, longB), closeTo(expected, delta),
+            reason: reason);
+        expect(distCalc(latB, longB, latA, longA), closeTo(expected, delta),
+            reason: '(inverted) $reason');
 
-      expect(distanceCoordsHaversine(-latA, -longA, -latB, -longB),
-          closeTo(expected, delta),
-          reason: '(mirrored) $reason');
-      expect(distanceCoordsHaversine(-latA, longA, -latB, longB),
-          closeTo(expected, delta),
-          reason: '(lat-mirrored) $reason');
-      expect(distanceCoordsHaversine(latA, -longA, latB, -longB),
-          closeTo(expected, delta),
-          reason: '(long-mirrored) $reason');
+        expect(distCalc(-latA, -longA, -latB, -longB), closeTo(expected, delta),
+            reason: '(mirrored) $reason');
+        expect(distCalc(-latA, longA, -latB, longB), closeTo(expected, delta),
+            reason: '(lat-mirrored) $reason');
+        expect(distCalc(latA, -longA, latB, -longB), closeTo(expected, delta),
+            reason: '(long-mirrored) $reason');
+      };
     }
 
-    final oneDegLatitudeDist = earthRadiusMeters * 2 * pi / 360;
-    // On the prime meridian one degree latitude.
-    runTestWithVariations(
-        0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
-    runTestWithVariations(
-        2, 0, 3, 0, oneDegLatitudeDist, 'one degree latitude from offset');
-    runTestWithVariations(-1, 0, 1, 0, 2 * oneDegLatitudeDist,
-        'two degree longitude spanning the equator');
-    // Offset to a non-zero longitude, shouldn't affect results for constant
-    // longitude.
-    runTestWithVariations(5, 3, 7, 3, 2 * oneDegLatitudeDist,
-        'two degree latitude from offset at low non-standard longitude');
-    runTestWithVariations(5, 89, 7, 89, 2 * oneDegLatitudeDist,
-        'two degree latitude from offset at high non-standard longitude');
+    test('distanceCoordsHaversine', () {
+      final runner = makeTestRunnerWithVariations(distanceCoordsHaversine);
+      final oneDegLatitudeDist = earthRadiusMeters * 2 * pi / 360;
 
-    // On the equator 1 degree longitude (at equator one degree longitude or
-    // latitude give the same distance).
-    runTestWithVariations(
-        0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
-    runTestWithVariations(
-        0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
-    runTestWithVariations(0, 179, 0, -178, 3 * oneDegLatitudeDist,
-        'three degree longitude spanning the antimeridian');
+      // On the prime meridian one degree latitude.
+      runner(0, 0, 1, 0, oneDegLatitudeDist, 'one degree latitude from origin');
+      runner(2, 0, 3, 0, oneDegLatitudeDist, 'one degree latitude from offset');
+      runner(-1, 0, 1, 0, 2 * oneDegLatitudeDist,
+          'two degree longitude spanning the equator');
+      // Offset to a non-zero longitude, shouldn't affect results for constant
+      // longitude.
+      runner(5, 3, 7, 3, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at low non-standard longitude');
+      runner(5, 89, 7, 89, 2 * oneDegLatitudeDist,
+          'two degree latitude from offset at high non-standard longitude');
 
-    // Test some predefined points. Validated against
-    // https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance.
-    runTestWithVariations(1, 2, 3, 4, 314402.95102362486, 'predefined A');
-    runTestWithVariations(10, 20, 30, 40, 3040602.8180682, 'predefined B');
+      // On the equator 1 degree longitude (at equator one degree longitude or
+      // latitude give the same distance).
+      runner(
+          0, 0, 0, 1, oneDegLatitudeDist, 'one degree longitude from origin');
+      runner(
+          0, 1, 0, 2, oneDegLatitudeDist, 'one degree longitude from offset');
+      runner(0, 179, 0, -178, 3 * oneDegLatitudeDist,
+          'three degree longitude spanning the antimeridian');
+
+      // Test some predefined points. Validated against
+      // https://www.vcalc.com/wiki/vCalc/Haversine+-+Distance.
+      runner(1, 2, 3, 4, 314402.95102362486, 'predefined A');
+      runner(10, 20, 30, 40, 3040602.8180682, 'predefined B');
+    });
   });
 }
