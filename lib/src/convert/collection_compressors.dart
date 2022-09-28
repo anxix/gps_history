@@ -103,6 +103,23 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
 
     // Points are close together in time and space -> merge point to current
     // stay.
+    _mergePointToCurrentStay(point);
+  }
+
+  /// Updates the [_currentStay] state with the information contained in
+  /// [point].
+  ///
+  /// Caller must make sure that it makes sense to do this update in terms of
+  /// time/space distance between the new point and the [_currentStay], this
+  /// method merely executes the merge operation.
+  void _mergePointToCurrentStay(GpsPoint point) {
+    // Sanity check.
+    if (_currentStay == null) {
+      throw GpsHistoryException(
+          'Called _updateCurrentStay while _currentStay == null!');
+    }
+
+    // endTime definitely needs to be updated.
     late GpsTime endTime;
     if (point.runtimeType == GpsStay) {
       endTime = (point as GpsStay).endTime;
@@ -113,14 +130,6 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
       // In case new classes are added.
       throw TypeError();
     }
-    _updateCurrentStay(point, endTime);
-  }
-
-  void _updateCurrentStay(GpsPoint point, endTime) {
-    if (_currentStay == null) {
-      throw GpsHistoryException(
-          'Called _updateCurrentStay while _currentStay == null!');
-    }
 
     var newAccuracy = point is GpsStay
         ? point.accuracy
@@ -130,7 +139,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
 
     // Update position if accuracy of new point is better than that of the
     // current stay.
-    final currentAccuracy = _currentStay!.accuracy ?? 1E100;
+    final currentAccuracy = _currentStay!.accuracy ?? 1E300;
     final improvedAccuracy =
         (newAccuracy != null) && (newAccuracy < currentAccuracy);
 
