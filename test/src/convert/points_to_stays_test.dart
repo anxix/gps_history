@@ -70,12 +70,12 @@ void main() {
     test('No merging discontinuous time', () {
       final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
       final p2 = p1.copyWith(time: p1.time.add(seconds: maxTimeGapSeconds + 1));
+      final result = [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)];
 
-      runTest([p1, p2], [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
-      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)],
-          [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
-      runTest([GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)],
-          [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
+      runTest([p1, p2], result);
+      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)], result);
+      runTest(
+          [GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)], result);
     });
 
     test('No merging discontinuous space', () {
@@ -115,6 +115,17 @@ void main() {
       runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)], result);
       runTest(
           [GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)], result);
+    });
+
+    test('Merging GpsStays with non-zero durations', () {
+      final p1 = GpsStay(
+          time: GpsTime(1), latitude: 0, longitude: 0, endTime: GpsTime(2));
+      final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
+      final p2 = p1.copyWith(
+          time: nextStartTime, endTime: nextStartTime.add(seconds: 100));
+      final result = [p1.copyWith(endTime: p2.endTime)];
+
+      runTest([p1, p2], result);
     });
   });
 }

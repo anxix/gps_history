@@ -130,7 +130,7 @@ class PointMerger {
     // If the current and new position are not sufficiently close together
     // in terms of time and space, output the current position and set point
     // as current stay.
-    if (point.time.difference(_currentStay!.time) >= _maxTimeGapSeconds ||
+    if (point.time.difference(_currentStay!.endTime) >= _maxTimeGapSeconds ||
         distance(_currentStay!, point, DistanceCalcMode.auto) >=
             _maxDistanceGapMeters) {
       _outputCurrentStayAndReset(point);
