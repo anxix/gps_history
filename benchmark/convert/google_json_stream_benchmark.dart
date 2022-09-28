@@ -28,15 +28,15 @@ void main() async {
   final stopwatch = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();
 
-  var fileStream = file.openRead();
+  final fileStream = file.openRead();
 
   stopwatch.start();
 
-  var points = fileStream.transform(GoogleJsonHistoryDecoder(
+  final points = fileStream.transform(GoogleJsonHistoryDecoder(
       minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
       accuracyThreshold: binaryAccuracyThreshold));
 
-  await for (var p in points) {
+  await for (final p in points) {
     gpsPoints.add(p);
   }
 
@@ -45,13 +45,13 @@ void main() async {
   print(
       'Read ${gpsPoints.length} in $dt s: ${gpsPoints.length / 1000000 / dt} Mpoints/s or ${dt / (gpsPoints.length / 1000000)} s/Mpoint');
 
-  var diffs = <int>[];
+  final diffs = <int>[];
   int sumdiffs = 0;
   GpsPoint? prevp;
   var mindiff = 100000000;
   var maxdiff = 0;
 
-  for (var p in gpsPoints) {
+  for (final p in gpsPoints) {
     // ignore: dead_code
     if (printPoints) {
       print(p);
