@@ -144,6 +144,11 @@ void main() {
 
     testStayEndTime();
 
+    test('startTime', () {
+      final s = GpsStay.allZero.copyWith(time: GpsTime(1234));
+      expect(s.startTime, s.time);
+    });
+
     // run specific tests that are not covered by the basic point test
     final s = makeStay(
         time: GpsTime(2020),
