@@ -36,36 +36,42 @@ void main() async {
   final filename = 'data/g_history_sample.json';
 
   final file = File(filename);
-  final gpsPoints = GpcCompactGpsPoint();
+  final gpsStays = GpcCompactGpsStay();
 
-  var fileStream = file.openRead();
+  final fileStream = file.openRead();
 
-  var points = fileStream.transform(GoogleJsonHistoryDecoder(
+  final points = fileStream.transform(GoogleJsonHistoryDecoder(
       minSecondsBetweenDatapoints: 1, accuracyThreshold: 500));
 
-  await for (var p in points) {
-    gpsPoints.add(p);
+  final stays = points.transform(
+      PointsToStaysDecoder(maxTimeGapSeconds: 10, maxDistanceGapMeters: 10));
+
+  await for (final s in stays) {
+    gpsStays.add(s);
   }
 
-  print('Read ${gpsPoints.length} points');
+  print('Read ${gpsStays.length} points');
 
   // Calculate with what frequency the points have been recorded.
-  var intervals = <int>[];
-  var distances = <double>[];
-  GpsPoint? prevPoint;
+  final intervals = <int>[];
+  final durations = <int>[];
+  final distances = <double>[];
+  GpsStay? prevPoint;
 
-  for (var p in gpsPoints) {
+  for (final s in gpsStays) {
+    durations.add(s.endTime.difference(s.startTime));
     if (prevPoint != null) {
-      final diff = p.time.difference(prevPoint.time);
+      final diff = s.time.difference(prevPoint.endTime);
       intervals.add(diff);
 
-      final dist = distance(prevPoint, p);
+      final dist = distance(prevPoint, s);
       distances.add(dist);
     }
-    prevPoint = p;
+    prevPoint = s;
   }
 
   intervals.sort();
+  durations.sort();
   distances.sort();
 
   if (intervals.isNotEmpty) {
@@ -73,6 +79,12 @@ void main() async {
     print('  min    = ${intervals[0]} s');
     print('  median = ${intervals[intervals.length ~/ 2]} s');
     print('  max    = ${intervals[intervals.length - 1]} s');
+  }
+  if (durations.isNotEmpty) {
+    print('Durations:');
+    print('  min    = ${durations[0]} s');
+    print('  median = ${durations[durations.length ~/ 2]} s');
+    print('  max    = ${durations[durations.length - 1]} s');
   }
   if (distances.isNotEmpty) {
     print('Distances:');
