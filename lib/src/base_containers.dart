@@ -11,7 +11,7 @@
 import 'package:meta/meta.dart';
 
 import 'base.dart';
-import 'random_access_iterable.dart';
+import 'utils/random_access_iterable.dart';
 import 'utils/time.dart';
 
 /// Exception class for sorting issues in [GpsPointsView] (sub)classes.
