@@ -174,5 +174,36 @@ void main() {
       var result = [p1.copyWith(endTime: p2.endTime)];
       runTest([p1, p2], result);
     });
+
+    test('Not merging points that are not in order of increasing time', () {
+      final p1 = GpsStay(
+          time: GpsTime(1000),
+          latitude: 0,
+          longitude: 0,
+          endTime: GpsTime(2000));
+      // p2 overlaps p1
+      final p2 = p1.copyWith(
+          time: p1.time.add(seconds: maxTimeGapSeconds - 1),
+          endTime: p1.endTime.add(seconds: maxTimeGapSeconds - 1));
+      // p3 is before p2 and hence cannot be merged
+      final p3 = p2.copyWith(
+          time: p2.time.add(seconds: -2), endTime: p2.time.add(seconds: -1));
+
+      final result = [p1, p2, p3];
+
+      runTest([p1, p2, p3], result);
+    });
+
+    test('Identical points', () {
+      final p1 = GpsPoint(time: GpsTime(10), latitude: 1, longitude: 2);
+
+      final result = [GpsStay.fromPoint(p1)];
+
+      runTest([p1, p1], result);
+
+      final sp1 =
+          GpsStay.fromPoint(p1).copyWith(endTime: p1.time.add(seconds: 10));
+      runTest([sp1, sp1], [sp1]);
+    });
   });
 }

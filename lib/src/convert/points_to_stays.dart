@@ -115,13 +115,14 @@ class PointMerger {
     // We have some previous stay state -> requires checking times and mutual
     // distances.
 
-    // If point is not after currentStay (this should typically not happen,
-    // but it's not forbidden as such), it cannot be merged. Conceptually
-    // it might be possible to merge two overlapping stays, but it's not worth
-    // the hassle.
+    // If point is not after or time-identical to currentStay (this should
+    // typically not happen, but it's not forbidden as such), it cannot be
+    // merged. Conceptually it might be possible to merge two overlapping stays,
+    // but it's not worth the hassle.
     // TODO: handle the same-time mode maybe? Or formalize it in a unit test.
-    if (comparePointTimes(_currentStay!, point) !=
-        TimeComparisonResult.before) {
+    final timeComparison = comparePointTimes(_currentStay!, point);
+    if (timeComparison != TimeComparisonResult.before &&
+        timeComparison != TimeComparisonResult.same) {
       // The current stay is finished -> output it and start a new one.
       _outputCurrentStayAndReset(point);
       return;
