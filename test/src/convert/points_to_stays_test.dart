@@ -10,6 +10,16 @@ import 'package:gps_history/gps_history_convert.dart';
 import 'package:test/test.dart';
 
 void main() {
+  checkTestResults(List<GpsStay> results, List<GpsStay> expected) {
+    expect(results.length, expected.length, reason: 'Incorrect results length');
+
+    for (var i = 0; i < results.length; i++) {
+      final foundPoint = results[i];
+      final expectedPoint = expected[i];
+      expect(foundPoint, expectedPoint, reason: 'Mismatch at position $i');
+    }
+  }
+
   group('PointMerger', () {
     final maxTimeGapSeconds = 10;
     final maxDistanceGapMeters = 5.0;
@@ -27,14 +37,7 @@ void main() {
       }
       merger.close();
 
-      expect(results.length, expected.length,
-          reason: 'Incorrect results length');
-
-      for (var i = 0; i < results.length; i++) {
-        final foundPoint = results[i];
-        final expectedPoint = expected[i];
-        expect(foundPoint, expectedPoint, reason: 'Mismatch at position $i');
-      }
+      checkTestResults(results, expected);
     }
 
     test('Empty', () {
@@ -204,6 +207,34 @@ void main() {
       final sp1 =
           GpsStay.fromPoint(p1).copyWith(endTime: p1.time.add(seconds: 10));
       runTest([sp1, sp1], [sp1]);
+    });
+  });
+
+  group('PointsToStaysDecoder', () {
+    late PointsToStaysDecoder decoder;
+
+    setUp(() {
+      decoder = PointsToStaysDecoder();
+    });
+
+    test('convert', () {
+      expect(() => decoder.convert([]), throwsA(isA<UnimplementedError>()));
+    });
+
+    test('Chunked conversion', () async {
+      final s1 = GpsStay(time: GpsTime(1), latitude: 1, longitude: 2);
+      final s2 = GpsStay(time: GpsTime(2), latitude: 3, longitude: 4);
+      final stays = [s1, s2];
+
+      final stream = Stream<Iterable<GpsPoint>>.fromIterable([stays]);
+
+      final result = <GpsStay>[];
+      final staysStream = stream.transform(decoder);
+      await for (var s in staysStream) {
+        result.add(s);
+      }
+
+      checkTestResults(result, stays);
     });
   });
 }

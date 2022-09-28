@@ -20,8 +20,14 @@ typedef GpsPointIterable = Iterable<GpsPoint>;
 /// Decoder that merges entities in a source stream to [GpsStay] entities, which
 /// will typically reduce the total number of entries in the stream
 /// significantly.
-class PointsToStaysDecoder<GpsPoint>
-    extends Converter<GpsPointIterable, GpsStay> {
+class PointsToStaysDecoder extends Converter<GpsPointIterable, GpsStay> {
+  final int? _maxTimeGapSeconds;
+  final double? _maxDistanceGapMeters;
+
+  PointsToStaysDecoder({int? maxTimeGapSeconds, double? maxDistanceGapMeters})
+      : _maxTimeGapSeconds = maxTimeGapSeconds,
+        _maxDistanceGapMeters = maxDistanceGapMeters;
+
   /// The [convert] method cannot be called, because [input] may generate any
   /// number of [GpsStay] entities, which can therefore not be returned as
   /// one single result.
@@ -34,7 +40,9 @@ class PointsToStaysDecoder<GpsPoint>
 
   @override
   Sink<GpsPointIterable> startChunkedConversion(Sink<GpsStay> sink) {
-    return _GpsPointsToStaysSink(sink);
+    return _GpsPointsToStaysSink(sink,
+        maxTimeGapSeconds: _maxTimeGapSeconds,
+        maxDistanceGapMeters: _maxDistanceGapMeters);
   }
 }
 
@@ -62,6 +70,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
   @override
   void close() {
     merger.close();
+    _outputSink.close();
   }
 }
 
@@ -119,7 +128,6 @@ class PointMerger {
     // typically not happen, but it's not forbidden as such), it cannot be
     // merged. Conceptually it might be possible to merge two overlapping stays,
     // but it's not worth the hassle.
-    // TODO: handle the same-time mode maybe? Or formalize it in a unit test.
     final timeComparison = comparePointTimes(_currentStay!, point);
     if (timeComparison != TimeComparisonResult.before &&
         timeComparison != TimeComparisonResult.same) {
