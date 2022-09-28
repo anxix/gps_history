@@ -1,6 +1,6 @@
-/// Implements converters that can take a stream of GPS items and squeeze
+/// Offers conversion facilities that can take a stream of GPS items and squeeze
 /// that stream by removing duplication or converting multiple consecutive
-/// items in the same locationto to a [GpsStay].
+/// items in the same location to to a [GpsStay].
 
 /* Copyright (c)
  *
