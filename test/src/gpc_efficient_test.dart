@@ -143,7 +143,19 @@ void main() {
           longitude: 175.0 + i,
           altitude: 16E3 + i));
 
-  // TODO: add tests for GpcStay
+  testGpc<GpsStay>(
+      'GpcCompactGpsMeasurement with extreme values',
+      () => GpcCompactGpsStay(),
+      (int i) => GpsStay(
+            // Repeat the test with values close to the maximum date range, to
+            // check that storage works OK near the boundaries.
+            time: GpsTime.fromUtc(2100).add(days: i),
+            latitude: i.toDouble(), // required to be equal to i
+            longitude: 175.0 + i,
+            altitude: 16E3 + i,
+            accuracy: null, // make sure we also test a null
+            endTime: GpsTime.fromUtc(2100).add(days: i, minutes: 1),
+          ));
 
   testGpc<GpsMeasurement>(
       'GpcCompactGpsMeasurement with extreme values',
