@@ -133,8 +133,8 @@ double deltaLatitudeAbs(double latADeg, double latBDeg) {
 double distanceCoordsSuperFast(
     double latADeg, double longADeg, double latBDeg, double longBDeg) {
   final meterPerDegLongA = getMetersPerLongitudeDegAtLatitudeDeg(latADeg);
-  final meterPerLongB = getMetersPerLongitudeDegAtLatitudeDeg(latBDeg);
-  final averageMeterPerLongDeg = (meterPerDegLongA + meterPerLongB) / 2;
+  final meterPerDegLongB = getMetersPerLongitudeDegAtLatitudeDeg(latBDeg);
+  final averageMeterPerLongDeg = (meterPerDegLongA + meterPerDegLongB) / 2;
   final distLongMeter =
       averageMeterPerLongDeg * deltaLongitudeAbs(longADeg, longBDeg);
 
