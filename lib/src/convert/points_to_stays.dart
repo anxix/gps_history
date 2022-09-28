@@ -119,6 +119,7 @@ class PointMerger {
     // but it's not forbidden as such), it cannot be merged. Conceptually
     // it might be possible to merge two overlapping stays, but it's not worth
     // the hassle.
+    // TODO: handle the same-time mode maybe? Or formalize it in a unit test.
     if (comparePointTimes(_currentStay!, point) !=
         TimeComparisonResult.before) {
       // The current stay is finished -> output it and start a new one.

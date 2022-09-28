@@ -11,9 +11,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('PointMerger', () {
+    final maxTimeGapSeconds = 10;
+    final maxDistanceGapMeters = 5.0;
+
     runTest(List<GpsPoint> input, List<GpsStay> expected) {
       final results = <GpsStay>[];
-      final merger = PointMerger((result) => results.add(result));
+      final merger = PointMerger((result) => results.add(result),
+          maxTimeGapSeconds: maxTimeGapSeconds,
+          maxDistanceGapMeters: maxDistanceGapMeters);
 
       for (final point in input) {
         merger.addPoint(point);
@@ -60,6 +65,56 @@ void main() {
       final mp = GpsMeasurement(
           time: GpsTime(7), latitude: 8, longitude: 9, accuracy: 12);
       runTest([mp], [GpsStay.fromPoint(mp).copyWith(accuracy: mp.accuracy)]);
+    });
+
+    test('No merging discontinuous time', () {
+      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p2 = p1.copyWith(time: p1.time.add(seconds: maxTimeGapSeconds + 1));
+
+      runTest([p1, p2], [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
+      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)],
+          [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
+      runTest([GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)],
+          [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)]);
+    });
+
+    test('No merging discontinuous space', () {
+      final p1 = GpsPoint(time: GpsTime(2), latitude: 0, longitude: 1);
+      final p2 = p1.copyWith(
+          time: p1.time.add(seconds: maxTimeGapSeconds - 1),
+          latitude: p1.latitude +
+              (maxDistanceGapMeters + 1) * 1 / metersPerDegreeLatitude);
+      final result = [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)];
+
+      runTest([p1, p2], result);
+      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)], result);
+      runTest(
+          [GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)], result);
+    });
+
+    test('Merging nearby time in identical space', () {
+      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p2 = p1.copyWith(time: p1.time.add(seconds: maxTimeGapSeconds - 1));
+      final result = [GpsStay.fromPoint(p1).copyWith(endTime: p2.time)];
+
+      runTest([p1, p2], result);
+      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)], result);
+      runTest(
+          [GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)], result);
+    });
+
+    test('Merging nearby time in nearby space', () {
+      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p2 = p1.copyWith(
+          time: p1.time.add(seconds: maxTimeGapSeconds - 1),
+          latitude: p1.latitude +
+              (maxDistanceGapMeters - 1) * 1 / metersPerDegreeLatitude);
+      final result = [GpsStay.fromPoint(p1).copyWith(endTime: p2.time)];
+
+      runTest([p1, p2], result);
+      runTest([GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)], result);
+      runTest(
+          [GpsMeasurement.fromPoint(p1), GpsMeasurement.fromPoint(p2)], result);
     });
   });
 }
