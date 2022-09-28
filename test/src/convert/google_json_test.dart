@@ -216,8 +216,17 @@ void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
   }
 }
 
+testJsonToGpsConvert() {
+  test('convert method', () {
+    expect(() => GoogleJsonHistoryDecoder().convert([]),
+        throwsA(isA<UnimplementedError>()));
+  });
+}
+
 void main() {
   testPointParser();
+
+  testJsonToGpsConvert();
 
   testJsonToGps('Empty string', '', List.empty());
 
