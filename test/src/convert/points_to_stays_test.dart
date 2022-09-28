@@ -218,7 +218,8 @@ void main() {
     });
 
     test('convert', () {
-      expect(() => decoder.convert([]), throwsA(isA<UnimplementedError>()));
+      expect(() => decoder.convert(GpsPoint.allZero),
+          throwsA(isA<UnimplementedError>()));
     });
 
     test('Chunked conversion', () async {
@@ -226,7 +227,7 @@ void main() {
       final s2 = GpsStay(time: GpsTime(2), latitude: 3, longitude: 4);
       final stays = [s1, s2];
 
-      final stream = Stream<Iterable<GpsPoint>>.fromIterable([stays]);
+      final stream = Stream<GpsPoint>.fromIterable(stays);
 
       final result = <GpsStay>[];
       final staysStream = stream.transform(decoder);

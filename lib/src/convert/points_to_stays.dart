@@ -20,7 +20,7 @@ typedef GpsPointIterable = Iterable<GpsPoint>;
 /// Decoder that merges entities in a source stream to [GpsStay] entities, which
 /// will typically reduce the total number of entries in the stream
 /// significantly.
-class PointsToStaysDecoder extends Converter<GpsPointIterable, GpsStay> {
+class PointsToStaysDecoder extends Converter<GpsPoint, GpsStay> {
   final int? _maxTimeGapSeconds;
   final double? _maxDistanceGapMeters;
 
@@ -32,14 +32,14 @@ class PointsToStaysDecoder extends Converter<GpsPointIterable, GpsStay> {
   /// number of [GpsStay] entities, which can therefore not be returned as
   /// one single result.
   @override
-  GpsStay convert(GpsPointIterable input) {
+  GpsStay convert(GpsPoint input) {
     // This method doesn't really make sense, because the input may end up
     // generating more than one GpsStay.
     throw UnimplementedError();
   }
 
   @override
-  Sink<GpsPointIterable> startChunkedConversion(Sink<GpsStay> sink) {
+  Sink<GpsPoint> startChunkedConversion(Sink<GpsStay> sink) {
     return _GpsPointsToStaysSink(sink,
         maxTimeGapSeconds: _maxTimeGapSeconds,
         maxDistanceGapMeters: _maxDistanceGapMeters);
@@ -47,7 +47,7 @@ class PointsToStaysDecoder extends Converter<GpsPointIterable, GpsStay> {
 }
 
 /// Sink for converting chunks of [GpsPoint] or child classes to [GpsStay].
-class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
+class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPoint> {
   /// Target for the identified [GpsStay] instances.
   final Sink<GpsStay> _outputSink;
 
@@ -62,9 +62,7 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
 
   @override
   void add(chunk) {
-    for (final point in chunk) {
-      merger.addPoint(point);
-    }
+    merger.addPoint(chunk);
   }
 
   @override
