@@ -12,7 +12,7 @@ library gps_history;
 
 export 'src/base.dart';
 export 'src/base_containers.dart';
-export 'src/distance.dart';
+export 'src/utils/distance.dart';
 export 'src/utils/time.dart';
 export 'src/gpc_efficient.dart';
 export 'src/gpc_list_based.dart';

@@ -7,7 +7,7 @@
 
 import 'dart:math';
 
-import 'package:gps_history/src/distance.dart';
+import 'package:gps_history/src/utils/distance.dart';
 import 'package:test/test.dart';
 
 void main() {

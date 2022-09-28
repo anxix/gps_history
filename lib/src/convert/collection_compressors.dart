@@ -12,7 +12,7 @@
 import 'dart:convert';
 
 import '../base.dart';
-import '../distance.dart';
+import '../utils/distance.dart';
 import '../utils/time.dart';
 
 typedef GpsPointIterable = Iterable<GpsPoint>;

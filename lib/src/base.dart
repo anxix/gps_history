@@ -8,8 +8,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'distance.dart';
 import 'hash.dart';
+import 'utils/distance.dart';
 import 'utils/time.dart';
 
 /// [Exception] class that can act as ancestor for exceptions raised by
