@@ -70,14 +70,13 @@ void main() {
         1);
 
     // Check the caps.
-    expect(() {
-      Conversions.gpsTimeToUint32(GpsTime.fromUtc(1969));
-    }, throwsA(isA<RangeError>()));
-    expect(() {
-      // Two values after the max should both encode to the same integer.
-      Conversions.uint32ToGpsTime(
-          Conversions.gpsTimeToUint32(GpsTime.fromUtc(5000)));
-    }, throwsA(isA<RangeError>()));
+    expect(Conversions.uint32ToGpsTime(0), GpsTime(0));
+    expect(Conversions.uint32ToGpsTime(GpsTime.maxSecondsSinceEpoch),
+        GpsTime(GpsTime.maxSecondsSinceEpoch));
+    expect(() => Conversions.uint32ToGpsTime(-1), throwsA(isA<RangeError>()));
+    expect(Conversions.uint32ToGpsTime(GpsTime.maxSecondsSinceEpoch + 1), null);
+    expect(() => Conversions.uint32ToGpsTime(GpsTime.maxSecondsSinceEpoch + 2),
+        throwsA(isA<RangeError>()));
 
     // Check null.
     final nullDateTimeAsInt = 4294967295;
