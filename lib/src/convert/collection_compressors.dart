@@ -74,33 +74,74 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
     // Handle initial state: no stay yet, accept whatever comes in as initial.
     if (_currentStay == null) {
       _outputCurrentStayAndReset(point);
-    } else {
-      // If point is not after currentStay (this should typically not happen,
-      // but it's not forbidden as such), it cannot be merged. Conceptually
-      // it might be possible to merge two overlapping stays, but it's not worth
-      // the hassle.
-      if (comparePointTimes(_currentStay!, point) !=
-          TimeComparisonResult.before) {
-        // The current stay is finished -> output it and start a new one.
-        _outputCurrentStayAndReset(point);
-      }
-      // We have some previous stay state -> requires checking times and mutual
-      // distances.
-      // TODO: implement
-      // If the current and new position are not sufficiently close together
-      // in terms of time and space, output the current position and set point
-      // as current stay.
-      if (point.time.difference(_currentStay!.time) >= _maxTimeGapSeconds ||
-          distance(_currentStay!, point, DistanceCalcMode.auto) >=
-              _maxDistanceGapMeters) {
-        _outputCurrentStayAndReset(point);
-        return;
-      }
-      if (point is GpsStay) {
-        // We have two stays -> merge if
-        // TODO: implement
-      } else {}
+      return;
     }
+
+    // We have some previous stay state -> requires checking times and mutual
+    // distances.
+
+    // If point is not after currentStay (this should typically not happen,
+    // but it's not forbidden as such), it cannot be merged. Conceptually
+    // it might be possible to merge two overlapping stays, but it's not worth
+    // the hassle.
+    if (comparePointTimes(_currentStay!, point) !=
+        TimeComparisonResult.before) {
+      // The current stay is finished -> output it and start a new one.
+      _outputCurrentStayAndReset(point);
+      return;
+    }
+
+    // If the current and new position are not sufficiently close together
+    // in terms of time and space, output the current position and set point
+    // as current stay.
+    if (point.time.difference(_currentStay!.time) >= _maxTimeGapSeconds ||
+        distance(_currentStay!, point, DistanceCalcMode.auto) >=
+            _maxDistanceGapMeters) {
+      _outputCurrentStayAndReset(point);
+      return;
+    }
+
+    // Points are close together in time and space -> merge point to current
+    // stay.
+    late GpsTime endTime;
+    if (point.runtimeType == GpsStay) {
+      endTime = (point as GpsStay).endTime;
+    } else if (point.runtimeType == GpsPoint ||
+        point.runtimeType == GpsMeasurement) {
+      endTime = point.time;
+    } else {
+      // In case new classes are added.
+      throw TypeError();
+    }
+    _updateCurrentStay(point, endTime);
+  }
+
+  void _updateCurrentStay(GpsPoint point, endTime) {
+    if (_currentStay == null) {
+      throw GpsHistoryException(
+          'Called _updateCurrentStay while _currentStay == null!');
+    }
+
+    var newAccuracy = point is GpsStay
+        ? point.accuracy
+        : point is GpsMeasurement
+            ? point.accuracy
+            : null;
+
+    // Update position if accuracy of new point is better than that of the
+    // current stay.
+    final currentAccuracy = _currentStay!.accuracy ?? 1E100;
+    final improvedAccuracy =
+        (newAccuracy != null) && (newAccuracy < currentAccuracy);
+
+    _currentStay = _currentStay!.copyWith(
+      // endTime needs to be updated regardless of accuracy
+      endTime: endTime,
+      // Positional components updated only if accuracy is better.
+      latitude: improvedAccuracy ? point.latitude : null,
+      longitude: improvedAccuracy ? point.longitude : null,
+      accuracy: improvedAccuracy ? newAccuracy : null,
+    );
   }
 
   /// Output the [_currentStay] to the output sink (if it's not null), then
