@@ -12,7 +12,7 @@ import 'package:meta/meta.dart';
 
 import 'base.dart';
 import 'random_access_iterable.dart';
-import 'time.dart';
+import 'utils/time.dart';
 
 /// Exception class for sorting issues in [GpsPointsView] (sub)classes.
 class GpsPointsViewSortingException extends GpsHistoryException {

@@ -10,7 +10,7 @@
 
 import 'distance.dart';
 import 'hash.dart';
-import 'time.dart';
+import 'utils/time.dart';
 
 /// [Exception] class that can act as ancestor for exceptions raised by
 class GpsHistoryException implements Exception {

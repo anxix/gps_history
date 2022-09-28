@@ -5,7 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/src/time.dart';
+import 'package:gps_history/src/utils/time.dart';
 import 'package:test/test.dart';
 
 void main() {
