@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import '../hash.dart';
+import 'hash.dart';
 
 /// Used as result type for time comparison.
 ///

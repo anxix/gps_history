@@ -5,7 +5,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/src/hash.dart';
+import 'package:gps_history/src/utils/hash.dart';
 import 'package:test/test.dart';
 
 void main() {
