@@ -456,61 +456,20 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
     _accuracyThreshold = accuracyThreshold;
   }
 
-  /// Override [Converter.convert] that returns the last point that is fully
-  /// defined by the [bytes].
-  ///
-  /// There's no guarantee that inputting a stream will indeed contain at least
-  /// one [GpsPoint]. If no point is found, the method will raise a
-  /// [JsonParseException], since the interface disallows returning a nullable.
+  /// The [convert] method cannot be called, because [bytes] may generate any
+  /// number of [GpsPoint] entities, which can therefore not be returned as
+  /// one single result.
   @override
   GpsPoint convert(List<int> bytes, [int start = 0, int? end]) {
-    GpsPoint? result;
-    var passthroughSink = _PassthroughSink((point) {
-      result = point;
-    });
-    var parserSink = _GpsPointParserSink(
-        passthroughSink, _minSecondsBetweenDatapoints, _accuracyThreshold);
-
-    // Decide how far we need to parse.
-    end = end ?? bytes.length;
-    // If it's not the whole [bytes], create a new list with the relevant part.
-    if (end < bytes.length) {
-      parserSink.add(List<int>.from(bytes.getRange(start, end)));
-    } else {
-      // Whole [bytes] => pass it on directly.
-      parserSink.add(bytes);
-    }
-    parserSink.close();
-
-    if (result != null) {
-      return result!;
-    } else {
-      throw JsonParseException('Unable to parse point from specified bytes');
-    }
+    // This method doesn't really make sense, because the input may end up
+    // generating zero, one or more than one point.
+    throw UnimplementedError();
   }
 
   @override
   Sink<List<int>> startChunkedConversion(Sink<GpsPoint> sink) {
     return _GpsPointParserSink(
         sink, _minSecondsBetweenDatapoints, _accuracyThreshold);
-  }
-}
-
-/// Simple sink to make the [GoogleJsonHistoryDecoder.convert]
-/// implementation possible. Translates [add] to a call to a [_wrappedFunction].
-class _PassthroughSink extends Sink<GpsPoint> {
-  final void Function(GpsPoint point) _wrappedFunction;
-
-  _PassthroughSink(this._wrappedFunction);
-
-  @override
-  void add(GpsPoint point) {
-    _wrappedFunction(point);
-  }
-
-  @override
-  void close() {
-    // Nothing to do.
   }
 }
 
