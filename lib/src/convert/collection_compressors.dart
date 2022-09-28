@@ -22,9 +22,13 @@ typedef GpsPointIterable = Iterable<GpsPoint>;
 /// significantly.
 class PointsToStaysDecoder<GpsPoint>
     extends Converter<GpsPointIterable, GpsStay> {
+  /// The [convert] method cannot be called, because [input] may generate any
+  /// number of [GpsStay] entities, which can therefore not be returned as
+  /// one single result.
   @override
   GpsStay convert(GpsPointIterable input) {
-    // TODO: implement convert
+    // This method doesn't really make sense, because the input may end up
+    // generating more than one GpsStay.
     throw UnimplementedError();
   }
 
