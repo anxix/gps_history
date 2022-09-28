@@ -13,6 +13,8 @@ void main() {
   group('PointMerger', () {
     final maxTimeGapSeconds = 10;
     final maxDistanceGapMeters = 5.0;
+    final offsetAtMaxDistanceGapMeter =
+        maxDistanceGapMeters * 1 / metersPerDegreeLatitude;
 
     runTest(List<GpsPoint> input, List<GpsStay> expected) {
       final results = <GpsStay>[];
@@ -82,8 +84,7 @@ void main() {
       final p1 = GpsPoint(time: GpsTime(2), latitude: 0, longitude: 1);
       final p2 = p1.copyWith(
           time: p1.time.add(seconds: maxTimeGapSeconds - 1),
-          latitude: p1.latitude +
-              (maxDistanceGapMeters + 1) * 1 / metersPerDegreeLatitude);
+          latitude: p1.latitude + 1.1 * offsetAtMaxDistanceGapMeter);
       final result = [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)];
 
       runTest([p1, p2], result);
@@ -107,8 +108,7 @@ void main() {
       final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
       final p2 = p1.copyWith(
           time: p1.time.add(seconds: maxTimeGapSeconds - 1),
-          latitude: p1.latitude +
-              (maxDistanceGapMeters - 1) * 1 / metersPerDegreeLatitude);
+          latitude: p1.latitude + 0.9 * offsetAtMaxDistanceGapMeter);
       final result = [GpsStay.fromPoint(p1).copyWith(endTime: p2.time)];
 
       runTest([p1, p2], result);
@@ -125,6 +125,53 @@ void main() {
           time: nextStartTime, endTime: nextStartTime.add(seconds: 100));
       final result = [p1.copyWith(endTime: p2.endTime)];
 
+      runTest([p1, p2], result);
+    });
+
+    test('Merging GpsStays and GpsPoint', () {
+      final p1 = GpsStay(
+          time: GpsTime(1), latitude: 0, longitude: 0, endTime: GpsTime(2));
+      final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
+      final p2 = GpsPoint(
+          time: nextStartTime, latitude: p1.latitude, longitude: p1.latitude);
+      final result = [p1.copyWith(endTime: p2.time)];
+
+      runTest([p1, p2], result);
+    });
+
+    test('Updating position from better accuracy', () {
+      final p1 = GpsStay(
+          time: GpsTime(1),
+          latitude: 0,
+          longitude: 0,
+          endTime: GpsTime(2),
+          accuracy: 10);
+      final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
+      final p2 = p1.copyWith(
+          time: nextStartTime,
+          endTime: nextStartTime.add(seconds: 100),
+          latitude: p1.latitude + 0.9 * offsetAtMaxDistanceGapMeter,
+          accuracy: 0.9 * p1.accuracy!);
+
+      var result = [p2.copyWith(time: p1.time)];
+      runTest([p1, p2], result);
+    });
+
+    test('Not updating position from worse accuracy', () {
+      final p1 = GpsStay(
+          time: GpsTime(1),
+          latitude: 0,
+          longitude: 0,
+          endTime: GpsTime(2),
+          accuracy: 10);
+      final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
+      final p2 = p1.copyWith(
+          time: nextStartTime,
+          endTime: nextStartTime.add(seconds: 100),
+          latitude: p1.latitude + 0.9 * offsetAtMaxDistanceGapMeter,
+          accuracy: 1.1 * p1.accuracy!);
+
+      var result = [p1.copyWith(endTime: p2.endTime)];
       runTest([p1, p2], result);
     });
   });
