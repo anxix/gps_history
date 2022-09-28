@@ -293,6 +293,8 @@ void main() {
           longitude: 175.0 + i,
           altitude: 16E3 + i));
 
+  // TODO: add tests for GpcStay
+
   testGpc<GpsMeasurement>(
       'GpcCompactGpsMeasurement with extreme values',
       () => GpcCompactGpsMeasurement(),
