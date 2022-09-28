@@ -425,11 +425,6 @@ class PointParser {
   }
 }
 
-/// An exception thrown if the JSON parsing goes wrong in an unrecoverable way.
-class JsonParseException extends GpsHistoryException {
-  JsonParseException([String? message]) : super(message);
-}
-
 /// Decoder for a stream of bytes from a Google location history JSON file to
 /// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
 class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
