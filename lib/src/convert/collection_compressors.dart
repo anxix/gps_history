@@ -30,7 +30,6 @@ class PointsToStaysDecoder<GpsPoint>
 
   @override
   Sink<GpsPointIterable> startChunkedConversion(Sink<GpsStay> sink) {
-    // TODO: implement startChunkedConversion
     return _GpsPointsToStaysSink(sink);
   }
 }
@@ -40,34 +39,66 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
   /// Target for the identified [GpsStay] instances.
   final Sink<GpsStay> _outputSink;
 
-  // Maximum amount of time in seconds between two measurements that are still
-  // allowed to be merged into one stay. This is because the data may contain
-  // huge time gaps during which no recording was performed.
-  final int _maxTimeGapSeconds;
-
-  // Maximum distance between two measurements that are still allowed to be
-  // merged into one stay.
-  final double _maxDistanceGapMeters;
-
-  GpsStay? _currentStay;
+  late PointMerger merger;
 
   _GpsPointsToStaysSink(this._outputSink,
-      {int? maxTimeGapSeconds, double? maxDistanceGapMeters})
-      : _maxTimeGapSeconds = maxTimeGapSeconds ?? GpsTime.resolutionSeconds,
-        _maxDistanceGapMeters = maxDistanceGapMeters ?? 1.0;
+      {int? maxTimeGapSeconds, double? maxDistanceGapMeters}) {
+    merger = PointMerger(_outputSink.add,
+        maxTimeGapSeconds: maxTimeGapSeconds,
+        maxDistanceGapMeters: maxDistanceGapMeters);
+  }
 
   @override
   void add(chunk) {
     for (final point in chunk) {
-      final rt = point.runtimeType;
-
-      // Make sure we're not dealing with an unsupported type.
-      if (rt != GpsPoint && rt != GpsMeasurement && rt != GpsStay) {
-        throw TypeError();
-      }
-
-      _processPoint(point);
+      merger.addPoint(point);
     }
+  }
+
+  @override
+  void close() {
+    merger.close();
+  }
+}
+
+/// Tool for merging multiple points that are adjacent in space and time into
+/// a single stay of extended duration.
+///
+/// Make sure to call the [close] method after the last point added to
+/// [PointMerger] in order to report the last tracked stay as a merge result.
+class PointMerger {
+  /// The current reference location to which any new points may either be
+  /// merged, or that may be output as a merge result if an incoming point is
+  /// too far removed in space and/or time.
+  GpsStay? _currentStay;
+
+  /// Function that will be called once a merged item has been identified and
+  /// finalized, typically the add() method of an output sink.
+  final void Function(GpsStay) reportMergeResult;
+
+  /// Maximum amount of time in seconds between two measurements that are still
+  /// allowed to be merged into one stay. This is because the data may contain
+  /// huge time gaps during which no recording was performed.
+  final int _maxTimeGapSeconds;
+
+  /// Maximum distance between two measurements that are still allowed to be
+  /// merged into one stay.
+  final double _maxDistanceGapMeters;
+
+  PointMerger(this.reportMergeResult,
+      {int? maxTimeGapSeconds, double? maxDistanceGapMeters})
+      : _maxTimeGapSeconds = maxTimeGapSeconds ?? GpsTime.resolutionSeconds,
+        _maxDistanceGapMeters = maxDistanceGapMeters ?? 1.0;
+
+  void addPoint(GpsPoint point) {
+    final rt = point.runtimeType;
+
+    // Make sure we're not dealing with an unsupported type.
+    if (rt != GpsPoint && rt != GpsMeasurement && rt != GpsStay) {
+      throw TypeError();
+    }
+
+    _processPoint(point);
   }
 
   void _processPoint(GpsPoint point) {
@@ -153,11 +184,11 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
     );
   }
 
-  /// Output the [_currentStay] to the output sink (if it's not null), then
-  /// resets [_currentStay] to [point].
+  /// Reports [_currentStay] (if it's not null) as result, then resets
+  /// [_currentStay] to [point].
   void _outputCurrentStayAndReset(GpsPoint point) {
     if (_currentStay != null) {
-      _outputSink.add(_currentStay!);
+      reportMergeResult(_currentStay!);
     }
 
     if (point is GpsStay) {
@@ -168,11 +199,12 @@ class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPointIterable> {
     }
   }
 
-  @override
+  /// Method to be called at the end of the processing, in order to make sure
+  /// any last stay entity is reported as merge result as well.
   void close() {
     // If we have an active stay, this is the time to emit and reset it.
     if (_currentStay != null) {
-      _outputSink.add(_currentStay!);
+      reportMergeResult(_currentStay!);
       _currentStay = null;
     }
   }
