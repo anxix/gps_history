@@ -116,7 +116,6 @@ void main() {
           throwsA(isA<RangeError>()));
     });
 
-    // TODO: test BB wrapping antimeridian
     test('Wrapping antimeridian', () {
       runContainsTests(-10, 170, 10, -170, [
         // Point well inside the box.
