@@ -192,6 +192,7 @@ class PointMerger {
       // Positional components updated only if accuracy is better.
       latitude: improvedAccuracy ? point.latitude : null,
       longitude: improvedAccuracy ? point.longitude : null,
+      altitude: improvedAccuracy ? point.altitude : null,
       accuracy: improvedAccuracy ? newAccuracy : null,
     );
   }

@@ -147,14 +147,16 @@ void main() {
           time: GpsTime(1),
           latitude: 0,
           longitude: 0,
-          endTime: GpsTime(2),
-          accuracy: 10);
+          altitude: 19,
+          accuracy: 10,
+          endTime: GpsTime(2));
       final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
       final p2 = p1.copyWith(
           time: nextStartTime,
-          endTime: nextStartTime.add(seconds: 100),
           latitude: p1.latitude + 0.9 * offsetAtMaxDistanceGapMeter,
-          accuracy: 0.9 * p1.accuracy!);
+          altitude: 219,
+          accuracy: 0.9 * p1.accuracy!,
+          endTime: nextStartTime.add(seconds: 100));
 
       var result = [p2.copyWith(time: p1.time)];
       runTest([p1, p2], result);
