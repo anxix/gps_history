@@ -1,0 +1,108 @@
+/// Queries allow seleting particular subdata from containers of GPS point data.
+///
+/// Queries:
+///
+/// 1) Timeline rendering, or showing on a calendar which days have recordings
+///    in a particular region.
+///    Input:
+///      - list of time instances, each with a tolerance
+///      - optionally a BB
+///    Output:
+///      A list of results, one for each input element, indicating one of:
+///      - position information available
+///      - position information available, but outside BB
+///      - no position information available
+///    Special cases:
+///      If the times with their tolerances overlap, cut off
+///      tolerances such that there's no overlap.
+///    Expected number of input/output items:
+///      At most about 8k on a desktop, more typically hundreds up to 2k.
+///
+/// 2) Places you've been in a certain period and in a particular region, but
+///    limiting the number of reponses so the map rendering doesn't get
+///    overwhelmed.
+///    Input:
+///      - time range
+///      - bounding box
+///      - horizontal and vertical number of grid rectangles within the
+///        bounding box such that at most one result is returned per grid
+///        rectangle.
+///    Output:
+///      A list of points (time+location info), at most one per grid rectangle.
+///    Expected number of input/output items:
+///      The goal being to render location indicators on a map, each grid rect
+///      shouldn't be larger than a location icon, say 16x16px. For an 8k
+///      screen, resolution is about 33Mpx giving a max. of about 125k grid
+///      items. For phone screens they're more in the 400kpx resolution, giving
+///      a max of about 1.5k items. It's more likely there will be way fewer
+///      items though, because the user will never have been on every grid
+///      rectangle.
+///
+/// 3) Location at a specific time, with a given tolerance.
+///    Input:
+///      - time with tolerance
+///    Output:
+///      - null (if no location found for the specific period) or
+///      - a single location being the one nearest to the specified time
+///
+/// 4) Information about the list.
+///    Output:
+///      - time of first item, time of last item, number of items.
+///
+/// 5) Item(s) at a particular index range in the list (e.g. for showing in
+///    a table).
+///    Input:
+///      - start index
+///      - number of items (if will reach beyond length, auto-capped)
+///    Output:
+///      - up to number of items from the list, starting at the start index
+
+/*
+ * Copyright (c)
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+import 'package:gps_history/gps_history.dart';
+
+abstract class QueryResult {}
+
+/// Abstract generic ancestor class for queries parametrized for container type
+/// [C] and result type [R].
+///
+/// Since queries may have specific implementations for particular container
+/// types, they are generics parametrized for container type.
+abstract class Query<C extends GpsPointsView, R extends QueryResult> {
+  /// Function that executes the actual query and returns the result.
+  R query(C container);
+}
+
+/// Query result for [QueryListInfo].
+class ListInfo extends QueryResult {
+  /// The start time of the first item in the container, if non-empty.
+  GpsTime? firstItemStartTime;
+
+  /// The end time of the last item in the container, if non-empty.
+  GpsTime? lastItemEndTime;
+
+  /// The number of items in the container.
+  int length;
+
+  ListInfo(this.firstItemStartTime, this.lastItemEndTime, this.length);
+}
+
+/// Queries generic information about the container and returns it as result
+/// of [ListInfo] type.
+class QueryListInfo<C extends GpsPointsView> extends Query<C, ListInfo> {
+  @override
+  ListInfo query(C container) {
+    return ListInfo(container.isNotEmpty ? container.first.time : null,
+        container.isNotEmpty ? container.last.endTime : null, container.length);
+  }
+}
+
+// class QueryTime extends Query {}
+
+// class QueryBoundingBox extends Query {}
