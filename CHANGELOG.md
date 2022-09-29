@@ -1,3 +1,15 @@
+# 0.0.9
+
+* Public API changes:
+  * 
+
+* New features:
+  * Added bounding boxes and containership checks against them.
+
+* Fixes:
+  * 
+
+
 # 0.0.8
 
 * New features:
