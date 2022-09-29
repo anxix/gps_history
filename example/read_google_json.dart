@@ -23,11 +23,14 @@ void main() async {
   final stays = points.transform(
       PointsToStaysDecoder(maxTimeGapSeconds: 10, maxDistanceGapMeters: 10));
 
+  final startTime = DateTime.now();
   await for (final s in stays) {
     gpsStays.add(s);
   }
+  final endTime = DateTime.now();
 
-  print('Read ${gpsStays.length} points');
+  print(
+      'Read ${gpsStays.length} points in ${endTime.difference(startTime).inMilliseconds} ms');
 
   // Calculate with what frequency the points have been recorded.
   final intervals = <int>[];
