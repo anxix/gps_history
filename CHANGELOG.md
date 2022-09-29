@@ -1,13 +1,16 @@
 # 0.0.8
 
-* Public API changes:
-  * 
-
 * New features:
-  * Distance calculations between GPS coordinates.
+  * Distance calculations between GPS coordinates, with a few different 
+    formulas that can trade accuracy for speed.
+  * Convert a stream of points to a stream of stays, where points that are
+    close together in time and space can be merged into a single stay. This can
+    reduce the amount of items required to represent a Google location history
+    by a factor 4-5.
 
 * Fixes:
   * ```GpsTime.toString``` implemented.
+  * Reorganized the codebase somewhat, moving things around to subdirectories.
 
 
 # 0.0.7
