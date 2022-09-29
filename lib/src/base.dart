@@ -37,9 +37,7 @@ TimeComparisonResult comparePointTimes(GpsPoint itemA, GpsPoint itemB) {
     final startA = itemA.time.secondsSinceEpoch;
     final endA = itemA.endTime.secondsSinceEpoch;
     final startB = itemB.time.secondsSinceEpoch;
-    final endB = (itemB is GpsStay)
-        ? itemB.endTime.secondsSinceEpoch
-        : itemB.time.secondsSinceEpoch; // non-stay same as zero length stay
+    final endB = itemB.endTime.secondsSinceEpoch;
     return compareTimeSpans(
         startA: startA, endA: endA, startB: startB, endB: endB);
   } else if (itemB is GpsStay) {
@@ -95,6 +93,11 @@ class GpsPoint {
     required this.longitude,
     this.altitude,
   });
+
+  /// The end time for the point measurement (same as [time] for [GpsPoint], but
+  /// may be overridden in subclasses if they implement staying in a position
+  /// for some extended period of time).
+  get endTime => time;
 
   /// Create a copy of the point with optionally one or more of its fields set
   /// to new values.
@@ -289,6 +292,7 @@ class GpsStay extends GpsPoint {
   /// 1: time=2, position=B, endTime=3
   /// ```
   /// for time=2 the correct position is B, not A.
+  @override
   get endTime => _endTime ?? time;
 
   @override

@@ -163,16 +163,7 @@ class PointMerger {
     }
 
     // endTime definitely needs to be updated.
-    late GpsTime endTime;
-    if (point.runtimeType == GpsStay) {
-      endTime = (point as GpsStay).endTime;
-    } else if (point.runtimeType == GpsPoint ||
-        point.runtimeType == GpsMeasurement) {
-      endTime = point.time;
-    } else {
-      // In case new classes are added.
-      throw TypeError();
-    }
+    final endTime = point.endTime;
 
     var newAccuracy = point is GpsStay
         ? point.accuracy
