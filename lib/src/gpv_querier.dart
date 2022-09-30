@@ -30,6 +30,17 @@ class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
   GpvQuerier(this._collection, this._indices);
 
   @override
+  GpsPointsView<T> newEmpty({int? capacity}) {
+    return GpvQuerier<T>(_collection, Int32List(0));
+  }
+
+  @override
+  GpsPointsView<T> subList({int startIndex = 0, int? nrItems}) {
+    // TODO: implement subList
+    throw UnimplementedError();
+  }
+
+  @override
   int get length => _indices.length;
 
   @override

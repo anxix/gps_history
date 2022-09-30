@@ -14,6 +14,7 @@ import 'dart:typed_data';
 import 'base.dart';
 import 'base_collections.dart';
 import 'utils/binary_conversions.dart';
+import 'utils/random_access_iterable.dart';
 import 'utils/time.dart';
 
 /// A space-efficient [GpsPointsCollection] implementation.
@@ -168,15 +169,23 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
 
   @override
   // ignore: non_constant_identifier_names
-  void addAllStartingAt_Unsafe(Iterable<T> source, [int skipItems = 0]) {
+  void addAllStartingAt_Unsafe(Iterable<T> source,
+      [int skipItems = 0, int? nrItems]) {
     // Try the fast algorithm if the data is of the correct type.
     if (runtimeType == source.runtimeType) {
-      _addAllStartingAtFast_Unsafe(source as GpcEfficient<T>, skipItems);
+      _addAllStartingAtFast_Unsafe(
+          source as GpcEfficient<T>, skipItems, nrItems);
     } else {
       // No the same type -> do a slow copy.
-      capacity = _elementsCount + source.length - skipItems;
 
-      for (var element in source.skip(skipItems)) {
+      // For regular iterables, calling length will consume it, so we don't
+      // want to do it. But for RandomAccessIterable, it's a safe operation and
+      // we can use it to preset the capacity for performance reasons.
+      if (source is RandomAccessIterable) {
+        capacity = _elementsCount + (nrItems ?? (source.length - skipItems));
+      }
+
+      for (var element in getSubSource(source, skipItems, nrItems)) {
         add_Unsafe(element);
       }
     }
@@ -187,7 +196,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// data.
   // ignore: non_constant_identifier_names
   void _addAllStartingAtFast_Unsafe(GpcEfficient<T> source,
-      [int skipItems = 0]) {
+      [int skipItems = 0, int? nrItems]) {
     // Copying binary data between different types is not safe.
     if (runtimeType != source.runtimeType) {
       throw TypeError();
@@ -200,7 +209,8 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
     // to copy those unused bytes, which is what would happen if we called
     // buffer.asByteData without a length argument. We want a view of only the
     // used bytes.
-    final bytesToCopy = source.length * source.elementSizeInBytes - skipBytes;
+    final bytesToCopy =
+        (nrItems ?? (source.length - skipItems)) * source.elementSizeInBytes;
 
     addByteData(source._rawData.buffer.asByteData(skipBytes, bytesToCopy));
   }

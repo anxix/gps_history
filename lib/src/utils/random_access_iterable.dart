@@ -51,6 +51,11 @@ abstract class RandomAccessIterable<T> extends Iterable<T>
   RandomAccessIterable<T> skip(int count) {
     return RandomAccessSkipIterable<T>(this, count);
   }
+// TODO: implement take()
+  // @override
+  // RandomAccessIterable<T> take(int count) {
+  //   return RandomAccessSkipIterable<T>(this, count);
+  // }
 }
 
 /// Iterator support for [RandomAccessIterable].
@@ -126,3 +131,65 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
     return count;
   }
 }
+
+// class RandomAccessTakeIterable<E> extends RandomAccessIterable<E> {
+//   final RandomAccessIterable<E> _iterable;
+//   final int _takeCount;
+
+//   factory RandomAccessTakeIterable(
+//       RandomAccessIterable<E> iterable, int takeCount) {
+//     ArgumentError.checkNotNull(takeCount, "takeCount");
+//     RangeError.checkNotNegative(takeCount, "takeCount");
+//     return RandomAccessTakeIterable<E>._(iterable, takeCount);
+//   }
+
+//   RandomAccessTakeIterable._(this._iterable, this._takeCount);
+
+//   @override
+//   RandomAccessIterator<E> get iterator {
+//     return RandomAccessTakeIterator<E>(_iterable, _takeCount);
+//   }
+
+//   @override
+//   int get length {
+//     int iterableLength = _iterable.length;
+//     if (iterableLength > _takeCount) return _takeCount;
+//     return iterableLength;
+//   }
+
+//   @override
+//   E operator [](int index) {
+//     if (index >= length) {
+//       throw IndexError(index, this, '', '', length);
+//     }
+//     return _iterable[index];
+//   }
+// }
+
+// class RandomAccessTakeIterator<E> extends RandomAccessIterator<E> {
+//   int _remaining;
+
+//   RandomAccessTakeIterator(super._source, this._remaining) {
+//     assert(_remaining >= 0);
+//   }
+
+//   @override
+//   bool moveNext() {
+//     _remaining--;
+//     if (_remaining >= 0) {
+//       return _source.iterator.moveNext();
+//     }
+//     _remaining = -1;
+//     return false;
+//   }
+
+//   @override
+//   E get current {
+//     // Before NNBD, this returned null when iteration was complete. In order to
+//     // avoid a hard breaking change, we return "null as E" in that case so that
+//     // if strong checking is not enabled or E is nullable, the existing
+//     // behavior is preserved.
+//     if (_remaining < 0) return null as E;
+//     return _source.iterator.current;
+//   }
+// }

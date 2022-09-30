@@ -28,6 +28,26 @@ abstract class GpsPointsView<T extends GpsPoint>
     extends RandomAccessIterable<T> {
   /// Indicate if the view is read-only and cannot be modified.
   bool get isReadonly => true;
+
+  /// Creates a copy (of the same type as this class) of the subrange of items
+  /// specified by the parameters.
+  ///
+  /// [startIndex] indicates, if provided, the first item that should be copied
+  /// by the query. If not provided, it defaults to 0.
+  ///
+  /// [nrItems] indicates, if provided, how many items should be copied by the
+  /// query. If not provided (or null), the copying will copy till the end of
+  /// the collection (equivalent to providing (length-startIndex)).
+  GpsPointsView<T> subList({int startIndex = 0, int? nrItems});
+
+  /// Creates a collection of the same type as this, optionally with
+  /// a starting [capacity] for children that support that.
+  ///
+  /// Setting the capacity at the correct value can for huge lists with
+  /// millions of items have a significant impact on the performance
+  /// of filling the list.
+  @protected
+  GpsPointsView<T> newEmpty({int? capacity});
 }
 
 /// Indicates how the sorting requirement for [GpsPointsCollection] should
@@ -62,15 +82,6 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   SortingEnforcement _sortingEnforcement = SortingEnforcement.throwIfWrongItems;
 
   bool _sortedByTime = true;
-
-  /// Creates a collection of the same type as this, optionally with
-  /// a starting [capacity] for children that support that.
-  ///
-  /// Setting the capacity at the correct value can for huge lists with
-  /// millions of items have a significant impact on the performance
-  /// of filling the list.
-  @protected
-  GpsPointsCollection<T> newEmpty({int? capacity});
 
   /// Whether the list is will disallow modifications that render it
   /// in a state that's not sorted by time. Setting this property to true
@@ -109,17 +120,20 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// entirely or partially sorted (depending on how its contents were
   /// initialized).
   /// If [sortedByTime] is true, the method immediately returns true. Otherwise
-  /// it checks the contents (optionally skipping the first [skipItems] items)
-  /// to determine if they are in fact sorted.
+  /// it checks the contents (optionally skipping the first [skipItems] items
+  /// and limiting itself to [nrItems] rather than the entire list) to determine
+  /// if they are in fact sorted.
   /// In the situation that the list is found to be fully sorted,
   /// [sortedByTime] will be set to true as well.
-  bool checkContentsSortedByTime([int skipItems = 0]) {
+  bool checkContentsSortedByTime([int skipItems = 0, int? nrItems]) {
     if (sortedByTime) {
       return true;
     }
 
+    final endIndex = skipItems + (nrItems ?? (length - skipItems));
+
     var detectedSorted = true;
-    for (var itemNr = skipItems + 1; itemNr < length; itemNr++) {
+    for (var itemNr = skipItems + 1; itemNr < endIndex; itemNr++) {
       switch (compareElementTime(itemNr - 1, itemNr)) {
         case TimeComparisonResult.before:
           continue;
@@ -133,7 +147,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
     // If we compared the entire list and found it's sorted, set the internal
     // flag.
-    if (detectedSorted && skipItems == 0) {
+    if (detectedSorted && skipItems == 0 && endIndex == length) {
       _sortedByTime = true;
     }
 
@@ -238,11 +252,11 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   /// Add all elements from [source] to [this], after skipping [skipItems]
   /// items from the [source]. [skipItems]=0 is equivalent to calling [addAll].
-  void addAllStartingAt(Iterable<T> source, [int skipItems = 0]) {
+  void addAllStartingAt(Iterable<T> source, [int skipItems = 0, int? nrItems]) {
     // If the collection doesn't care about sorting or it's already unsorted, go
     // ahead and add.
     if (sortingEnforcement == SortingEnforcement.notRequired || !sortedByTime) {
-      _addAllStartingAt_NoSortingRequired(source, skipItems);
+      _addAllStartingAt_NoSortingRequired(source, skipItems, nrItems);
       return;
     }
 
@@ -252,7 +266,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // If the source is itself a collection, rely on its internal sorting
     // flags to determine the validity of the situation cheaply.
     if (source is GpsPointsCollection<T>) {
-      _addAllStartingAt_CollectionSource(source, skipItems);
+      _addAllStartingAt_CollectionSource(source, skipItems, nrItems);
       return;
     }
 
@@ -265,7 +279,13 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // in point_addition.dart is about 3-4x faster with preset capacity than if
     // the list is grown incrementally with the natural capacity increasing
     // algo.
-    final copiedSource = newEmpty(capacity: source.length - skipItems);
+    int? copiedCapacity;
+    if (source is RandomAccessIterable) {
+      copiedCapacity = (source.length - skipItems);
+    }
+
+    final copiedSource =
+        newEmpty(capacity: copiedCapacity) as GpsPointsCollection<T>;
     // Use same enforcement strategy as the target collection. That way if the
     // data is incorrect, it can be detected already while copying from the
     // iterable to the list.
@@ -276,7 +296,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       copiedSource.add(last);
     }
     // Only copy after any skipped items.
-    for (final element in source.skip(skipItems)) {
+    final subSource = getSubSource(source, skipItems, nrItems);
+    for (final element in subSource) {
       copiedSource.add(element);
     }
     // When adding, skip the reference item that we copied from the current
@@ -287,19 +308,25 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Implements the [addAllStartingAt] code path for the situation where the
   /// sorting is not relevant.
   // ignore: non_constant_identifier_names
-  void _addAllStartingAt_NoSortingRequired(Iterable<T> source, int skipItems) {
+  void _addAllStartingAt_NoSortingRequired(
+      Iterable<T> source, int skipItems, int? nrItems) {
     final originalLength = length;
-    addAllStartingAt_Unsafe(source, skipItems);
+    addAllStartingAt_Unsafe(source, skipItems, nrItems);
     // If the collection was originally sorted by time, check if it still is.
     if (sortedByTime) {
       // Start checking including the original last element, because it needs
       // to determine if the first newly added element is sorted compared to
       // the original last element.
       checkContentsSortedByTime(
-          originalLength > 0 // include original last element if there was one
-              ? originalLength - 1 // position of original last element
-              : 0 // no original last element -> start at beginning of list
-          );
+        originalLength > 0 // include original last element if there was one
+            ? originalLength - 1 // position of original last element
+            : 0, // no original last element -> start at beginning of list
+        originalLength > 0 // extra item being last from original list
+            ? nrItems != null
+                ? nrItems + 1 // include the original last element
+                : null
+            : nrItems, // no original last element -> check all new items
+      );
     }
   }
 
@@ -307,9 +334,9 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// source is a collection.
   // ignore: non_constant_identifier_names
   void _addAllStartingAt_CollectionSource(
-      GpsPointsCollection<T> source, int skipItems) {
+      GpsPointsCollection<T> source, int skipItems, int? nrItems) {
     // Stop if there's nothing to add.
-    if (source.length - skipItems < 1) {
+    if ((nrItems != null && nrItems < 1) || source.length - skipItems < 1) {
       return;
     }
 
@@ -317,11 +344,18 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // starting at skipItems, find the correct starting point in the source for
     // performing the addition. Everything after that point can be inserted
     // immediately with confidence that sorted state will be maintained.
-    if (source.checkContentsSortedByTime(skipItems)) {
-      int maxStartingPoint = sortingEnforcement ==
-              SortingEnforcement.throwIfWrongItems
-          ? skipItems // unsorted not skipped -> there must be valid data from the start
-          : source.length - 1; // can skip unsorted -> need valid data anywehere
+    if (source.checkContentsSortedByTime(skipItems, nrItems)) {
+      late int maxStartingPoint;
+      if (sortingEnforcement == SortingEnforcement.throwIfWrongItems) {
+        // Unsorted parts not silently skipped during add() -> there must be
+        // valid data from the start.
+        maxStartingPoint = skipItems;
+      } else {
+        // Can skip unsorted parts during add() -> need valid data anywehere
+        // between the start and the end.
+        maxStartingPoint =
+            nrItems != null ? nrItems + skipItems - 1 : source.length - 1;
+      }
 
       // Find the starting point for the addition and add everything from there.
       for (var i = skipItems; i <= maxStartingPoint; i++) {
@@ -333,7 +367,8 @@ abstract class GpsPointsCollection<T extends GpsPoint>
           // sortingEnforcement == SortingEnforcement.throwIfWrongItems,
           // the add() will throw an exception if the source[i] item is invalid
           // and the whole addition will (correctly) fail.
-          addAllStartingAt_Unsafe(source, i + 1);
+          addAllStartingAt_Unsafe(source, i + 1,
+              nrItems != null ? nrItems - (i - skipItems) - 1 : null);
           return;
         }
       }
@@ -348,7 +383,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       // otherwise it's guaranteed to throw at some point and hence the entire
       // operation is not allowed.
       if (sortingEnforcement == SortingEnforcement.skipWrongItems) {
-        for (final element in source.skip(skipItems)) {
+        for (final element in getSubSource(source, skipItems, nrItems)) {
           add(element);
         }
       } else {
@@ -359,11 +394,31 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     }
   }
 
+  /// Returns a subset iterable from [source] that skips [skipItems] and copies
+  /// up to [nrItems] (if specified) or the entire list (if not specified).
+  @protected
+  Iterable<T> getSubSource(Iterable<T> source, int skipItems, int? nrItems) {
+    Iterable<T> subSource = source.skip(skipItems);
+    if (nrItems != null) {
+      subSource = subSource.take(nrItems);
+    }
+    return subSource;
+  }
+
   /// Internal implementation of [addAllStartingAt], which does not do any
   /// safety checks regarding sorting. Only to be overridden in children.
   @protected
   // ignore: non_constant_identifier_names
-  void addAllStartingAt_Unsafe(Iterable<T> source, [int skipItems = 0]);
+  void addAllStartingAt_Unsafe(Iterable<T> source,
+      [int skipItems = 0, int? nrItems]);
+
+  @override
+  GpsPointsCollection<T> subList({int startIndex = 0, int? nrItems}) {
+    final result = newEmpty() as GpsPointsCollection<T>;
+
+    result.addAllStartingAt(this, startIndex, nrItems);
+    return result;
+  }
 
   /// Collections are typically not read-only.
   @override

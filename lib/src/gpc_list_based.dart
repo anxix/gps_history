@@ -46,7 +46,8 @@ class GpcListBased<T extends GpsPoint> extends GpsPointsCollection<T> {
 
   @override
   // ignore: non_constant_identifier_names
-  void addAllStartingAt_Unsafe(Iterable<T> source, [int skipItems = 0]) {
-    _points.addAll(source.skip(skipItems));
+  void addAllStartingAt_Unsafe(Iterable<T> source,
+      [int skipItems = 0, int? nrItems]) {
+    _points.addAll(getSubSource(source, skipItems, nrItems));
   }
 }
