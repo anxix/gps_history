@@ -36,8 +36,7 @@ class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
 
   @override
   GpsPointsView<T> sublist(int start, [int? end]) {
-    // TODO: implement subList
-    throw UnimplementedError();
+    return GpvQuerier(_collection, _indices.sublist(start, end));
   }
 
   @override
