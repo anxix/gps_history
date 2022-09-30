@@ -82,13 +82,17 @@ abstract class QueryResult {}
 ///
 /// Since queries may have specific implementations for particular collection
 /// types, they are generics parametrized for collection type.
+///
+/// The goal is to be able to send queries to a separate isolate and get the
+/// results back efficiently. This requires the [Query] children to store
+/// internally a representation that is cheap to transfer over an isolate port.
 abstract class Query<C extends GpsPointsView, R extends QueryResult> {
   /// Function that executes the actual query and returns the result.
   R query(C collection);
 }
 
-/// Query result for [QueryListInfo].
-class ListInfo extends QueryResult {
+/// Query result for [QueryCollectionInfo].
+class CollectionInfo extends QueryResult {
   /// The start time of the first item in the collection, if non-empty.
   GpsTime? firstItemStartTime;
 
@@ -98,36 +102,38 @@ class ListInfo extends QueryResult {
   /// The number of items in the collection.
   int length;
 
-  ListInfo(this.firstItemStartTime, this.lastItemEndTime, this.length);
+  CollectionInfo(this.firstItemStartTime, this.lastItemEndTime, this.length);
 }
 
 /// Queries generic information about the collection and returns it as result
-/// of [ListInfo] type.
-class QueryListInfo<C extends GpsPointsView> extends Query<C, ListInfo> {
+/// of [CollectionInfo] type.
+class QueryCollectionInfo<C extends GpsPointsView>
+    extends Query<C, CollectionInfo> {
   @override
-  ListInfo query(C collection) {
-    return ListInfo(
+  CollectionInfo query(C collection) {
+    return CollectionInfo(
         collection.isNotEmpty ? collection.first.time : null,
         collection.isNotEmpty ? collection.last.endTime : null,
         collection.length);
   }
 }
 
-/// Query result for [QueryListItems].
-class SubList<C extends GpsPointsView> extends QueryResult {
+/// Query result for [QueryCollectionItems].
+class CollectionItems<C extends GpsPointsView> extends QueryResult {
   final int startIndex;
 
   final C collection;
 
-  SubList(this.startIndex, this.collection);
+  CollectionItems(this.startIndex, this.collection);
 }
 
 /// Returns specified item range from the collection and as result
-/// of [SubList] type.
+/// of [CollectionItems] type.
 ///
 /// The result will be a copy of the data, so that it can be transferred
 /// cheaply via an isolate port.
-class QueryListItems<C extends GpsPointsView> extends Query<C, SubList<C>> {
+class QueryCollectionItems<C extends GpsPointsView>
+    extends Query<C, CollectionItems<C>> {
   final int _startIndex;
   final int? _nrItems;
 
@@ -140,14 +146,15 @@ class QueryListItems<C extends GpsPointsView> extends Query<C, SubList<C>> {
   /// [nrItems] indicates, if provided, how many items should be copied by the
   /// query. If not provided (or null), the copying will copy till the end of
   /// the collection (equivalent to providing (length-startIndex)).
-  QueryListItems({int startIndex = 0, int? nrItems})
+  QueryCollectionItems({int startIndex = 0, int? nrItems})
       : _startIndex = startIndex,
         _nrItems = nrItems;
 
   @override
-  SubList<C> query(C collection) {
+  CollectionItems<C> query(C collection) {
     final end = _nrItems == null ? collection.length : _startIndex + _nrItems!;
-    return SubList<C>(_startIndex, collection.sublist(_startIndex, end) as C);
+    return CollectionItems<C>(
+        _startIndex, collection.sublist(_startIndex, end) as C);
   }
 }
 
