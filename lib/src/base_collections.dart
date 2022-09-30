@@ -1,4 +1,4 @@
-/// Base classes for the GPS containers.
+/// Base classes for the GPS collections.
 
 /*
  * Copyright (c)

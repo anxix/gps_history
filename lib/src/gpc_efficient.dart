@@ -44,7 +44,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// are required to store every element.
   int get elementSizeInBytes;
 
-  /// The number of elements currently stored in the container.
+  /// The number of elements currently stored in the collection.
   @override
   int get length => _elementsCount;
 
@@ -60,7 +60,7 @@ abstract class GpcEfficient<T extends GpsPoint> extends GpsPointsCollection<T> {
   /// automatically if elements are added without explicit pre-allocation of
   /// capacity.
   /// Capacity cannot be decreased to less than the current length, since
-  /// that might invalidate any pre-existing views on this container.
+  /// that might invalidate any pre-existing views on this collection.
   int get capacity => _rawData.lengthInBytes ~/ elementSizeInBytes;
   set capacity(int newCapacity) {
     // Don't allow deleting any currently in-use elements, for it could invalidate

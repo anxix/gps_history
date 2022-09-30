@@ -181,7 +181,7 @@ class GpsStay extends GpsPoint {
   /// - endTime: if [endTime] > [startTime]
   ///
   /// An exception is thrown if [endTime] < [startTime] as it would render any
-  /// containers unable to process a negative time duration.
+  /// collections unable to process a negative time duration.
   static GpsTime? _endTimeToInternal(GpsTime? endTime, GpsTime startTime) {
     if (endTime == null) {
       return null;

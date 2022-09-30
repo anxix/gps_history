@@ -18,7 +18,7 @@ export 'src/persist/utilities.dart';
 export 'src/persist/p_gpc_efficient.dart';
 
 /// Function that creates and registers the default persisters for the
-/// built-in container types. Call it from the calling code's main() function
+/// built-in collection types. Call it from the calling code's main() function
 /// for example, unless you want to do your own persistence registration from
 /// scratch.
 void initializeDefaultPersisters() {
