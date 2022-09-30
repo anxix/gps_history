@@ -50,7 +50,6 @@ abstract class RandomAccessIterable<T> extends Iterable<T> {
     return RandomAccessSkipIterable<T>(this, count);
   }
 
-// TODO: implement take()
   @override
   RandomAccessIterable<T> take(int count) {
     return RandomAccessTakeIterable<T>(this, count);
