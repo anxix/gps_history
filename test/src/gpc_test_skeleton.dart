@@ -133,7 +133,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
         expect(gpc[i], src[skip + i], reason: 'incorrect point at position $i');
       }
 
-      // Try addAllStartingAlt on the same type.
+      // Try addAllStartingAt on the same type.
       final otherGpc = collectionConstructor();
       expect(gpc.runtimeType, otherGpc.runtimeType,
           reason: 'test intended to be on same types');
@@ -156,6 +156,42 @@ void testGpsPointsCollection<T extends GpsPoint>(
       // Check invalid argument throws error.
       expect(
           () => otherGpc.addAllStartingAt(gpc, -1), throwsA(isA<RangeError>()));
+    });
+
+    test('addAllStartingAt with limited length', () {
+      final src = makeList(10);
+
+      // Try addAllStartingAt on different types (src and gpc are not of the
+      // same class).
+      expect(gpc.runtimeType, isNot(src.runtimeType),
+          reason: 'test intended to be on different types');
+      gpc.addAllStartingAt(src, 2, 3);
+      expect(gpc.length, 3, reason: 'incorrect number of items added');
+      for (var i = 0; i < gpc.length; i++) {
+        expect(gpc[i], src[i + 2], reason: 'incorrect point at position $i');
+      }
+
+      // Add the rest of the items
+      gpc.addAllStartingAt(src, 5);
+      expect(gpc.length, 8,
+          reason: 'incorrect number of items after adding rest');
+
+      // Try addAllStartingAt on the same type.
+      final otherGpc = collectionConstructor();
+      expect(gpc.runtimeType, otherGpc.runtimeType,
+          reason: 'test intended to be on same types');
+      otherGpc.addAllStartingAt(gpc, 1, 4);
+      expect(otherGpc.length, 4,
+          reason: 'wrong length after addAllStartingAt on same type');
+      for (var i = 0; i < otherGpc.length; i++) {
+        expect(otherGpc[i], gpc[i + 1],
+            reason:
+                'incorrect point at position $i after addAllStartingAt on same type');
+      }
+
+      // Check invalid argument throws error.
+      expect(() => otherGpc.addAllStartingAt(gpc, 1, -2),
+          throwsA(isA<RangeError>()));
     });
   });
 

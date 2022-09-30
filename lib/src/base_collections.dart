@@ -253,6 +253,11 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   /// Add all elements from [source] to [this], after skipping [skipItems]
   /// items from the [source]. [skipItems]=0 is equivalent to calling [addAll].
   void addAllStartingAt(Iterable<T> source, [int skipItems = 0, int? nrItems]) {
+    if (nrItems != null && nrItems < 0) {
+      throw (RangeError(
+          'Incorrect number of items specified for addAllStartingAt: $nrItems'));
+    }
+
     // If the collection doesn't care about sorting or it's already unsorted, go
     // ahead and add.
     if (sortingEnforcement == SortingEnforcement.notRequired || !sortedByTime) {
