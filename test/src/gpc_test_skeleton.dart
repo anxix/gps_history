@@ -24,7 +24,7 @@ void testGpsPointsCollection<T extends GpsPoint>(
     String name,
     GpsPointsCollection<T> Function() collectionConstructor,
     T Function(int itemIndex) itemConstructor) {
-  GpsPointsCollection<T>? gpc;
+  late GpsPointsCollection<T> gpc;
 
   /// Returns a list with [nrItems] items built with the specified
   /// [itemConstructor].
@@ -41,43 +41,43 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   group('Test $name - basics:', () {
-    test('Length empty', () => expect(gpc!.length, 0));
+    test('Length empty', () => expect(gpc.length, 0));
 
     test('isEmpty/isNotEmpty', () {
-      expect(gpc!.isEmpty, true, reason: 'wrong for empty list');
-      expect(gpc!.isNotEmpty, false, reason: 'wrong for empty list');
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.isEmpty, false, reason: 'wrong for non-empty list');
-      expect(gpc!.isNotEmpty, true, reason: 'wrong for non-empty list');
+      expect(gpc.isEmpty, true, reason: 'wrong for empty list');
+      expect(gpc.isNotEmpty, false, reason: 'wrong for empty list');
+      gpc.add(itemConstructor(1));
+      expect(gpc.isEmpty, false, reason: 'wrong for non-empty list');
+      expect(gpc.isNotEmpty, true, reason: 'wrong for non-empty list');
     });
 
     test('Simple add and indexing', () {
-      expect(() => gpc!.first, throwsA(isA<StateError>()));
-      expect(() => gpc!.last, throwsA(isA<StateError>()));
+      expect(() => gpc.first, throwsA(isA<StateError>()));
+      expect(() => gpc.last, throwsA(isA<StateError>()));
 
       // basic tests with just one point
       final p0 = itemConstructor(1);
-      gpc!.add(p0);
-      expect(gpc!.length, 1, reason: 'wrong length after first add');
-      expect(gpc![0], p0, reason: 'wrong point after first add');
-      expect(gpc!.elementAt(0), p0, reason: 'wrong elementAt after first add');
-      expect(gpc!.first, p0, reason: 'wrong first after first add');
-      expect(gpc!.last, p0, reason: 'wrong last after first add');
+      gpc.add(p0);
+      expect(gpc.length, 1, reason: 'wrong length after first add');
+      expect(gpc[0], p0, reason: 'wrong point after first add');
+      expect(gpc.elementAt(0), p0, reason: 'wrong elementAt after first add');
+      expect(gpc.first, p0, reason: 'wrong first after first add');
+      expect(gpc.last, p0, reason: 'wrong last after first add');
 
       // basic tests with a second point
       final p1 = itemConstructor(2);
-      gpc!.add(p1);
-      expect(gpc!.length, 2, reason: 'wrong length after second add');
-      expect(gpc![0], p0, reason: 'wrong point at [0] after second add');
-      expect(gpc![1], p1, reason: 'wrong point at [1] after second add');
-      expect(gpc!.elementAt(1), p1, reason: 'wrong elementAt after second add');
-      expect(gpc!.first, p0, reason: 'wrong first after second add');
-      expect(gpc!.last, p1, reason: 'wrong last after second add');
+      gpc.add(p1);
+      expect(gpc.length, 2, reason: 'wrong length after second add');
+      expect(gpc[0], p0, reason: 'wrong point at [0] after second add');
+      expect(gpc[1], p1, reason: 'wrong point at [1] after second add');
+      expect(gpc.elementAt(1), p1, reason: 'wrong elementAt after second add');
+      expect(gpc.first, p0, reason: 'wrong first after second add');
+      expect(gpc.last, p1, reason: 'wrong last after second add');
     });
 
     test('Invalid indexing', () {
-      expect(() => gpc![-1], throwsA(isA<RangeError>()));
-      expect(() => gpc![0], throwsA(isA<RangeError>()));
+      expect(() => gpc[-1], throwsA(isA<RangeError>()));
+      expect(() => gpc[0], throwsA(isA<RangeError>()));
     });
   });
 
@@ -87,29 +87,29 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
       // Try addAll on different types (src and gpc are not of the
       // same class).
-      expect(gpc!.runtimeType, isNot(src.runtimeType),
+      expect(gpc.runtimeType, isNot(src.runtimeType),
           reason: 'test intended to be on different types');
-      gpc!.addAll(src);
-      expect(gpc!.length, src.length, reason: 'wrong length');
-      for (var i = 0; i < gpc!.length; i++) {
-        expect(gpc![i], src[i], reason: 'incorrect point at position $i');
+      gpc.addAll(src);
+      expect(gpc.length, src.length, reason: 'wrong length');
+      for (var i = 0; i < gpc.length; i++) {
+        expect(gpc[i], src[i], reason: 'incorrect point at position $i');
       }
 
       // Try addAll on the same type.
       final otherGpc = collectionConstructor();
       otherGpc.sortingEnforcement = SortingEnforcement.notRequired;
-      expect(gpc!.runtimeType, otherGpc.runtimeType,
+      expect(gpc.runtimeType, otherGpc.runtimeType,
           reason: 'test intended to be on same types');
-      otherGpc.addAll(gpc!);
-      otherGpc.addAll(gpc!);
-      expect(otherGpc.length, 2 * gpc!.length,
+      otherGpc.addAll(gpc);
+      otherGpc.addAll(gpc);
+      expect(otherGpc.length, 2 * gpc.length,
           reason: 'wrong length after addAll on same type');
-      for (var i = 0; i < gpc!.length; i++) {
-        expect(otherGpc[i], gpc![i],
+      for (var i = 0; i < gpc.length; i++) {
+        expect(otherGpc[i], gpc[i],
             reason: 'incorrect point at position $i after addAll on same type');
-        expect(otherGpc[gpc!.length + i], gpc![i],
+        expect(otherGpc[gpc.length + i], gpc[i],
             reason:
-                'incorrect point at position ${gpc!.length + i} after addAll on same type');
+                'incorrect point at position ${gpc.length + i} after addAll on same type');
       }
     });
 
@@ -117,46 +117,45 @@ void testGpsPointsCollection<T extends GpsPoint>(
       final src = makeList(5);
 
       // It's valid to call add with skipItems beyond the source boundary.
-      gpc!.addAllStartingAt(src, src.length);
-      expect(gpc!.length, 0,
+      gpc.addAllStartingAt(src, src.length);
+      expect(gpc.length, 0,
           reason: 'should be empty if adding from beyond the source boundary');
 
       final skip = 2;
       // Try addAllStartingAt on different types (src and gpc are not of the
       // same class).
-      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
-      expect(gpc!.runtimeType, isNot(src.runtimeType),
+      gpc.sortingEnforcement = SortingEnforcement.notRequired;
+      expect(gpc.runtimeType, isNot(src.runtimeType),
           reason: 'test intended to be on different types');
-      gpc!.addAllStartingAt(src, skip);
-      expect(gpc!.length, src.length - skip, reason: 'wrong length');
-      for (var i = 0; i < gpc!.length; i++) {
-        expect(gpc![i], src[skip + i],
-            reason: 'incorrect point at position $i');
+      gpc.addAllStartingAt(src, skip);
+      expect(gpc.length, src.length - skip, reason: 'wrong length');
+      for (var i = 0; i < gpc.length; i++) {
+        expect(gpc[i], src[skip + i], reason: 'incorrect point at position $i');
       }
 
       // Try addAllStartingAlt on the same type.
       final otherGpc = collectionConstructor();
-      expect(gpc!.runtimeType, otherGpc.runtimeType,
+      expect(gpc.runtimeType, otherGpc.runtimeType,
           reason: 'test intended to be on same types');
-      otherGpc.addAllStartingAt(gpc!, 0);
+      otherGpc.addAllStartingAt(gpc, 0);
       otherGpc.sortingEnforcement = SortingEnforcement.notRequired;
-      otherGpc.addAllStartingAt(gpc!, 1);
-      expect(otherGpc.length, 2 * gpc!.length - 1,
+      otherGpc.addAllStartingAt(gpc, 1);
+      expect(otherGpc.length, 2 * gpc.length - 1,
           reason: 'wrong length after addAllStartingAt on same type');
-      for (var i = 0; i < gpc!.length; i++) {
-        expect(otherGpc[i], gpc![i],
+      for (var i = 0; i < gpc.length; i++) {
+        expect(otherGpc[i], gpc[i],
             reason:
                 'incorrect point at position $i after addAllStartingAt on same type');
       }
-      for (var i = gpc!.length; i < otherGpc.length; i++) {
-        expect(otherGpc[i], gpc![i - gpc!.length + 1],
+      for (var i = gpc.length; i < otherGpc.length; i++) {
+        expect(otherGpc[i], gpc[i - gpc.length + 1],
             reason:
                 'incorrect point at position $i after addAllStartingAt on same type');
       }
 
       // Check invalid argument throws error.
-      expect(() => otherGpc.addAllStartingAt(gpc!, -1),
-          throwsA(isA<RangeError>()));
+      expect(
+          () => otherGpc.addAllStartingAt(gpc, -1), throwsA(isA<RangeError>()));
     });
   });
 
@@ -166,13 +165,13 @@ void testGpsPointsCollection<T extends GpsPoint>(
       // addition to detect if all elements have been traversed, and skipping
       // something with value 0 would obviously not be noticed.
       for (var i = 1; i < 4; i++) {
-        gpc!.add(itemConstructor(i));
+        gpc.add(itemConstructor(i));
       }
 
       // It's required that the constructor returns items with at least the
       // latitude being equal to the itemIndex+1.
       var total = 0.0;
-      for (var point in gpc!) {
+      for (var point in gpc) {
         total += point.latitude;
       }
       expect(total, 6.0);
@@ -180,26 +179,26 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
     test('Skip', () {
       for (var i = 1; i < 4; i++) {
-        gpc!.add(itemConstructor(i));
+        gpc.add(itemConstructor(i));
       }
 
-      var partialGpc = gpc!.skip(0);
-      expect(partialGpc.length, gpc!.length);
+      var partialGpc = gpc.skip(0);
+      expect(partialGpc.length, gpc.length);
       for (var i = 0; i < partialGpc.length; i++) {
-        expect(partialGpc[i], gpc![i], reason: 'Invalid point at position $i');
+        expect(partialGpc[i], gpc[i], reason: 'Invalid point at position $i');
       }
 
-      partialGpc = gpc!.skip(1);
+      partialGpc = gpc.skip(1);
       expect(partialGpc.length, 2);
       for (var i = 0; i < partialGpc.length; i++) {
-        expect(partialGpc[i], gpc![i + 1],
+        expect(partialGpc[i], gpc[i + 1],
             reason: 'Invalid point at position $i');
       }
 
-      partialGpc = gpc!.skip(1).skip(1);
+      partialGpc = gpc.skip(1).skip(1);
       expect(partialGpc.length, 1);
       for (var i = 0; i < partialGpc.length; i++) {
-        expect(partialGpc[i], gpc![i + 2],
+        expect(partialGpc[i], gpc[i + 2],
             reason: 'Invalid point at position $i');
       }
     });
@@ -207,119 +206,118 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
   group('Test $name - sorting behaviour:', () {
     test('Simple sorted states', () {
-      expect(gpc!.sortedByTime, true,
+      expect(gpc.sortedByTime, true,
           reason: 'empty list should implicitly be sorted');
 
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.length, 1, reason: 'first item should have been added');
-      expect(gpc!.sortedByTime, true,
+      gpc.add(itemConstructor(1));
+      expect(gpc.length, 1, reason: 'first item should have been added');
+      expect(gpc.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
 
-      gpc!.add(itemConstructor(2));
-      expect(gpc!.length, 2, reason: 'second item should have been added');
-      expect(gpc!.sortedByTime, true,
+      gpc.add(itemConstructor(2));
+      expect(gpc.length, 2, reason: 'second item should have been added');
+      expect(gpc.sortedByTime, true,
           reason: 'list with two incrementing items should be sorted');
 
       // Not allowed to add two items with the same time.
       expect(() {
-        gpc!.add(itemConstructor(2));
+        gpc.add(itemConstructor(2));
       }, throwsA(isA<GpsPointsViewSortingException>()));
-      expect(gpc!.length, 2, reason: 'third item should not have been added');
-      expect(gpc!.sortedByTime, true,
+      expect(gpc.length, 2, reason: 'third item should not have been added');
+      expect(gpc.sortedByTime, true,
           reason: 'list should remain sorted after failed addition');
 
-      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.length, 3,
+      gpc.sortingEnforcement = SortingEnforcement.notRequired;
+      gpc.add(itemConstructor(1));
+      expect(gpc.length, 3,
           reason:
               'third item should have been added even if it breaks sorting');
-      expect(gpc!.sortedByTime, false,
+      expect(gpc.sortedByTime, false,
           reason: 'list with non-incrementing items should be unsorted');
     });
 
     test('skipWrongItems sorting behaviour', () {
-      gpc!.sortingEnforcement = SortingEnforcement.skipWrongItems;
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.sortedByTime, true,
+      gpc.sortingEnforcement = SortingEnforcement.skipWrongItems;
+      gpc.add(itemConstructor(1));
+      expect(gpc.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
 
-      gpc!.add(itemConstructor(0));
-      expect(gpc!.length, 1,
+      gpc.add(itemConstructor(0));
+      expect(gpc.length, 1,
           reason: 'the invalid value should have been skipped');
-      expect(gpc!.sortedByTime, true,
+      expect(gpc.sortedByTime, true,
           reason: 'the invalid value should have been skipped');
 
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.length, 1,
-          reason: 'duplicate value should have been skipped');
-      expect(gpc!.sortedByTime, true,
+      gpc.add(itemConstructor(1));
+      expect(gpc.length, 1, reason: 'duplicate value should have been skipped');
+      expect(gpc.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
 
-      gpc!.add(itemConstructor(3));
-      expect(gpc!.length, 2, reason: 'valid value should have been allowed');
-      expect(gpc!.sortedByTime, true,
+      gpc.add(itemConstructor(3));
+      expect(gpc.length, 2, reason: 'valid value should have been allowed');
+      expect(gpc.sortedByTime, true,
           reason: 'list with three incrementing items should be sorted');
     });
 
     test('Throwing behaviour in case of sorting violating items', () {
-      gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
-      gpc!.add(itemConstructor(1));
-      expect(gpc!.sortedByTime, true,
+      gpc.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+      gpc.add(itemConstructor(1));
+      expect(gpc.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
 
       expect(() {
-        gpc!.add(itemConstructor(0));
+        gpc.add(itemConstructor(0));
       }, throwsA(isA<GpsPointsViewSortingException>()));
-      expect(gpc!.length, 1,
+      expect(gpc.length, 1,
           reason: 'the invalid value should have not been added');
-      expect(gpc!.sortedByTime, true,
+      expect(gpc.sortedByTime, true,
           reason: 'one-item list should implicitly be sorted');
-      expect(gpc!.last, itemConstructor(1),
+      expect(gpc.last, itemConstructor(1),
           reason: 'contents of existing item were changed by failed addition');
     });
 
     test('Switching sorting enforcement', () {
-      expect(gpc!.sortingEnforcement, SortingEnforcement.throwIfWrongItems,
+      expect(gpc.sortingEnforcement, SortingEnforcement.throwIfWrongItems,
           reason: 'initial state not as expected');
 
       // Create an unsorted state.
-      gpc!.sortingEnforcement = SortingEnforcement.notRequired;
-      gpc!.add(itemConstructor(1));
-      gpc!.add(itemConstructor(0));
+      gpc.sortingEnforcement = SortingEnforcement.notRequired;
+      gpc.add(itemConstructor(1));
+      gpc.add(itemConstructor(0));
 
       expect(() {
-        gpc!.sortingEnforcement = SortingEnforcement.skipWrongItems;
+        gpc.sortingEnforcement = SortingEnforcement.skipWrongItems;
       }, throwsA(isA<GpsPointsViewSortingException>()),
           reason: 'should not switch to skipWrongItems while unsorted');
       expect(() {
-        gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+        gpc.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
       }, throwsA(isA<GpsPointsViewSortingException>()),
           reason: 'should not switch to throwIfWrongItems while unsorted');
     });
   });
 
   test('checkContentsSortedByTime', () {
-    expect(gpc!.checkContentsSortedByTime(), true,
+    expect(gpc.checkContentsSortedByTime(), true,
         reason: 'Empty list is by definition sorted');
 
-    gpc!.sortingEnforcement = SortingEnforcement.notRequired;
-    gpc!.add(itemConstructor(1));
-    gpc!.add(itemConstructor(0));
-    gpc!.add(itemConstructor(2));
+    gpc.sortingEnforcement = SortingEnforcement.notRequired;
+    gpc.add(itemConstructor(1));
+    gpc.add(itemConstructor(0));
+    gpc.add(itemConstructor(2));
 
-    expect(gpc!.sortedByTime, false,
+    expect(gpc.sortedByTime, false,
         reason: 'list is incorrectly marked as sorted');
 
-    expect(gpc!.checkContentsSortedByTime(), false,
+    expect(gpc.checkContentsSortedByTime(), false,
         reason: 'entire list is unsorted');
-    expect(gpc!.checkContentsSortedByTime(1), true,
+    expect(gpc.checkContentsSortedByTime(1), true,
         reason: 'list is partially unsorted');
-    expect(gpc!.checkContentsSortedByTime(2), true,
+    expect(gpc.checkContentsSortedByTime(2), true,
         reason: 'last item of the list is by defintion sorted');
-    expect(gpc!.sortedByTime, false,
+    expect(gpc.sortedByTime, false,
         reason:
             'list is incorrectly marked as sorted because part of it is sorted');
-    expect(gpc!.checkContentsSortedByTime(gpc!.length), true,
+    expect(gpc.checkContentsSortedByTime(gpc.length), true,
         reason:
             'contents beyond list are treated as empty list and hence sorted');
   });
@@ -327,11 +325,11 @@ void testGpsPointsCollection<T extends GpsPoint>(
   group('addAllStartingAt with (partially) unsorted source', () {
     runTest(dynamic source) {
       // Tests for adding invalid data.
-      gpc!.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
-      gpc!.add(itemConstructor(0));
+      gpc.sortingEnforcement = SortingEnforcement.throwIfWrongItems;
+      gpc.add(itemConstructor(0));
       for (var i = 0; i <= 1; i++) {
         expect(() {
-          gpc!.addAllStartingAt(source, i);
+          gpc.addAllStartingAt(source, i);
         }, throwsA(isA<GpsPointsViewSortingException>()),
             reason:
                 'Should not be able to add unsorted source starting from index $i');
@@ -421,19 +419,19 @@ void testGpsPointsCollection<T extends GpsPoint>(
 
   test('Time comparisons', () {
     // Comparisons on all-internal items (may have optimized code paths).
-    gpc!.add(itemConstructor(1));
+    gpc.add(itemConstructor(1));
     final newItem = itemConstructor(2);
-    gpc!.add(newItem);
-    expect(gpc!.compareElementTime(1, 1), TimeComparisonResult.same);
-    expect(gpc!.compareElementTime(0, 1), TimeComparisonResult.before);
-    expect(gpc!.compareElementTime(1, 0), TimeComparisonResult.after);
+    gpc.add(newItem);
+    expect(gpc.compareElementTime(1, 1), TimeComparisonResult.same);
+    expect(gpc.compareElementTime(0, 1), TimeComparisonResult.before);
+    expect(gpc.compareElementTime(1, 0), TimeComparisonResult.after);
 
     // Comparisons on hybrid internal and standalone points
-    expect(gpc!.compareElementTimeWithSeparateItem(0, newItem),
+    expect(gpc.compareElementTimeWithSeparateItem(0, newItem),
         TimeComparisonResult.before);
-    expect(gpc!.compareElementTimeWithSeparateItem(0, itemConstructor(0)),
+    expect(gpc.compareElementTimeWithSeparateItem(0, itemConstructor(0)),
         TimeComparisonResult.after);
-    expect(gpc!.compareElementTimeWithSeparateItem(1, newItem),
+    expect(gpc.compareElementTimeWithSeparateItem(1, newItem),
         TimeComparisonResult.same);
   });
 }
