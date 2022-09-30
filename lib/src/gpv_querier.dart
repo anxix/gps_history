@@ -11,7 +11,7 @@
 import 'dart:typed_data';
 
 import 'base.dart';
-import 'base_containers.dart';
+import 'base_collections.dart';
 
 /// A view that internally only stores indices in a referenced
 /// collections, and queries the collection for the points when required.

@@ -12,7 +12,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'base.dart';
-import 'base_containers.dart';
+import 'base_collections.dart';
 import 'utils/binary_conversions.dart';
 import 'utils/time.dart';
 

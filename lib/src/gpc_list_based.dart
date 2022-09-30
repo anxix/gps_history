@@ -9,7 +9,7 @@
  */
 
 import 'base.dart';
-import 'base_containers.dart';
+import 'base_collections.dart';
 
 /// A collection that internally stores the points in a basic list.
 ///
