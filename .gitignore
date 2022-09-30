@@ -26,3 +26,7 @@ partial.md
 
 # Generated executables
 *.exe
+
+# Test coverage files
+coverage.json
+lcov.info
