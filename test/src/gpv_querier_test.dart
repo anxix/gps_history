@@ -11,19 +11,50 @@ import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
 void main() {
-  group('Test GpvQuerier', () {
-    final points = GpcListBased<GpsPoint>()
-      ..addAll([
-        GpsPoint(time: GpsTime(1), latitude: 1, longitude: 1, altitude: 1),
-        GpsPoint(time: GpsTime(2), latitude: 2, longitude: 2, altitude: 2),
-        GpsPoint(time: GpsTime(3), latitude: 3, longitude: 3, altitude: 3),
-      ]);
+  group('GpvQuerier', () {
+    late GpcListBased<GpsPoint> points;
 
-    test('Check backwards', () {
-      var view = GpvQuerier(points, Int32List.fromList([2, 0]));
+    setUp(() {
+      points = GpcListBased<GpsPoint>();
+      for (var i = 0; i < 10; i++) {
+        points.add(GpsPoint(
+            time: GpsTime(i + 1),
+            latitude: i.toDouble(),
+            longitude: i.toDouble(),
+            altitude: i.toDouble()));
+      }
+    });
+
+    test('Backwards', () {
+      final view = GpvQuerier(points, Int32List.fromList([2, 0]));
       expect(view.length, 2, reason: 'incorrect length');
       expect(view[0], points[2], reason: 'incorrect first item');
       expect(view[1], points[0], reason: 'incorrect last item');
+    });
+
+    test('Sublist', () {
+      final view =
+          GpvQuerier(points, Int32List.fromList([0, 1, 2, 3, 4, 5, 6]));
+      final sublist = view.sublist(3, 5);
+
+      expect(sublist.runtimeType, view.runtimeType,
+          reason: 'expected same type to be returned by sublist()');
+
+      expect(sublist.length, 2, reason: 'incorrect length');
+
+      for (var i = 0; i < sublist.length; i++) {
+        expect(sublist[i], view[i + 3], reason: 'Wrong item at position $i');
+      }
+    });
+
+    test('NewEmpty', () {
+      final view =
+          GpvQuerier(points, Int32List.fromList([0, 1, 2, 3, 4, 5, 6]));
+      final newEmpty = view.newEmpty();
+
+      expect(newEmpty.runtimeType, view.runtimeType,
+          reason: 'expected same type to be returned by newEmpty()');
+      expect(newEmpty.length, 0);
     });
   });
 }
