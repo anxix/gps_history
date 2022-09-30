@@ -29,16 +29,15 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// Indicate if the view is read-only and cannot be modified.
   bool get isReadonly => true;
 
-  /// Creates a copy (of the same type as this class) of the subrange of items
-  /// specified by the parameters.
+  /// Returns a new collection of the same type as the current collection
+  /// containing the elements between [start] and [end].
   ///
-  /// [startIndex] indicates, if provided, the first item that should be copied
-  /// by the query. If not provided, it defaults to 0.
+  /// If [end] is omitted, it defaults to the [length] of this collection.
   ///
-  /// [nrItems] indicates, if provided, how many items should be copied by the
-  /// query. If not provided (or null), the copying will copy till the end of
-  /// the collection (equivalent to providing (length-startIndex)).
-  GpsPointsView<T> subList({int startIndex = 0, int? nrItems});
+  /// The `start` and `end` positions must satisfy the relations
+  /// 0 ≤ `start` ≤ `end` ≤ [length].
+  /// If `end` is equal to `start`, then the returned list is empty.
+  GpsPointsView<T> sublist(int start, [int? end]);
 
   /// Creates a collection of the same type as this, optionally with
   /// a starting [capacity] for children that support that.
@@ -341,7 +340,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
   void _addAllStartingAt_CollectionSource(
       GpsPointsCollection<T> source, int skipItems, int? nrItems) {
     // Stop if there's nothing to add.
-    if ((nrItems != null && nrItems < 1) || source.length - skipItems < 1) {
+    if ((nrItems != null && nrItems < 1) || (source.length - skipItems < 1)) {
       return;
     }
 
@@ -418,10 +417,14 @@ abstract class GpsPointsCollection<T extends GpsPoint>
       [int skipItems = 0, int? nrItems]);
 
   @override
-  GpsPointsCollection<T> subList({int startIndex = 0, int? nrItems}) {
+  GpsPointsCollection<T> sublist(int start, [int? end]) {
+    RangeError.checkValidRange(start, end, length, 'start', 'end',
+        'incorrect parameters for sublist() call');
+
     final result = newEmpty() as GpsPointsCollection<T>;
 
-    result.addAllStartingAt(this, startIndex, nrItems);
+    end = end ?? length;
+    result.addAllStartingAt(this, start, end - start);
     return result;
   }
 

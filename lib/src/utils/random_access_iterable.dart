@@ -15,9 +15,7 @@
 /// and similar functionality. This can not be enforced, but code using it
 /// will rely on these operations not looping over the entire contents before
 /// returning a result.
-abstract class RandomAccessIterable<T> extends Iterable<T>
-//with IterableMixin<T>
-{
+abstract class RandomAccessIterable<T> extends Iterable<T> {
   T operator [](int index);
 
   @override
@@ -51,11 +49,12 @@ abstract class RandomAccessIterable<T> extends Iterable<T>
   RandomAccessIterable<T> skip(int count) {
     return RandomAccessSkipIterable<T>(this, count);
   }
+
 // TODO: implement take()
-  // @override
-  // RandomAccessIterable<T> take(int count) {
-  //   return RandomAccessSkipIterable<T>(this, count);
-  // }
+  @override
+  RandomAccessIterable<T> take(int count) {
+    return RandomAccessTakeIterable<T>(this, count);
+  }
 }
 
 /// Iterator support for [RandomAccessIterable].
@@ -67,19 +66,23 @@ abstract class RandomAccessIterable<T> extends Iterable<T>
 /// expose the [RandomAccessSkipIterable] interface for implementation in
 /// third party code.
 class RandomAccessIterator<T> extends Iterator<T> {
-  int _index = -1;
+  late int _index;
+  late int _end;
   final RandomAccessIterable<T> _source;
 
   /// Creates the iterator for the specified [_source] iterable, optionally
-  /// allowing to skip [skipCount] items at the start of the iteration.
-  RandomAccessIterator(this._source, [int skipCount = 0]) {
-    assert(skipCount >= 0);
-    _index += skipCount;
+  /// allowing to skip [skipCount] items at the start of the iteration and
+  /// stop the iteration at position [end] (skipCount <= end <= [length]).
+  RandomAccessIterator(this._source, [int skipCount = 0, int? end]) {
+    RangeError.checkValidRange(skipCount, end, _source.length, 'skipCount',
+        'end', 'Incorrect paramters for RandomAccessIterator');
+    _index = skipCount - 1;
+    _end = end ?? _source.length;
   }
 
   @override
   bool moveNext() {
-    if (_index + 1 >= _source.length) {
+    if (_index + 1 >= _end) {
       return false;
     }
 
@@ -132,64 +135,37 @@ class RandomAccessSkipIterable<T> extends RandomAccessIterable<T> {
   }
 }
 
-// class RandomAccessTakeIterable<E> extends RandomAccessIterable<E> {
-//   final RandomAccessIterable<E> _iterable;
-//   final int _takeCount;
+/// An iterable aimed at only taking a limited number of items at the beginning.
+class RandomAccessTakeIterable<E> extends RandomAccessIterable<E> {
+  final RandomAccessIterable<E> _iterable;
+  final int _takeCount;
 
-//   factory RandomAccessTakeIterable(
-//       RandomAccessIterable<E> iterable, int takeCount) {
-//     ArgumentError.checkNotNull(takeCount, "takeCount");
-//     RangeError.checkNotNegative(takeCount, "takeCount");
-//     return RandomAccessTakeIterable<E>._(iterable, takeCount);
-//   }
+  factory RandomAccessTakeIterable(
+      RandomAccessIterable<E> iterable, int takeCount) {
+    ArgumentError.checkNotNull(takeCount, "takeCount");
+    RangeError.checkNotNegative(takeCount, "takeCount");
+    return RandomAccessTakeIterable<E>._(iterable, takeCount);
+  }
 
-//   RandomAccessTakeIterable._(this._iterable, this._takeCount);
+  RandomAccessTakeIterable._(this._iterable, this._takeCount);
 
-//   @override
-//   RandomAccessIterator<E> get iterator {
-//     return RandomAccessTakeIterator<E>(_iterable, _takeCount);
-//   }
+  @override
+  RandomAccessIterator<E> get iterator {
+    return RandomAccessIterator<E>(_iterable, 0, _takeCount);
+  }
 
-//   @override
-//   int get length {
-//     int iterableLength = _iterable.length;
-//     if (iterableLength > _takeCount) return _takeCount;
-//     return iterableLength;
-//   }
+  @override
+  int get length {
+    int iterableLength = _iterable.length;
+    if (iterableLength > _takeCount) return _takeCount;
+    return iterableLength;
+  }
 
-//   @override
-//   E operator [](int index) {
-//     if (index >= length) {
-//       throw IndexError(index, this, '', '', length);
-//     }
-//     return _iterable[index];
-//   }
-// }
-
-// class RandomAccessTakeIterator<E> extends RandomAccessIterator<E> {
-//   int _remaining;
-
-//   RandomAccessTakeIterator(super._source, this._remaining) {
-//     assert(_remaining >= 0);
-//   }
-
-//   @override
-//   bool moveNext() {
-//     _remaining--;
-//     if (_remaining >= 0) {
-//       return _source.iterator.moveNext();
-//     }
-//     _remaining = -1;
-//     return false;
-//   }
-
-//   @override
-//   E get current {
-//     // Before NNBD, this returned null when iteration was complete. In order to
-//     // avoid a hard breaking change, we return "null as E" in that case so that
-//     // if strong checking is not enabled or E is nullable, the existing
-//     // behavior is preserved.
-//     if (_remaining < 0) return null as E;
-//     return _source.iterator.current;
-//   }
-// }
+  @override
+  E operator [](int index) {
+    if (index >= length) {
+      throw IndexError(index, this, '', '', length);
+    }
+    return _iterable[index];
+  }
+}

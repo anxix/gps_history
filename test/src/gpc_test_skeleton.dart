@@ -195,6 +195,26 @@ void testGpsPointsCollection<T extends GpsPoint>(
     });
   });
 
+  group('Sublist', () {
+    test('Zero length', () {
+      final result = gpc.sublist(0);
+      expect(result.runtimeType, gpc.runtimeType,
+          reason: 'expected sublist of same type');
+      expect(result.length, 0);
+      expect(result.runtimeType, gpc.runtimeType);
+    });
+
+    test('Whole list', () {
+      final src = makeList(5);
+      gpc.addAll(src);
+      final result = gpc.sublist(0);
+      expect(result.length, src.length, reason: 'wrong length');
+      for (var i = 0; i < result.length; i++) {
+        expect(result[i], gpc[i], reason: 'incorrect item at position $i');
+      }
+    });
+  });
+
   group('Test $name - iterator behaviour:', () {
     test('forEach', () {
       // Add three points. Start from 1 rather than 0, because we'll use
@@ -235,6 +255,40 @@ void testGpsPointsCollection<T extends GpsPoint>(
       expect(partialGpc.length, 1);
       for (var i = 0; i < partialGpc.length; i++) {
         expect(partialGpc[i], gpc[i + 2],
+            reason: 'Invalid point at position $i');
+      }
+    });
+
+    test('Take', () {
+      gpc.addAll(makeList(5));
+
+      // Take nothing.
+      var partialGpc = gpc.take(0);
+      expect(partialGpc.length, 0, reason: 'no elements to take');
+
+      partialGpc = gpc.take(2);
+      expect(partialGpc.length, 2,
+          reason: 'should have specified number of elements');
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc[i], reason: 'Invalid point at position $i');
+      }
+
+      // Take everything, with parameter greater than length.
+      partialGpc = gpc.take(gpc.length + 1);
+      expect(partialGpc.length, gpc.length,
+          reason: 'should have taken all elements');
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc[i], reason: 'Invalid point at position $i');
+      }
+    });
+
+    test('Skip and take', () {
+      gpc.addAll(makeList(10));
+
+      final partialGpc = gpc.skip(3).take(4);
+      expect(partialGpc.length, 4, reason: 'wrong number of elements taken');
+      for (var i = 0; i < partialGpc.length; i++) {
+        expect(partialGpc[i], gpc[i + 3],
             reason: 'Invalid point at position $i');
       }
     });

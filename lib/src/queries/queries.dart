@@ -146,8 +146,8 @@ class QueryListItems<C extends GpsPointsView> extends Query<C, SubList<C>> {
 
   @override
   SubList<C> query(C collection) {
-    return SubList<C>(_startIndex,
-        collection.subList(startIndex: _startIndex, nrItems: _nrItems) as C);
+    final end = _nrItems == null ? collection.length : _startIndex + _nrItems!;
+    return SubList<C>(_startIndex, collection.sublist(_startIndex, end) as C);
   }
 }
 
