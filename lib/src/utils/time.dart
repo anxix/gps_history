@@ -177,8 +177,8 @@ class GpsTime {
   static const minutesPerHour = 60;
   static const secondsPerHour = secondsPerMinute * minutesPerHour;
   static const hoursPerDay = 24;
-  static const secondsPerDay = secondsPerHour * hoursPerDay;
   static const minutesPerday = minutesPerHour * hoursPerDay;
+  static const secondsPerDay = secondsPerHour * hoursPerDay;
 
   /// Checks that the specified [value] is valid for [secondsSinceEpoch] and
   /// throws a [RangeError] if that is not the case, returns it otherwise.
