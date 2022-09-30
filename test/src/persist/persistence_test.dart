@@ -418,13 +418,13 @@ void testReadWrite() {
     test('persister readonly', () async {
       gpc!.isReadonly = true;
       expect(() async => await persistence!.read(gpc!, Stream.value([])),
-          throwsA(isA<ReadonlyContainerException>()));
+          throwsA(isA<ReadonlyCollectionException>()));
     });
 
     test('persister not empty', () async {
       gpc!.add(GpsPoint.allZero);
       expect(() async => await persistence!.read(gpc!, Stream.value([])),
-          throwsA(isA<NotEmptyContainerException>()));
+          throwsA(isA<NotEmptyCollectionException>()));
     });
 
     test('persister signature wrong', () async {
