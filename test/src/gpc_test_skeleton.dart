@@ -272,6 +272,10 @@ void testGpsPointsCollection<T extends GpsPoint>(
       for (var i = 0; i < partialGpc.length; i++) {
         expect(partialGpc[i], gpc[i], reason: 'Invalid point at position $i');
       }
+      // Make sure indexing outside the taken range doesn't work.
+      expect(() {
+        partialGpc[3];
+      }, throwsA(isA<IndexError>()));
 
       // Take everything, with parameter greater than length.
       partialGpc = gpc.take(gpc.length + 1);
