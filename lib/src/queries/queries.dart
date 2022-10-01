@@ -107,6 +107,10 @@ class CollectionInfo extends QueryResult {
 
 /// Queries generic information about the collection and returns it as result
 /// of [CollectionInfo] type.
+///
+/// This type of query can be useful e.g. for determining how many rows to
+/// report in a table of all points, or what time span a timeline should
+/// display.
 class QueryCollectionInfo<C extends GpsPointsView>
     extends Query<C, CollectionInfo> {
   @override
@@ -132,6 +136,8 @@ class CollectionItems<C extends GpsPointsView> extends QueryResult {
 ///
 /// The result will be a copy of the data, so that it can be transferred
 /// cheaply via an isolate port.
+///
+/// This type of query can be used to e.g. populate rows in a table.
 class QueryCollectionItems<C extends GpsPointsView>
     extends Query<C, CollectionItems<C>> {
   final int _startIndex;
