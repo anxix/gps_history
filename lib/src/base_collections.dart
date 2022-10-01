@@ -427,12 +427,11 @@ abstract class GpsPointsCollection<T extends GpsPoint>
 
   @override
   GpsPointsCollection<T> sublist(int start, [int? end]) {
-    RangeError.checkValidRange(start, end, length, 'start', 'end',
+    end = RangeError.checkValidRange(start, end, length, 'start', 'end',
         'incorrect parameters for sublist() call');
 
     final result = newEmpty() as GpsPointsCollection<T>;
 
-    end = end ?? length;
     result.addAllStartingAt(this, start, end - start);
     return result;
   }
