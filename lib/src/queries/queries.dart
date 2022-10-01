@@ -187,7 +187,7 @@ class LocationByTime<P extends GpsPoint> extends QueryResult {
 ///
 /// This type of query can be used to e.g. show a marker on a map based on
 /// a selected moment in time.
-class QueryLocationByTime<C extends GpsPointsCollection<P>, P extends GpsPoint>
+class QueryLocationByTime<C extends GpsPointsView<P>, P extends GpsPoint>
     extends Query<C, LocationByTime<P>> {
   final GpsTime _time;
   final int? _toleranceSeconds;
