@@ -54,6 +54,17 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// of filling the list.
   @protected
   GpsPointsView<T> newEmpty({int? capacity});
+
+  /// Performs [compareTime] for the elements in the positions [elementNrA]
+  /// and [elementNrB], then returns the result.
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// implementations, for example if they support overlapping time or if
+  /// they have a way to do quick time comparisons without doing full item
+  /// retrieval.
+  TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
+    return compareTime(this[elementNrA].time, this[elementNrB].time);
+  }
 }
 
 /// Indicates how the sorting requirement for [GpsPointsCollection] should
@@ -162,17 +173,6 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // Note that detectedSorted is not necessarily same as _sortedByTime,
     // since the comparison may have skipped a number of items at the beginning!
     return detectedSorted;
-  }
-
-  /// Performs [compareTime] for the elements in the positions [elementNrA]
-  /// and [elementNrB], then returns the result.
-  ///
-  /// Children my override this method to implement more efficient or custom
-  /// implementations, for example if they support overlapping time or if
-  /// they have a way to do quick time comparisons without doing full item
-  /// retrieval.
-  TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
-    return compareTime(this[elementNrA].time, this[elementNrB].time);
   }
 
   /// Performs [compareTime] for the item in the positions [elementNrA]
