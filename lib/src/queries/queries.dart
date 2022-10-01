@@ -66,7 +66,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import 'package:gps_history/gps_history.dart';
+import '../base.dart';
+import '../base_collections.dart';
+import '../utils/time.dart';
+import 'search.dart';
 
 /// Abstract ancestor class for query results.
 ///
@@ -202,8 +205,27 @@ class QueryLocationByTime<C extends GpsPointsView<P>, P extends GpsPoint>
 
   @override
   LocationByTime<P> query(C collection) {
-    // TODO: implement
-    return LocationByTime(_time, _toleranceSeconds, null);
+    int compareFunc(int a, int b) {
+      final result = collection.compareElementTime(a, b);
+      switch (result) {
+        case TimeComparisonResult.before:
+          return -1;
+        case TimeComparisonResult.same:
+          return 0;
+        case TimeComparisonResult.after:
+          return 1;
+        default:
+          throw ArgumentError(
+              'Comparison on $collection returns overlapping values at ($a, $b). '
+              'This is not allowed.');
+      }
+    }
+
+    final searchAlgorithm = SearchAlgorithm.getBestAlgorithm(
+        collection, collection.sortedByTime, compareFunc);
+    final resultIndex = searchAlgorithm.find();
+    return LocationByTime(_time, _toleranceSeconds,
+        resultIndex != null ? collection[resultIndex] : null);
   }
 }
 
