@@ -50,15 +50,18 @@ class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
 
   @override
   bool get sortedByTime {
+    // If cached, return cached value.
     if (_sortedByTime != null) {
       return _sortedByTime!;
     }
 
-    // If the wrapped collection is sorted by time, it's enough to check that
-    // the indices list is in incremental order.
+    // Not cached -> determine state now. Start out assuming it's sorted,
+    // then try to prove that's not the case.
+    _sortedByTime = true;
+
     if (_collection.sortedByTime) {
-      // Assume it's sorted, and then go find out to prove the opposite.
-      _sortedByTime = true;
+      // If the wrapped collection is sorted by time, it's enough to check that
+      // the indices list is in incremental order.
       for (var i = 1; i < _indices.length; i++) {
         if (_indices[i - 1] >= _indices[i]) {
           _sortedByTime = false;

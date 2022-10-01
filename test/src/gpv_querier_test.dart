@@ -62,5 +62,39 @@ void main() {
           reason: 'expected same type to be returned by newEmpty()');
       expect(newEmpty.length, 0);
     });
+
+    test('Sorting from sorted list', () {
+      var view = GpvQuerier(points, Int32List.fromList([1, 2, 3]));
+      expect(view.sortedByTime, true);
+
+      view = GpvQuerier(points, Int32List.fromList([1, 2, 2]));
+      expect(view.sortedByTime, false);
+
+      view = GpvQuerier(points, Int32List.fromList([3, 2]));
+      expect(view.sortedByTime, false);
+
+      view = GpvQuerier(points, Int32List.fromList([3]));
+      expect(view.sortedByTime, true);
+
+      // The empty case.
+      view = GpvQuerier(points, Int32List(0));
+      expect(view.sortedByTime, true);
+    });
+
+    test('Sorting from unsorted list', () {
+      var unsortedPoints = GpcListBased()
+        ..sortingEnforcement = SortingEnforcement.notRequired;
+      unsortedPoints.add(points[9]);
+      unsortedPoints.add(points[8]);
+      unsortedPoints.add(points[7]);
+      // Sanity check.
+      expect(unsortedPoints.sortedByTime, false);
+
+      var view = GpvQuerier(unsortedPoints, Int32List.fromList([0, 1, 2]));
+      expect(view.sortedByTime, false);
+
+      view = GpvQuerier(unsortedPoints, Int32List.fromList([2, 1, 0]));
+      expect(view.sortedByTime, true);
+    });
   });
 }
