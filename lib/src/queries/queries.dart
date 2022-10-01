@@ -205,22 +205,7 @@ class QueryLocationByTime<C extends GpsPointsView<P>, P extends GpsPoint>
 
   @override
   LocationByTime<P> query(C collection) {
-    int compareFunc(int a, int b) {
-      final result = collection.compareElementTime(a, b);
-      switch (result) {
-        case TimeComparisonResult.before:
-          return -1;
-        case TimeComparisonResult.same:
-          return 0;
-        case TimeComparisonResult.after:
-          return 1;
-        default:
-          throw ArgumentError(
-              'Comparison on $collection returns overlapping values at ($a, $b). '
-              'This is not allowed.');
-      }
-    }
-
+    final compareFunc = makeTimeCompareFunc(collection, _time);
     final searchAlgorithm = SearchAlgorithm.getBestAlgorithm(
         collection, collection.sortedByTime, compareFunc);
     final resultIndex = searchAlgorithm.find();

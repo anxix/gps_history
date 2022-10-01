@@ -13,8 +13,35 @@ import 'package:meta/meta.dart';
 import '../base.dart';
 import '../base_collections.dart';
 import '../gpc_efficient.dart';
+import '../utils/time.dart';
 
-typedef CompareFunc = Comparator<int>;
+typedef CompareTargetToItemFunc = int Function(int itemNr);
+
+/// Creates and returns a function that can be use used to compare an item
+/// at a specific position in [collection] to a given [time], returning
+/// -1 if the item in the [collection] is before [time], 0 if they're the same
+/// or overlapping, and 1 if the item in the [collection] is after [time].
+CompareTargetToItemFunc makeTimeCompareFunc(
+    GpsPointsView collection, GpsTime time) {
+  return (int itemIndex) {
+    final result =
+        collection.compareElementTimeWithSeparateTime(itemIndex, time);
+    switch (result) {
+      case TimeComparisonResult.before:
+        return -1;
+      // same and overlapping both count as matches.
+      case TimeComparisonResult.same:
+      case TimeComparisonResult.overlapping:
+        return 0;
+      case TimeComparisonResult.after:
+        return 1;
+      default:
+        throw ArgumentError(
+            'Comparison on $collection returns unexpected value $result for ($itemIndex, $time). '
+            'This is not allowed.');
+    }
+  };
+}
 
 /// Abstract class representing a search algorithm looking for entities of type
 /// [P] in a collection of type [C].
@@ -23,7 +50,7 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>> {
   /// type [P] in the given [collection] of type [C].
   static SearchAlgorithm
       getBestAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>>(
-          C collection, bool isSorted, CompareFunc compareFunc) {
+          C collection, bool isSorted, CompareTargetToItemFunc compareFunc) {
     if (isSorted) {
       // Sorted collection can do a binary search.
       if (collection is GpcEfficient) {
@@ -47,7 +74,7 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>> {
   final C collection;
 
   /// The comparison function that will be used to identify the desired item.
-  final CompareFunc compareFunc;
+  final CompareTargetToItemFunc compareFunc;
 
   SearchAlgorithm(this.collection, this.compareFunc);
 
@@ -61,7 +88,9 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>> {
   /// which the [compareFunc] returns [ComparisonResult.equal]. If such an
   /// item is not fount, the function returns null.
   ///
-  /// The arguments must satisfy: 0 <= [start] <= [end] <= [length].
+  /// The arguments must satisfy: 0 <= [start] <= [end] <= [length]. In other
+  /// words, [start] will be considered, but the matching will stop at element
+  /// index [end]-1.
   int? find([int start = 0, int? end]) {
     end = RangeError.checkValidRange(start, end, collection.length, 'start',
         'end', 'Invalid parameters to $runtimeType.find.');
@@ -75,8 +104,15 @@ class LinearSearch<P extends GpsPoint, C extends GpsPointsView<P>>
 
   @override
   int? findUnsafe(int start, int end) {
-    // TODO: implement findUnsafe
-    throw UnimplementedError();
+    // Slow implementation, as we've got to do a linear search.
+    for (var i = start; i < end; i++) {
+      if (compareFunc(i) == 0) {
+        return i;
+      }
+    }
+
+    // Linear search delivered nothing -> return null.
+    return null;
   }
 }
 
@@ -96,8 +132,37 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>>
 
   @override
   int? findUnsafe(int start, int end) {
-    // TODO: implement findUnsafe
-    throw UnimplementedError();
+    while (true) {
+      // Impossible situation -> have not found anything.
+      if (start >= end) {
+        return null;
+      }
+
+      // Only one option -> either it's a match, or there's no match.
+      if (start == end - 1) {
+        if (compareFunc(start) == 0) {
+          return start;
+        } else {
+          return null;
+        }
+      }
+
+      // Can't tell yet -> subdivide and look in the upper/lower half depending
+      // on how the midpoint works out.
+      final mid = start + (end - start) ~/ 2;
+      final midComparison = compareFunc(mid);
+      if (midComparison == 0) {
+        return mid;
+      } else {
+        if (midComparison < 0) {
+          // mid is before the item we're looking for -> look from mid+1 to end
+          start = mid + 1;
+        } else {
+          // mid is after the item we're looking for -> look from start to mid (excluding mid)
+          end = mid;
+        }
+      }
+    }
   }
 }
 
