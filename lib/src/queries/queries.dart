@@ -124,8 +124,11 @@ class QueryCollectionInfo<C extends GpsPointsView>
 
 /// Query result for [QueryCollectionItems].
 class CollectionItems<C extends GpsPointsView> extends QueryResult {
+  /// The starting index for which the query was executed.
   final int startIndex;
 
+  /// A collection of the same type as the one the query was apllied to,
+  /// containing copies of the requested items.
   final C collection;
 
   CollectionItems(this.startIndex, this.collection);
@@ -164,6 +167,44 @@ class QueryCollectionItems<C extends GpsPointsView>
   }
 }
 
-// class QueryTime extends Query {}
+/// Query result for [QueryLocationByTime].
+class LocationByTime<P extends GpsPoint> extends QueryResult {
+  /// The time for which the query was executed.
+  final GpsTime time;
+
+  /// The tolerance that was specified for finding the location (if no exact
+  /// match was available).
+  final int? toleranceSeconds;
+
+  /// The point that was found
+  final P? location;
+
+  LocationByTime(this.time, this.toleranceSeconds, this.location);
+}
+
+/// Finds the location at a specific time if available, or the nearest within
+/// a specified tolerance, returning it as a result of [LocationByTime] type.
+///
+/// This type of query can be used to e.g. show a marker on a map based on
+/// a selected moment in time.
+class QueryLocationByTime<C extends GpsPointsCollection<P>, P extends GpsPoint>
+    extends Query<C, LocationByTime<P>> {
+  final GpsTime _time;
+  final int? _toleranceSeconds;
+
+  /// Creates the query with [time] indicating at what time we want to find a
+  /// location. The optionsl [toleranceSeconds], if provided, allows finding
+  /// a location that is nearest to [time], within +/- the tolerance if no
+  /// exact match is identified.
+  QueryLocationByTime(GpsTime time, int? toleranceSeconds)
+      : _time = time,
+        _toleranceSeconds = toleranceSeconds;
+
+  @override
+  LocationByTime<P> query(C collection) {
+    // TODO: implement
+    return LocationByTime(_time, _toleranceSeconds, null);
+  }
+}
 
 // class QueryBoundingBox extends Query {}
