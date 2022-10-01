@@ -71,7 +71,7 @@ class RandomAccessIterator<T> extends Iterator<T> {
 
   /// Creates the iterator for the specified [_source] iterable, optionally
   /// allowing to skip [skipCount] items at the start of the iteration and
-  /// stop the iteration at position [end] (skipCount <= end <= [length]).
+  /// stop the iteration at position [end] ([skipCount] <= [end] <= [length]).
   RandomAccessIterator(this._source, [int skipCount = 0, int? end]) {
     _index = skipCount - 1;
     _end = RangeError.checkValidRange(skipCount, end, _source.length,
