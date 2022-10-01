@@ -29,6 +29,13 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// Indicate if the view is read-only and cannot be modified.
   bool get isReadonly => true;
 
+  /// Indicates whether the contents are sorted in increasing order of time
+  /// value. If this is the case, time-based queries can be faster by performing
+  /// a binary search. For every point in time only one entity is allowed to
+  /// provide a location value, i.e. a list is not sorted if it contains two
+  /// identical elements consecutively.
+  bool get sortedByTime;
+
   /// Returns a new collection of the same type as the current collection
   /// containing the elements between [start] and [end].
   ///
@@ -107,9 +114,7 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     }
   }
 
-  /// Indicates whether the contents are sorted in increasing order of time
-  /// value. If this is the case, time-based queries can be faster by performing
-  /// a binary search.
+  @override
   bool get sortedByTime => _sortedByTime;
 
   /// Checks whether the contents are sorted by increasing time in cases where
@@ -135,12 +140,16 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     for (var itemNr = skipItems + 1; itemNr < endIndex; itemNr++) {
       switch (compareElementTime(itemNr - 1, itemNr)) {
         case TimeComparisonResult.before:
-          continue;
+          break; // Breaks the swithc, not the for loop.
         case TimeComparisonResult.same:
         case TimeComparisonResult.after:
         case TimeComparisonResult.overlapping:
           detectedSorted = false;
-          break;
+          break; // Breaks the switch, not the for loop.
+      }
+      // Stop the loop as soon as we find it's not sorted.
+      if (!detectedSorted) {
+        break;
       }
     }
 

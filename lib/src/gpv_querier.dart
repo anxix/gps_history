@@ -12,10 +12,13 @@ import 'dart:typed_data';
 
 import 'base.dart';
 import 'base_collections.dart';
+import 'utils/time.dart';
 
 /// A view that internally only stores indices in a referenced
 /// collections, and queries the collection for the points when required.
 class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
+  bool? _sortedByTime;
+
   /// The reference collection of points, which will be used to return the
   /// actual points.
   final GpsPointsCollection<T> _collection;
@@ -44,4 +47,36 @@ class GpvQuerier<T extends GpsPoint> extends GpsPointsView<T> {
 
   @override
   T operator [](int index) => _collection[_indices[index]];
+
+  @override
+  bool get sortedByTime {
+    if (_sortedByTime != null) {
+      return _sortedByTime!;
+    }
+
+    // If the wrapped collection is sorted by time, it's enough to check that
+    // the indices list is in incremental order.
+    if (_collection.sortedByTime) {
+      // Assume it's sorted, and then go find out to prove the opposite.
+      _sortedByTime = true;
+      for (var i = 1; i < _indices.length; i++) {
+        if (_indices[i - 1] >= _indices[i]) {
+          _sortedByTime = false;
+          break;
+        }
+      }
+    } else {
+      // Wrapped collection is not sorted by time, but the indices may have
+      // been provided in an order such that the result is sorted.
+      for (var itemNr = 1; itemNr < length; itemNr++) {
+        if (comparePointTimes(this[itemNr - 1], this[itemNr]) !=
+            TimeComparisonResult.before) {
+          _sortedByTime = false;
+          break;
+        }
+      }
+    }
+
+    return _sortedByTime!;
+  }
 }
