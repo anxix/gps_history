@@ -14,9 +14,7 @@ import '../base.dart';
 import '../base_collections.dart';
 import '../gpc_efficient.dart';
 
-enum ComparisonResult { lower, equal, higher }
-
-typedef CompareFunc = ComparisonResult Function(int index1, int index2);
+typedef CompareFunc = Comparator<int>;
 
 /// Abstract class representing a search algorithm looking for entities of type
 /// [P] in a collection of type [C].
