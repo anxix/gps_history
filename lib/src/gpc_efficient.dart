@@ -335,6 +335,15 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
   }
 
   @override
+  TimeComparisonResult compareElementTimeWithSeparateTime(
+      int elementNrA, GpsTime timeB) {
+    final elementTime = _getUint32(_elementNrToByteOffset(elementNrA));
+    final itemTime = Conversions.gpsTimeToUint32(timeB);
+
+    return compareIntRepresentationTime(elementTime, itemTime);
+  }
+
+  @override
   TimeComparisonResult compareElementTimeWithSeparateItem(
       int elementNrA, T elementB) {
     final elementTime = _getUint32(_elementNrToByteOffset(elementNrA));
@@ -418,6 +427,22 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
     final startB = _getUint32(_elementNrToByteOffset(elementNrB));
     final endB =
         _getUint32(_elementNrToByteOffset(elementNrB) + _offsetEndTime);
+
+    return compareTimeSpans(
+        startA: startA, endA: endA, startB: startB, endB: endB);
+  }
+
+  @override
+  TimeComparisonResult compareElementTimeWithSeparateTime(
+      int elementNrA, GpsTime timeB) {
+    // See documentation of compareElementTime for what the various rules are.
+    // This implementation is effectively a copypaste operation, for speed
+    // reasons.
+    final startA = _getUint32(_elementNrToByteOffset(elementNrA));
+    final endA =
+        _getUint32(_elementNrToByteOffset(elementNrA) + _offsetEndTime);
+    final startB = Conversions.gpsTimeToUint32(timeB);
+    final endB = Conversions.gpsTimeToUint32(timeB);
 
     return compareTimeSpans(
         startA: startA, endA: endA, startB: startB, endB: endB);

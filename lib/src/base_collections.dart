@@ -65,6 +65,32 @@ abstract class GpsPointsView<T extends GpsPoint>
   TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
     return compareTime(this[elementNrA].time, this[elementNrB].time);
   }
+
+  /// Performs [compareTime] for the item in the positions [elementNrA]
+  /// and some separate [timeB] that's presumably not in the list, then
+  /// returns the result.
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// algorithms, for example if they support overlapping time or if
+  /// they have a way to do quick time comparisons without doing full item
+  /// retrieval.
+  TimeComparisonResult compareElementTimeWithSeparateTime(
+      int elementNrA, GpsTime timeB) {
+    return compareTime(this[elementNrA].time, timeB);
+  }
+
+  /// Performs [compareTime] for the item in the positions [elementNrA]
+  /// and some separate [elementB] that's presumably not in the list, then
+  /// returns the result.
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// algorithms, for example if they support overlapping time or if
+  /// they have a way to do quick time comparisons without doing full item
+  /// retrieval.
+  TimeComparisonResult compareElementTimeWithSeparateItem(
+      int elementNrA, T elementB) {
+    return compareTime(this[elementNrA].time, elementB.time);
+  }
 }
 
 /// Indicates how the sorting requirement for [GpsPointsCollection] should
@@ -173,19 +199,6 @@ abstract class GpsPointsCollection<T extends GpsPoint>
     // Note that detectedSorted is not necessarily same as _sortedByTime,
     // since the comparison may have skipped a number of items at the beginning!
     return detectedSorted;
-  }
-
-  /// Performs [compareTime] for the item in the positions [elementNrA]
-  /// and some separate [elementB] that's presumably not in the list, then
-  ///  returns the result.
-  ///
-  /// Children my override this method to implement more efficient or custom
-  /// algorithms, for example if they support overlapping time or if
-  /// they have a way to do quick time comparisons without doing full item
-  /// retrieval.
-  TimeComparisonResult compareElementTimeWithSeparateItem(
-      int elementNrA, T elementB) {
-    return compareTime(this[elementNrA].time, elementB.time);
   }
 
   /// Add a single [element] to the collection.

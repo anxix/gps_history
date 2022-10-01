@@ -512,15 +512,22 @@ void testGpsPointsCollection<T extends GpsPoint>(
   });
 
   test('Time comparisons', () {
-    // Comparisons on all-internal items (may have optimized code paths).
     gpc.add(itemConstructor(1));
     final newItem = itemConstructor(2);
     gpc.add(newItem);
+
+    // Comparisons on all-internal items (may have optimized code paths).
     expect(gpc.compareElementTime(1, 1), TimeComparisonResult.same);
     expect(gpc.compareElementTime(0, 1), TimeComparisonResult.before);
     expect(gpc.compareElementTime(1, 0), TimeComparisonResult.after);
 
-    // Comparisons on hybrid internal and standalone points
+    // Comparisons on hybrid internal and standalone times.
+    expect(gpc.compareElementTimeWithSeparateTime(0, newItem.time),
+        TimeComparisonResult.before);
+    expect(gpc.compareElementTimeWithSeparateTime(0, itemConstructor(0).time),
+        TimeComparisonResult.after);
+
+    // Comparisons on hybrid internal and standalone points.
     expect(gpc.compareElementTimeWithSeparateItem(0, newItem),
         TimeComparisonResult.before);
     expect(gpc.compareElementTimeWithSeparateItem(0, itemConstructor(0)),
