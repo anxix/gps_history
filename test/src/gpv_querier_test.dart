@@ -25,6 +25,12 @@ void main() {
       }
     });
 
+    test('Readonly', () {
+      final view = GpvQuerier(points, Int32List.fromList([2, 0]));
+      // GpvQuerier entities should be readonly.
+      expect(view.isReadonly, true);
+    });
+
     test('Backwards', () {
       final view = GpvQuerier(points, Int32List.fromList([2, 0]));
       expect(view.length, 2, reason: 'incorrect length');
