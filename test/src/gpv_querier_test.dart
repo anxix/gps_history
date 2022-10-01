@@ -66,6 +66,8 @@ void main() {
     test('Sorting from sorted list', () {
       var view = GpvQuerier(points, Int32List.fromList([1, 2, 3]));
       expect(view.sortedByTime, true);
+      // Ask again, because it's a separate code path.
+      expect(view.sortedByTime, true);
 
       view = GpvQuerier(points, Int32List.fromList([1, 2, 2]));
       expect(view.sortedByTime, false);
