@@ -6,6 +6,7 @@
  */
 
 import 'package:gps_history/gps_history.dart';
+import 'package:gps_history/gps_queries.dart';
 import 'package:test/test.dart';
 
 void main() {

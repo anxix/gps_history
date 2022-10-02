@@ -66,10 +66,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import '../../gps_queries.dart';
 import '../base.dart';
 import '../base_collections.dart';
 import '../utils/time.dart';
-import 'search.dart';
 
 /// Abstract ancestor class for query results.
 ///

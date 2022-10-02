@@ -13,35 +13,9 @@ import 'package:meta/meta.dart';
 import '../base.dart';
 import '../base_collections.dart';
 import '../gpc_efficient.dart';
-import '../utils/time.dart';
 
 typedef CompareTargetToItemFunc = int Function(int itemNr);
 
-/// Creates and returns a function that can be use used to compare an item
-/// at a specific position in [collection] to a given [time], returning
-/// -1 if the item in the [collection] is before [time], 0 if they're the same
-/// or overlapping, and 1 if the item in the [collection] is after [time].
-CompareTargetToItemFunc makeTimeCompareFunc(
-    GpsPointsView collection, GpsTime time) {
-  return (int itemIndex) {
-    final result =
-        collection.compareElementTimeWithSeparateTime(itemIndex, time);
-    switch (result) {
-      case TimeComparisonResult.before:
-        return -1;
-      // same and overlapping both count as matches.
-      case TimeComparisonResult.same:
-      case TimeComparisonResult.overlapping:
-        return 0;
-      case TimeComparisonResult.after:
-        return 1;
-      default:
-        throw ArgumentError(
-            'Comparison on $collection returns unexpected value $result for ($itemIndex, $time). '
-            'This is not allowed.');
-    }
-  };
-}
 
 /// Abstract class representing a search algorithm looking for entities of type
 /// [P] in a collection of type [C].

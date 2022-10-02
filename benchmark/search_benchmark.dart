@@ -6,7 +6,7 @@
  */
 
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/src/queries/search.dart';
+import 'package:gps_history/gps_queries.dart';
 
 const nrItems = 10000000;
 const nrLoops = 1000000;
