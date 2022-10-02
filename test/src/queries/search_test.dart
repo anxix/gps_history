@@ -7,10 +7,7 @@
  */
 
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/src/base.dart';
-import 'package:gps_history/src/gpc_efficient.dart';
 import 'package:gps_history/src/queries/search.dart';
-import 'package:gps_history/src/utils/time.dart';
 import 'package:test/test.dart';
 
 typedef SearchAlgorithmBuilder = SearchAlgorithm Function(
