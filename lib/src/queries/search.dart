@@ -91,8 +91,15 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   /// words, [start] will be considered, but the matching will stop at element
   /// index [end]-1.
   int? find(F target, [int start = 0, int? end]) {
-    end = RangeError.checkValidRange(start, end, collection.length, 'start',
-        'end', 'Invalid parameters to $runtimeType.find.');
+    end = RangeError.checkValidRange(
+        start,
+        end,
+        collection.length,
+        'start',
+        'end',
+        // Don't do expensive string interpolation here, if doing lots of find()
+        // calls, this mayend up taking half the time!
+        'Invalid parameters to find().');
     return findUnsafe(target, start, end);
   }
 }
