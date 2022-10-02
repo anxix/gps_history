@@ -23,7 +23,7 @@ void main(List<String> args) {
 
   final targetTime = GpsTime(0); // pretty much worst case for binary search
   final searchAlgo =
-      BinarySearchInGpcEfficient(collection, makeTimeCompareFunc(collection));
+      BinarySearchInGpcEfficient(collection, makeTimeCompareFunc());
 
   stopwatch.start();
 

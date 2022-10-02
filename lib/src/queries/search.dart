@@ -14,7 +14,10 @@ import '../base.dart';
 import '../base_collections.dart';
 import '../gpc_efficient.dart';
 
-typedef CompareItemToTargetFunc<F> = int Function(int itemNr, F findTarget);
+/// Function to compare item [itemNr] of [collection] to [findTarget] and
+/// return a result, like [Comparator].
+typedef CompareItemToTargetFunc<C extends GpsPointsView, F> = int Function(
+    C collection, int itemNr, F findTarget);
 
 /// Abstract class representing a search algorithm looking for entities of type
 /// [P] in a collection of type [C]. The entity of type [P] will be identified
@@ -31,22 +34,26 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   /// [collection].
   static SearchAlgorithm
       getBestAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>, F>(
-          C collection, bool isSorted, CompareItemToTargetFunc<F> compareFunc) {
+          C collection,
+          bool isSorted,
+          CompareItemToTargetFunc<C, F> compareFunc) {
     if (isSorted) {
       // Sorted collection can do a binary search.
       if (collection is GpcEfficient) {
-        return BinarySearchInGpcEfficient<P, F>(
-            collection as GpcEfficient<P>, compareFunc);
+        return BinarySearchInGpcEfficient<P, F>(collection as GpcEfficient<P>,
+            compareFunc as CompareItemToTargetFunc<GpcEfficient<P>, F>);
       } else {
-        return BinarySearchInSlowCollection<P, F>(collection, compareFunc);
+        return BinarySearchInSlowCollection<P, F>(collection,
+            compareFunc as CompareItemToTargetFunc<GpsPointsView, F>);
       }
     } else {
       // Unsorted collection requires linear search.
       if (collection is GpcEfficient) {
-        return LinearSearchInGpcEfficient<P, F>(
-            collection as GpcEfficient<P>, compareFunc);
+        return LinearSearchInGpcEfficient<P, F>(collection as GpcEfficient<P>,
+            compareFunc as CompareItemToTargetFunc<GpcEfficient<P>, F>);
       } else {
-        return LinearSearchInSlowCollection<P, F>(collection, compareFunc);
+        return LinearSearchInSlowCollection<P, F>(collection,
+            compareFunc as CompareItemToTargetFunc<GpsPointsView, F>);
       }
     }
   }
@@ -55,7 +62,7 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   final C collection;
 
   /// The comparison function that will be used to identify the desired item.
-  final CompareItemToTargetFunc<F> compareFunc;
+  final CompareItemToTargetFunc<C, F> compareFunc;
 
   /// Constructor for the algorithm. It's necessary to bind both the
   /// [collection] and the [compreFunc], because an algorithm created for one
@@ -98,7 +105,7 @@ class LinearSearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
   int? findUnsafe(F target, int start, int end) {
     // Slow implementation, as we've got to do a linear search.
     for (var i = start; i < end; i++) {
-      if (compareFunc(i, target) == 0) {
+      if (compareFunc(collection, i, target) == 0) {
         return i;
       }
     }
@@ -132,7 +139,7 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
 
       // Only one option -> either it's a match, or there's no match.
       if (start == end - 1) {
-        if (compareFunc(start, target) == 0) {
+        if (compareFunc(collection, start, target) == 0) {
           return start;
         } else {
           return null;
@@ -142,7 +149,7 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
       // Can't tell yet -> subdivide and look in the upper/lower half depending
       // on how the midpoint works out.
       final mid = start + (end - start) ~/ 2;
-      final midComparison = compareFunc(mid, target);
+      final midComparison = compareFunc(collection, mid, target);
       if (midComparison == 0) {
         return mid;
       } else {

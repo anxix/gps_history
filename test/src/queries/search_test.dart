@@ -12,7 +12,8 @@ import 'package:test/test.dart';
 
 typedef SearchAlgorithmBuilder<F>
     = SearchAlgorithm<GpsPoint, GpcEfficient, F> Function(
-        GpcCompactGpsPoint collection, CompareItemToTargetFunc<F> compareFunc);
+        GpcCompactGpsPoint collection,
+        CompareItemToTargetFunc<GpcEfficient, F> compareFunc);
 
 void main() {
   group('Search algorithm', () {
@@ -38,8 +39,7 @@ void main() {
           collection.add(point);
         }
 
-        final searchAlgo =
-            algoBuilder(collection, makeTimeCompareFunc(collection));
+        final searchAlgo = algoBuilder(collection, makeTimeCompareFunc());
 
         if (collection.isEmpty) {
           expect(searchAlgo.find(GpsTime(refTime)), null,
@@ -72,7 +72,7 @@ void main() {
     test('Linear in sorted list', () {
       // Test that it finds items in a sorted list.
       runTest((GpcCompactGpsPoint collection,
-          CompareItemToTargetFunc<GpsTime> compareFunc) {
+          CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
         return LinearSearchInGpcEfficient(collection, compareFunc);
       }, 1, true);
     });
@@ -80,7 +80,7 @@ void main() {
     test('Linear in unsorted list', () {
       // Test that it finds items in an unsorted list.
       runTest((GpcCompactGpsPoint collection,
-          CompareItemToTargetFunc<GpsTime> compareFunc) {
+          CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
         return LinearSearchInGpcEfficient(collection, compareFunc);
       }, -1, true);
     });
@@ -88,7 +88,7 @@ void main() {
     test('Binary in sorted list', () {
       // Test that it finds items in a sorted list.
       runTest((GpcCompactGpsPoint collection,
-          CompareItemToTargetFunc<GpsTime> compareFunc) {
+          CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
         return BinarySearchInGpcEfficient(collection, compareFunc);
       }, 1, true);
     });
@@ -96,7 +96,7 @@ void main() {
     test('Binary in unsorted list', () {
       // Test that it doesn't find all items in an unsorted list.
       runTest((GpcCompactGpsPoint collection,
-          CompareItemToTargetFunc<GpsTime> compareFunc) {
+          CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
         return BinarySearchInGpcEfficient(collection, compareFunc);
       }, -1, false);
     });
