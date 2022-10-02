@@ -22,13 +22,13 @@ void main(List<String> args) {
   final stopwatch = Stopwatch();
 
   final targetTime = GpsTime(0); // pretty much worst case for binary search
-  final searchAlgo = BinarySearchInGpcEfficient(
-      collection, makeTimeCompareFunc(collection, targetTime));
+  final searchAlgo =
+      BinarySearchInGpcEfficient(collection, makeTimeCompareFunc(collection));
 
   stopwatch.start();
 
   for (var loopNr = 0; loopNr < nrLoops; loopNr++) {
-    final found = searchAlgo.find();
+    final found = searchAlgo.find(targetTime);
     if (found == null || collection[found].time != targetTime) {
       print('Bad result');
       break;

@@ -16,9 +16,8 @@ import '../utils/time.dart';
 /// at a specific position in [collection] to a given [time], returning
 /// -1 if the item in the [collection] is before [time], 0 if they're the same
 /// or overlapping, and 1 if the item in the [collection] is after [time].
-CompareTargetToItemFunc makeTimeCompareFunc(
-    GpsPointsView collection, GpsTime time) {
-  return (int itemIndex) {
+CompareItemToTargetFunc<GpsTime> makeTimeCompareFunc(GpsPointsView collection) {
+  return (int itemIndex, GpsTime time) {
     final result =
         collection.compareElementTimeWithSeparateTime(itemIndex, time);
     switch (result) {

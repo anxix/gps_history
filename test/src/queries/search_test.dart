@@ -10,8 +10,9 @@ import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_queries.dart';
 import 'package:test/test.dart';
 
-typedef SearchAlgorithmBuilder = SearchAlgorithm Function(
-    GpcCompactGpsPoint collection, CompareTargetToItemFunc compareFunc);
+typedef SearchAlgorithmBuilder<F>
+    = SearchAlgorithm<GpsPoint, GpcEfficient, F> Function(
+        GpcCompactGpsPoint collection, CompareItemToTargetFunc<F> compareFunc);
 
 void main() {
   group('Search algorithm', () {
@@ -19,7 +20,7 @@ void main() {
     /// list built such that each item is [incrementPerItem] higher in value
     /// than the one before it. If [expectToFindAll] is true, all items must be
     /// found by the algorithm, otherwise it may or may not find all items.
-    runTest(SearchAlgorithmBuilder algoBuilder, int incrementPerItem,
+    runTest(SearchAlgorithmBuilder<GpsTime> algoBuilder, int incrementPerItem,
         bool expectToFindAll) {
       // Keep track of how many items were not found, because if expectToFindAll
       // is false, at least some items must be not found. This effectively tests
@@ -37,20 +38,18 @@ void main() {
           collection.add(point);
         }
 
-        final searchAlgo = algoBuilder(
-            collection, makeTimeCompareFunc(collection, GpsTime(refTime)));
+        final searchAlgo =
+            algoBuilder(collection, makeTimeCompareFunc(collection));
 
         if (collection.isEmpty) {
-          expect(searchAlgo.find(), null,
+          expect(searchAlgo.find(GpsTime(refTime)), null,
               reason: 'Should not find anything in empty list.');
           continue;
         }
 
         // Try to find every element in the list.
         for (final target in collection) {
-          final searchAlgo = algoBuilder(
-              collection, makeTimeCompareFunc(collection, target.time));
-          final result = searchAlgo.find();
+          final result = searchAlgo.find(target.time);
           if (result != null) {
             // Found a match -> check it's correct.
             expect(collection[result].time, target.time,
@@ -72,32 +71,32 @@ void main() {
 
     test('Linear in sorted list', () {
       // Test that it finds items in a sorted list.
-      runTest(
-          (GpcCompactGpsPoint collection, CompareTargetToItemFunc compareFunc) {
+      runTest((GpcCompactGpsPoint collection,
+          CompareItemToTargetFunc<GpsTime> compareFunc) {
         return LinearSearchInGpcEfficient(collection, compareFunc);
       }, 1, true);
     });
 
     test('Linear in unsorted list', () {
       // Test that it finds items in an unsorted list.
-      runTest(
-          (GpcCompactGpsPoint collection, CompareTargetToItemFunc compareFunc) {
+      runTest((GpcCompactGpsPoint collection,
+          CompareItemToTargetFunc<GpsTime> compareFunc) {
         return LinearSearchInGpcEfficient(collection, compareFunc);
       }, -1, true);
     });
 
     test('Binary in sorted list', () {
       // Test that it finds items in a sorted list.
-      runTest(
-          (GpcCompactGpsPoint collection, CompareTargetToItemFunc compareFunc) {
+      runTest((GpcCompactGpsPoint collection,
+          CompareItemToTargetFunc<GpsTime> compareFunc) {
         return BinarySearchInGpcEfficient(collection, compareFunc);
       }, 1, true);
     });
 
     test('Binary in unsorted list', () {
       // Test that it doesn't find all items in an unsorted list.
-      runTest(
-          (GpcCompactGpsPoint collection, CompareTargetToItemFunc compareFunc) {
+      runTest((GpcCompactGpsPoint collection,
+          CompareItemToTargetFunc<GpsTime> compareFunc) {
         return BinarySearchInGpcEfficient(collection, compareFunc);
       }, -1, false);
     });
