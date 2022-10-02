@@ -39,7 +39,7 @@ void main() {
           collection.add(point);
         }
 
-        final searchAlgo = algoBuilder(collection, makeTimeCompareFunc());
+        final searchAlgo = algoBuilder(collection, compareItemToTime);
 
         if (collection.isEmpty) {
           expect(searchAlgo.find(GpsTime(refTime)), null,
