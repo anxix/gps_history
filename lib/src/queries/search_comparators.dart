@@ -26,9 +26,5 @@ int compareItemToTime(GpsPointsView collection, int itemIndex, GpsTime time) {
       return 0;
     case TimeComparisonResult.after:
       return 1;
-    default:
-      throw ArgumentError(
-          'Comparison on $collection returns unexpected value $result for ($itemIndex, $time). '
-          'This is not allowed.');
   }
 }
