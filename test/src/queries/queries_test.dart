@@ -98,6 +98,18 @@ void main() {
     // Doesn't require extensive testing since it just wraps the search
     // algorithm functionality, which has its own thorough tests.
 
+    test('No match', () {
+      final collection = GpcListBased<GpsPoint>();
+      final queryTime = GpsTime(10);
+      final queryTolerance = 15;
+      final result = QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(
+              queryTime, queryTolerance)
+          .query(collection);
+      expect(result.location, null);
+      expect(result.time, queryTime);
+      expect(result.toleranceSeconds, queryTolerance);
+    });
+
     test('Exact match', () {
       final collection = GpcListBased<GpsPoint>()
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
@@ -115,16 +127,32 @@ void main() {
       expect(result.toleranceSeconds, null);
     });
 
-    test('No match', () {
-      final collection = GpcListBased<GpsPoint>();
-      final queryTime = GpsTime(10);
-      final queryTolerance = 15;
-      final result = QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(
-              queryTime, queryTolerance)
-          .query(collection);
-      expect(result.location, null);
-      expect(result.time, queryTime);
-      expect(result.toleranceSeconds, queryTolerance);
+    test('Match thanks to tolerance', () {
+      final collection = GpcListBased<GpsPoint>()
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(20)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(30)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(40)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(50)));
+      final itemIndex = 4;
+      final queryTime = collection[itemIndex].time.add(seconds: 2);
+      final perfectMatchResult =
+          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, null)
+              .query(collection);
+      expect(perfectMatchResult.location, null,
+          reason: 'Perfect match should not be found');
+
+      final smallToleranceMatchResult =
+          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, 1)
+              .query(collection);
+      expect(smallToleranceMatchResult.location, null,
+          reason: 'Small tolerance match should not be found');
+
+      // final largeToleranceMatchResult =
+      //     QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, 2)
+      //         .query(collection);
+      // expect(largeToleranceMatchResult.location, collection[itemIndex],
+      //     reason: 'Large tolerance match should be found');
     });
   });
 }
