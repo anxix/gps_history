@@ -73,7 +73,8 @@ void main() {
       // Test that it finds items in a sorted list.
       runTest((GpcCompactGpsPoint collection,
           CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
-        return LinearSearchInGpcEfficient(collection, compareFunc);
+        return LinearSearchInGpcEfficient(
+            collection, SearchCompareDiff(compareFunc));
       }, 1, true);
     });
 
@@ -81,7 +82,8 @@ void main() {
       // Test that it finds items in an unsorted list.
       runTest((GpcCompactGpsPoint collection,
           CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
-        return LinearSearchInGpcEfficient(collection, compareFunc);
+        return LinearSearchInGpcEfficient(
+            collection, SearchCompareDiff(compareFunc));
       }, -1, true);
     });
 
@@ -89,7 +91,8 @@ void main() {
       // Test that it finds items in a sorted list.
       runTest((GpcCompactGpsPoint collection,
           CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
-        return BinarySearchInGpcEfficient(collection, compareFunc);
+        return BinarySearchInGpcEfficient(
+            collection, SearchCompareDiff(compareFunc));
       }, 1, true);
     });
 
@@ -97,7 +100,8 @@ void main() {
       // Test that it doesn't find all items in an unsorted list.
       runTest((GpcCompactGpsPoint collection,
           CompareItemToTargetFunc<GpcEfficient, GpsTime> compareFunc) {
-        return BinarySearchInGpcEfficient(collection, compareFunc);
+        return BinarySearchInGpcEfficient(
+            collection, SearchCompareDiff(compareFunc));
       }, -1, false);
     });
   });
@@ -106,8 +110,10 @@ void main() {
     test('Sorted slow collection', () {
       // Try different combinations of signatures in each test variant.
       final collection = GpcListBased<GpsPoint>();
-      final algo = SearchAlgorithm.getBestAlgorithm<GpsPoint,
-          GpcListBased<GpsPoint>, GpsTime>(collection, true, compareItemToTime);
+      final algo = SearchAlgorithm.getBestAlgorithm<
+          GpsPoint,
+          GpcListBased<GpsPoint>,
+          GpsTime>(collection, true, SearchCompareDiff(compareItemToTime));
       expect(algo.runtimeType, BinarySearchInSlowCollection<GpsPoint, GpsTime>);
     });
 
@@ -116,7 +122,7 @@ void main() {
       final collection = GpcCompactGpsStay();
       final algo =
           SearchAlgorithm.getBestAlgorithm<GpsStay, GpcCompactGpsStay, GpsTime>(
-              collection, true, compareItemToTime);
+              collection, true, SearchCompareDiff(compareItemToTime));
       expect(algo.runtimeType, BinarySearchInGpcEfficient<GpsStay, GpsTime>);
     });
 
@@ -126,7 +132,7 @@ void main() {
       final algo = SearchAlgorithm.getBestAlgorithm<
           GpsMeasurement,
           GpcListBased<GpsMeasurement>,
-          GpsTime>(collection, false, compareItemToTime);
+          GpsTime>(collection, false, SearchCompareDiff(compareItemToTime));
       expect(algo.runtimeType,
           LinearSearchInSlowCollection<GpsMeasurement, GpsTime>);
     });
@@ -135,7 +141,10 @@ void main() {
       // Try different combinations of signatures in each test variant.
       final collection = GpcCompactGpsPoint();
       final algo = SearchAlgorithm.getBestAlgorithm(
-          collection, false, compareItemToTime);
+          collection,
+          false,
+          SearchCompareDiff<GpcEfficient<GpsPoint>, GpsTime>(
+              compareItemToTime));
       expect(algo.runtimeType, LinearSearchInGpcEfficient<GpsPoint, GpsTime>);
     });
   });

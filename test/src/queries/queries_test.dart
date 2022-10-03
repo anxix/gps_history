@@ -148,6 +148,7 @@ void main() {
       expect(smallToleranceMatchResult.location, null,
           reason: 'Small tolerance match should not be found');
 
+      // TODO: implement and activate test with tolerance
       // final largeToleranceMatchResult =
       //     QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, 2)
       //         .query(collection);
