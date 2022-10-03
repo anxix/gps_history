@@ -108,8 +108,13 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
         'start',
         'end',
         // Don't do expensive string interpolation here, if doing lots of find()
-        // calls, this mayend up taking half the time!
+        // calls, this may end up taking half the time or more!
         'Invalid parameters to find().');
+    // In order to do tolerance-based evaluations, a function to compute the
+    // difference must have been provided.
+    if (tolerance != null) {
+      ArgumentError.checkNotNull(compareDiff.diffFunc, 'tolerance');
+    }
     return findUnsafe(target, tolerance, start, end);
   }
 }

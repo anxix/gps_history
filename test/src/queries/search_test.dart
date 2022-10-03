@@ -16,7 +16,7 @@ typedef SearchAlgorithmBuilder<F>
         CompareItemToTargetFunc<GpcEfficient, F> compareFunc);
 
 void main() {
-  group('Search algorithm', () {
+  group('Search algorithm with no tolerance', () {
     /// Runs a battery of tests on the algorithm returned by [s], using a target
     /// list built such that each item is [incrementPerItem] higher in value
     /// than the one before it. If [expectToFindAll] is true, all items must be
@@ -103,6 +103,19 @@ void main() {
         return BinarySearchInGpcEfficient(
             collection, SearchCompareDiff(compareFunc));
       }, -1, false);
+    });
+  });
+
+  group('Sarch with tolerance', () {
+    test('Tolerance provided, but no diff calculation function', () {
+      final collection = GpcListBased<GpsPoint>();
+      final searchAlgorithm = BinarySearchInSlowCollection<GpsPoint, GpsTime>(
+          collection, SearchCompareDiff(compareItemToTime));
+      // Didn't pass in a diff fucntion -> trying to find with a tolerance
+      // should throw an exception.
+      expect(() {
+        searchAlgorithm.find(GpsTime(0), 0);
+      }, throwsA(isA<ArgumentError>()));
     });
   });
 
