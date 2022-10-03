@@ -93,4 +93,38 @@ void main() {
       runTest(gpc, query, CollectionItems(1, gpc.sublist(1, 3)));
     });
   });
+
+  group('QueryLocationByTime', () {
+    // Doesn't require extensive testing since it just wraps the search
+    // algorithm functionality, which has its own thorough tests.
+
+    test('Exact match', () {
+      final collection = GpcListBased<GpsPoint>()
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(20)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(30)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(40)))
+        ..add(GpsPoint.allZero.copyWith(time: GpsTime(50)));
+      final itemIndex = 4;
+      final queryTime = collection[itemIndex].time;
+      final result =
+          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, null)
+              .query(collection);
+      expect(result.location, collection[itemIndex]);
+      expect(result.time, queryTime);
+      expect(result.toleranceSeconds, null);
+    });
+
+    test('No match', () {
+      final collection = GpcListBased<GpsPoint>();
+      final queryTime = GpsTime(10);
+      final queryTolerance = 15;
+      final result = QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(
+              queryTime, queryTolerance)
+          .query(collection);
+      expect(result.location, null);
+      expect(result.time, queryTime);
+      expect(result.toleranceSeconds, queryTolerance);
+    });
+  });
 }
