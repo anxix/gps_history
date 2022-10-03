@@ -101,4 +101,42 @@ void main() {
       }, -1, false);
     });
   });
+
+  group('Get best algorithm', () {
+    test('Sorted slow collection', () {
+      // Try different combinations of signatures in each test variant.
+      final collection = GpcListBased<GpsPoint>();
+      final algo = SearchAlgorithm.getBestAlgorithm<GpsPoint,
+          GpcListBased<GpsPoint>, GpsTime>(collection, true, compareItemToTime);
+      expect(algo.runtimeType, BinarySearchInSlowCollection<GpsPoint, GpsTime>);
+    });
+
+    test('Sorted efficient collection', () {
+      // Try different combinations of signatures in each test variant.
+      final collection = GpcCompactGpsStay();
+      final algo =
+          SearchAlgorithm.getBestAlgorithm<GpsStay, GpcCompactGpsStay, GpsTime>(
+              collection, true, compareItemToTime);
+      expect(algo.runtimeType, BinarySearchInGpcEfficient<GpsStay, GpsTime>);
+    });
+
+    test('Unsorted slow collection', () {
+      // Try different combinations of signatures in each test variant.
+      final collection = GpcListBased<GpsMeasurement>();
+      final algo = SearchAlgorithm.getBestAlgorithm<
+          GpsMeasurement,
+          GpcListBased<GpsMeasurement>,
+          GpsTime>(collection, false, compareItemToTime);
+      expect(algo.runtimeType,
+          LinearSearchInSlowCollection<GpsMeasurement, GpsTime>);
+    });
+
+    test('Unsorted efficient collection', () {
+      // Try different combinations of signatures in each test variant.
+      final collection = GpcCompactGpsPoint();
+      final algo = SearchAlgorithm.getBestAlgorithm(
+          collection, false, compareItemToTime);
+      expect(algo.runtimeType, LinearSearchInGpcEfficient<GpsPoint, GpsTime>);
+    });
+  });
 }
