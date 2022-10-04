@@ -63,7 +63,7 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// they have a way to do quick time comparisons without doing full item
   /// retrieval.
   TimeComparisonResult compareElementTime(int elementNrA, int elementNrB) {
-    return compareTime(this[elementNrA].time, this[elementNrB].time);
+    return comparePointTimes(this[elementNrA], this[elementNrB]);
   }
 
   /// Performs [compareTime] for the item in the positions [elementNrA]
@@ -76,7 +76,12 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// retrieval.
   TimeComparisonResult compareElementTimeWithSeparateTime(
       int elementNrA, GpsTime timeB) {
-    return compareTime(this[elementNrA].time, timeB);
+    final elemA = this[elementNrA];
+    return compareTimeSpans(
+        startA: elemA.time.secondsSinceEpoch,
+        endA: elemA.endTime.secondsSinceEpoch,
+        startB: timeB.secondsSinceEpoch,
+        endB: timeB.secondsSinceEpoch);
   }
 
   /// Performs [compareTime] for the item in the positions [elementNrA]
@@ -89,7 +94,7 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// retrieval.
   TimeComparisonResult compareElementTimeWithSeparateItem(
       int elementNrA, T elementB) {
-    return compareTime(this[elementNrA].time, elementB.time);
+    return comparePointTimes(this[elementNrA], elementB);
   }
 
   /// Calculate the difference in time between the item in the position
