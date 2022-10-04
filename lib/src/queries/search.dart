@@ -95,10 +95,10 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
 
   /// Tries to find and return the item index between [start] and [end] for
   /// which the [compareDiff] returns [TimeComparisonResult.same] or
-  /// [TimeComparisonResult.overlap], or that is within [tolerance] from
+  /// [TimeComparisonResult.overlapping], or that is within [tolerance] from
   /// [target]. If such an item is not fount, the function null.
   ///
-  /// The arguments must satisfy: 0 <= [start] <= [end] <= [collection.length].
+  /// The arguments must satisfy: 0 <= [start] <= [end] <= [collection].length.
   /// In other words, [start] will be considered, but the matching will stop at
   /// element index [end]-1.
   int? find(F target, [num? tolerance, int start = 0, int? end]) {
