@@ -151,6 +151,53 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
     extends SearchAlgorithm<P, C, F> {
   BinarySearch(super.collection, super.compareFunc);
 
+  /// Given a situation where an exact match for [target] was not found,
+  /// attempt to find an item that's within the [tolerance] from that [target].
+  /// Matching will be done around a specified [referenceNonMatchingPosition]
+  /// that's the position where the binary search stopped trying to identify
+  /// matches.
+  int? _findNearestMatchWithinTolerance(F target, num? tolerance,
+      final int start, final int end, final int referenceNonMatchingPosition) {
+    if (tolerance == null || compareDiff.diffFunc == null) {
+      return null;
+    }
+
+    // Since the collection is sorted, it's only necessary to look at the
+    // immediately adjacent items. Either one of those, or the reference
+    // position will be the best one.
+    final refDiff = compareDiff.diffFunc!
+            (collection, referenceNonMatchingPosition, target)
+        .abs();
+
+    if (start < referenceNonMatchingPosition) {
+      // It's possible to look at a lower index -> see if that one is closer.
+      final itemNrBefore = referenceNonMatchingPosition - 1;
+      final beforeDiff =
+          compareDiff.diffFunc!(collection, itemNrBefore, target).abs();
+      if (beforeDiff < refDiff && beforeDiff <= tolerance) {
+        return itemNrBefore;
+      }
+    }
+
+    if (referenceNonMatchingPosition < end - 1) {
+      // It's possible to look at a higher index -> see if that one is closer.
+      final itemNrAfter = referenceNonMatchingPosition + 1;
+      final afterDiff = compareDiff.diffFunc!(collection, itemNrAfter, target);
+      if (afterDiff < refDiff && afterDiff <= tolerance) {
+        return itemNrAfter;
+      }
+    }
+
+    // Neither the item before nor after is a better fit. Maybe reference is
+    // good enough.
+    if (refDiff <= tolerance) {
+      return referenceNonMatchingPosition;
+    }
+
+    // Didn't find anything within the tolerance.
+    return null;
+  }
+
   @override
   int? findUnsafe(F target, num? tolerance, final int start, final int end) {
     var localStart = start;
@@ -158,8 +205,9 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
 
     while (true) {
       // Impossible situation -> have not found anything.
-      if (localStart >= localEnd) {
-        return null;
+      if (localStart == localEnd) {
+        return _findNearestMatchWithinTolerance(
+            target, tolerance, start, end, localStart);
       }
 
       // Only one option -> either it's a match, or there's no match.
@@ -167,7 +215,8 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
         if (compareDiff.compareFunc(collection, localStart, target) == 0) {
           return localStart;
         } else {
-          return null;
+          return _findNearestMatchWithinTolerance(
+              target, tolerance, start, end, localStart);
         }
       }
 

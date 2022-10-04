@@ -91,6 +91,16 @@ abstract class GpsPointsView<T extends GpsPoint>
       int elementNrA, T elementB) {
     return compareTime(this[elementNrA].time, elementB.time);
   }
+
+  /// Calculate the difference in time between the item in the position
+  /// [elementNrA] and the [timeB]. The result is nagative if A is before B,
+  /// 0 if B is within A (if A is a span) or equal to A (if A is a single
+  /// moment), and positivie if A is after B.
+  int diffElementTimeAndSeparateTime(int elementNrA, GpsTime timeB) {
+    final elem = this[elementNrA];
+    return diffTime(
+        startTimeA: elem.time, endTimeA: elem.endTime, timeB: timeB);
+  }
 }
 
 /// Indicates how the sorting requirement for [GpsPointsCollection] should

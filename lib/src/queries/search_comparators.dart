@@ -15,8 +15,8 @@ import '../utils/time.dart';
 /// returning -1 if the item in the [collection] is before [time], 0 if they're
 /// the same or overlapping, and 1 if the item in the [collection] is
 /// after [time].
-int compareItemToTime(GpsPointsView collection, int itemIndex, GpsTime time) {
-  final result = collection.compareElementTimeWithSeparateTime(itemIndex, time);
+int compareItemToTime(GpsPointsView collection, int itemNr, GpsTime time) {
+  final result = collection.compareElementTimeWithSeparateTime(itemNr, time);
   switch (result) {
     case TimeComparisonResult.before:
       return -1;
@@ -27,4 +27,9 @@ int compareItemToTime(GpsPointsView collection, int itemIndex, GpsTime time) {
     case TimeComparisonResult.after:
       return 1;
   }
+}
+
+num diffItemAndTime(GpsPointsView collection, int itemNr, GpsTime time) {
+  final result = collection.diffElementTimeAndSeparateTime(itemNr, time);
+  return result;
 }

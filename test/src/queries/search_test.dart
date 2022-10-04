@@ -106,7 +106,7 @@ void main() {
     });
   });
 
-  group('Sarch with tolerance', () {
+  group('Search with tolerance', () {
     test('Tolerance provided, but no diff calculation function', () {
       final collection = GpcListBased<GpsPoint>();
       final searchAlgorithm = BinarySearchInSlowCollection<GpsPoint, GpsTime>(
@@ -116,6 +116,81 @@ void main() {
       expect(() {
         searchAlgorithm.find(GpsTime(0), 0);
       }, throwsA(isA<ArgumentError>()));
+    });
+
+    runToleranceTest(
+        {required int timeSpacing,
+        required int timeSpan,
+        required int offsetToTest,
+        required int? tolerance,
+        required bool expectFind,
+        required String message}) {
+      final collection = GpcListBased<GpsStay>();
+      for (var i = 0; i < 10; i++) {
+        final startTime = (i + 1) * timeSpacing;
+        final point = GpsStay.allZero.copyWith(
+            time: GpsTime(startTime), endTime: GpsTime(startTime + timeSpan));
+        collection.add(point);
+      }
+      final searchAlgorithm = BinarySearchInSlowCollection<GpsPoint, GpsTime>(
+          collection, SearchCompareDiff(compareItemToTime, diffItemAndTime));
+
+      checkCorrectFind(int timeToFind, int pointNr, String relPosition) {
+        final foundItemNr =
+            searchAlgorithm.find(GpsTime(timeToFind), tolerance);
+        if (!expectFind) {
+          expect(foundItemNr, null,
+              reason:
+                  '$message <$relPosition>: Wrongly not found at position $pointNr');
+        } else {
+          expect(foundItemNr, pointNr,
+              reason:
+                  '$message <$relPosition>: Wrongly found at position $pointNr');
+        }
+      }
+
+      for (var pointNr = 0; pointNr < collection.length; pointNr++) {
+        final point = collection[pointNr];
+        // Test time slightly before the point.
+        final timeBefore = point.time.secondsSinceEpoch - offsetToTest;
+        checkCorrectFind(timeBefore, pointNr, 'before');
+
+        // Test time slightly after the point.
+        final timeAfter = point.time.secondsSinceEpoch + offsetToTest;
+        checkCorrectFind(timeAfter, pointNr, 'after');
+      }
+    }
+
+    test('Tolerance', () {
+      runToleranceTest(
+        timeSpacing: 10,
+        timeSpan: 0,
+        offsetToTest: 0,
+        tolerance: 0,
+        expectFind: true,
+        message: 'Zero tolerance, but overlapping times',
+      );
+      runToleranceTest(
+          timeSpacing: 10,
+          timeSpan: 0,
+          offsetToTest: 2,
+          tolerance: 0,
+          expectFind: false,
+          message: 'Zero tolerance, offset times');
+      runToleranceTest(
+          timeSpacing: 10,
+          timeSpan: 0,
+          offsetToTest: 2,
+          tolerance: 3,
+          expectFind: true,
+          message: 'Tolerance > offset');
+      runToleranceTest(
+          timeSpacing: 10,
+          timeSpan: 2,
+          offsetToTest: 1,
+          tolerance: 1,
+          expectFind: true,
+          message: 'Tolerance = offset and span');
     });
   });
 
