@@ -79,33 +79,71 @@ void main() {
   });
 
   group('Time differences', () {
+    runTimeDifferenceTest(
+        {required int startTimeA,
+        required int? endTimeA,
+        required int timeB,
+        required int expected,
+        String? reason}) {
+      // Test the integer comparison version.
+      expect(
+          diffIntTime(startTimeA: startTimeA, endTimeA: endTimeA, timeB: timeB),
+          expected,
+          reason: reason);
+
+      // Test the GpsTime comparison version.
+      expect(
+          diffTime(
+              startTimeA: GpsTime(startTimeA),
+              endTimeA: endTimeA == null ? null : GpsTime(endTimeA),
+              timeB: GpsTime(timeB)),
+          expected,
+          reason: reason);
+    }
+
     test('Inside span', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 10), 0,
+      runTimeDifferenceTest(
+          startTimeA: 5,
+          endTimeA: 15,
+          timeB: 10,
+          expected: 0,
           reason: 'in middle of span');
-      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 5), 0,
+      runTimeDifferenceTest(
+          startTimeA: 5,
+          endTimeA: 15,
+          timeB: 5,
+          expected: 0,
           reason: 'at start of span');
-      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 15), 0,
+      runTimeDifferenceTest(
+          startTimeA: 5,
+          endTimeA: 15,
+          timeB: 15,
+          expected: 0,
           reason: 'at end of span');
     });
 
     test('Span after point', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 4), 1);
+      runTimeDifferenceTest(startTimeA: 5, endTimeA: 15, timeB: 4, expected: 1);
     });
 
     test('Span before point', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 16), -1);
+      runTimeDifferenceTest(
+          startTimeA: 5, endTimeA: 15, timeB: 16, expected: -1);
     });
 
     test('Point on point', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 5), 0);
+      runTimeDifferenceTest(
+          startTimeA: 5, endTimeA: null, timeB: 5, expected: 0);
     });
 
     test('Point before point', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 4), 1);
+      runTimeDifferenceTest(
+          startTimeA: 5, endTimeA: null, timeB: 4, expected: 1);
     });
 
     test('Point after point', () {
-      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 6), -1);
+      runTimeDifferenceTest(
+          startTimeA: 5, endTimeA: null, timeB: 6, expected: -1);
     });
   });
 
