@@ -156,6 +156,69 @@ TimeComparisonResult compareTimeSpans(
   return TimeComparisonResult.overlapping;
 }
 
+/// Like [diffIntTime], but with parameters provided in [GpsTime] rather than
+/// directly as integers.
+int diffTime(
+    {required GpsTime startTimeA,
+    required GpsTime? endTimeA,
+    required GpsTime timeB}) {
+  return diffIntTime(
+    startTimeA: startTimeA.secondsSinceEpoch,
+    endTimeA: endTimeA?.secondsSinceEpoch,
+    timeB: timeB.secondsSinceEpoch,
+  );
+}
+
+/// Calculates the difference between [timeB] and a time or time span
+/// defined by a [startTimeA] and optionally, if it's a span rather than an
+/// instance, an [endTimeA]. The result will be negative and equal to
+/// [endTimeA]-[timeB] if A is before B, positive and equal to
+/// [startTimeA]-[timeB] is A is after B.
+///
+///  Situation         | Result
+/// -------------------+---------
+///     A +--------+   | > 0
+///   B +              |
+/// -------------------+---------
+///     A +--------+   | = 0
+///     B +            |
+///        B +         |
+///              B +   |
+/// -------------------+---------
+///     A +--------+   | > 0
+///                B + |
+/// -------------------+---------
+///
+/// The result is zero if [timeB] is within the time span defined by the two "A"
+/// parameters, even if it's equal to [endTimeA]. *This even though the
+/// situation of [timeB]==[endTimeA] would not qualify as
+/// [TimeComparisonResult.overlapping]!*. This inconsistency is rather hard to
+/// avoid, as the infinitesimally small fraction of an instance prior to
+/// [endTimeA] does count as/ overlapping - the difference is infinitely small
+/// and can therefore not really be expressed in any way.
+int diffIntTime(
+    {required int startTimeA, required int? endTimeA, required int timeB}) {
+  final startDiff = (startTimeA - timeB);
+  if (endTimeA == null) {
+    return startDiff;
+  }
+
+  final endDiff = (endTimeA - timeB);
+
+  // B is within span A if startDiff is negative and endDiff is positive.
+  if (0 > startDiff && endDiff > 0) {
+    return 0;
+  }
+
+  // A is before B -> closest difference will be to the end point.
+  if (endDiff <= 0) {
+    return endDiff;
+  }
+
+  // A must be after B -> closest difference will be to the start point.
+  return startDiff;
+}
+
 /// Represents a time value for [GpsPoint] and children.
 ///
 /// Time is internally stored as UTC with accuracy level of 1 second, counted

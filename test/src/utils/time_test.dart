@@ -78,6 +78,37 @@ void main() {
     });
   });
 
+  group('Time differences', () {
+    test('Inside span', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 10), 0,
+          reason: 'in middle of span');
+      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 5), 0,
+          reason: 'at start of span');
+      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 15), 0,
+          reason: 'at end of span');
+    });
+
+    test('Span after point', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 4), 1);
+    });
+
+    test('Span before point', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: 15, timeB: 16), -1);
+    });
+
+    test('Point on point', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 5), 0);
+    });
+
+    test('Point before point', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 4), 1);
+    });
+
+    test('Point after point', () {
+      expect(diffIntTime(startTimeA: 5, endTimeA: null, timeB: 6), -1);
+    });
+  });
+
   group('GpsTime', () {
     test('Invalid times', () {
       expect(() {
