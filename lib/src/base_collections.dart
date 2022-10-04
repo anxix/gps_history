@@ -93,9 +93,9 @@ abstract class GpsPointsView<T extends GpsPoint>
   }
 
   /// Calculate the difference in time between the item in the position
-  /// [elementNrA] and the [timeB]. The result is nagative if A is before B,
-  /// 0 if B is within A (if A is a span) or equal to A (if A is a single
-  /// moment), and positivie if A is after B.
+  /// [elementNrA] and the [timeB]. See [diffTime] for explanations on
+  /// how the difference is calculated and when it is positive, negative or
+  /// zero.
   int diffElementTimeAndSeparateTime(int elementNrA, GpsTime timeB) {
     final elem = this[elementNrA];
     return diffTime(
