@@ -12,7 +12,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:gps_history/gps_history.dart';
+
+import '../base.dart';
 
 /// An exception raised if no persister is found for a particular object.
 class NoPersisterException extends GpsHistoryException {

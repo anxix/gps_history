@@ -11,8 +11,8 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:gps_history/gps_history.dart';
-
+import '../base_collections.dart';
+import '../gpc_efficient.dart';
 import 'persistence.dart';
 import 'utilities.dart';
 

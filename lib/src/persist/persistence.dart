@@ -11,8 +11,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:gps_history/gps_history.dart';
-
+import '../base_collections.dart';
 import 'utilities.dart';
 
 /// The Persistence class should be used as a singleton (call [Persistence.get])
