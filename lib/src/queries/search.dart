@@ -75,7 +75,7 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   final SearchCompareDiff<C, F> compareDiff;
 
   /// Constructor for the algorithm. It's necessary to bind both the
-  /// [collection] and the [compreFunc], because an algorithm created for one
+  /// [collection] and the [compareDiff], because an algorithm created for one
   /// list cannot necessarily be used in another list.
   ///
   /// E.g. if an algorithm object was created for a sorted list and would then
@@ -94,12 +94,13 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   int? findUnsafe(F target, num? tolerance, int start, int end);
 
   /// Tries to find and return the item index between [start] and [end] for
-  /// which the [compareDiff] returns [ComparisonResult.equal]. If such an
-  /// item is not fount, the function returns null.
+  /// which the [compareDiff] returns [TimeComparisonResult.same] or
+  /// [TimeComparisonResult.overlap], or that is within [tolerance] from
+  /// [target]. If such an item is not fount, the function null.
   ///
-  /// The arguments must satisfy: 0 <= [start] <= [end] <= [length]. In other
-  /// words, [start] will be considered, but the matching will stop at element
-  /// index [end]-1.
+  /// The arguments must satisfy: 0 <= [start] <= [end] <= [collection.length].
+  /// In other words, [start] will be considered, but the matching will stop at
+  /// element index [end]-1.
   int? find(F target, [num? tolerance, int start = 0, int? end]) {
     end = RangeError.checkValidRange(
         start,
