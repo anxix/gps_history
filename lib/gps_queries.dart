@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-library gps_history;
+library gps_queries;
 
 export 'src/queries/queries.dart';
 export 'src/queries/search.dart';
