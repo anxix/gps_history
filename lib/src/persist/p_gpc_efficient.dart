@@ -12,7 +12,9 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/gps_history_persist.dart';
+
+import 'persistence.dart';
+import 'utilities.dart';
 
 /// Abstract persister for [GpcEfficient]. Child classes should be created
 /// for specific children of [GpcEfficient], providing overriddes for

@@ -12,7 +12,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:gps_history/gps_history.dart';
-import 'package:gps_history/gps_history_persist.dart';
+
+import 'utilities.dart';
 
 /// The Persistence class should be used as a singleton (call [Persistence.get])
 /// that can write and potentially read [GpsPointsView] instances to
