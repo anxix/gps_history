@@ -125,12 +125,34 @@ class LinearSearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
 
   @override
   int? findUnsafe(F target, num? tolerance, int start, int end) {
-    // TODO: do something about tolerance-based searching
+    // Check that it's necessary and possible to deal with tolerances.
+    final supportTolerance =
+        tolerance != null && tolerance != 0 && compareDiff.diffFunc != null;
+
+    int? bestIndexWithinTolerance;
+    num? bestDiffWithinTolerance;
+
     // Slow implementation, as we've got to do a linear search.
     for (var i = start; i < end; i++) {
       if (compareDiff.compareFunc(collection, i, target) == 0) {
         return i;
       }
+
+      if (supportTolerance) {
+        final diff = compareDiff.diffFunc!(collection, i, target).abs();
+        if (diff > tolerance) {
+          continue;
+        }
+        if (bestDiffWithinTolerance == null || diff < bestDiffWithinTolerance) {
+          bestDiffWithinTolerance = diff;
+          bestIndexWithinTolerance = i;
+        }
+      }
+    }
+
+    // Did not find perfect match, but maybe found something within tolerance.
+    if (bestIndexWithinTolerance != null) {
+      return bestIndexWithinTolerance;
     }
 
     // Linear search delivered nothing -> return null.

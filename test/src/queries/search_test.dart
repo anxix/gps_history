@@ -206,6 +206,31 @@ void main() {
     });
   });
 
+  group('Linear search with tolerance', () {
+    test('Basic', () {
+      final collection = GpcCompactGpsStay();
+      // Create some list where items are not in order.
+      collection.sortingEnforcement = SortingEnforcement.notRequired;
+      collection.add(
+          GpsStay.allZero.copyWith(time: GpsTime(20), endTime: GpsTime(22)));
+      collection.add(
+          GpsStay.allZero.copyWith(time: GpsTime(10), endTime: GpsTime(12)));
+
+      final linAlgo = LinearSearch<GpsStay, GpcCompactGpsStay, GpsTime>(
+          collection, SearchCompareDiff(compareItemToTime, diffItemAndTime));
+
+      final firstTarget = collection.first.endTime.add(seconds: 1);
+      final firstFindWithTolerance = linAlgo.find(firstTarget, 2);
+      expect(firstFindWithTolerance, 0, reason: 'Did not find first item');
+
+      // Look for a point that's within the tolerance of both points and
+      // see if the one with the lower tolerance is returned.
+      final lastTarget = collection.last.time.add(seconds: -4);
+      final lastFindWithTolerance = linAlgo.find(lastTarget, 7);
+      expect(lastFindWithTolerance, 1, reason: 'Did not find last item');
+    });
+  });
+
   group('Get best algorithm', () {
     test('Sorted slow collection', () {
       // Try different combinations of signatures in each test variant.
