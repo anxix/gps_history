@@ -153,7 +153,7 @@ void main() {
         checkCorrectFind(timeBefore, pointNr, 'before');
 
         // Test time slightly after the point.
-        final timeAfter = point.time.secondsSinceEpoch + offsetToTest;
+        final timeAfter = point.endTime.secondsSinceEpoch + offsetToTest;
         checkCorrectFind(timeAfter, pointNr, 'after');
       }
     }
@@ -185,13 +185,22 @@ void main() {
             tolerance: 3,
             expectFind: true);
       });
-      
+
       test('Tolerance = offset and span', () {
         runToleranceTest(
             timeSpacing: 10,
             timeSpan: 2,
             offsetToTest: 1,
             tolerance: 1,
+            expectFind: true);
+      });
+
+      test('Offset within the span', () {
+        runToleranceTest(
+            timeSpacing: 10,
+            timeSpan: 4,
+            offsetToTest: -1,
+            tolerance: 0,
             expectFind: true);
       });
     });
