@@ -123,8 +123,7 @@ void main() {
         required int timeSpan,
         required int offsetToTest,
         required int? tolerance,
-        required bool expectFind,
-        required String message}) {
+        required bool expectFind}) {
       final collection = GpcListBased<GpsStay>();
       for (var i = 0; i < 10; i++) {
         final startTime = (i + 1) * timeSpacing;
@@ -140,12 +139,10 @@ void main() {
             searchAlgorithm.find(GpsTime(timeToFind), tolerance);
         if (!expectFind) {
           expect(foundItemNr, null,
-              reason:
-                  '$message <$relPosition>: Wrongly not found at position $pointNr');
+              reason: '<$relPosition>: Wrongly not found at position $pointNr');
         } else {
           expect(foundItemNr, pointNr,
-              reason:
-                  '$message <$relPosition>: Wrongly found at position $pointNr');
+              reason: '<$relPosition>: Wrongly found at position $pointNr');
         }
       }
 
@@ -161,36 +158,42 @@ void main() {
       }
     }
 
-    test('Tolerance', () {
-      runToleranceTest(
-        timeSpacing: 10,
-        timeSpan: 0,
-        offsetToTest: 0,
-        tolerance: 0,
-        expectFind: true,
-        message: 'Zero tolerance, but overlapping times',
-      );
-      runToleranceTest(
-          timeSpacing: 10,
-          timeSpan: 0,
-          offsetToTest: 2,
-          tolerance: 0,
-          expectFind: false,
-          message: 'Zero tolerance, offset times');
-      runToleranceTest(
-          timeSpacing: 10,
-          timeSpan: 0,
-          offsetToTest: 2,
-          tolerance: 3,
-          expectFind: true,
-          message: 'Tolerance > offset');
-      runToleranceTest(
-          timeSpacing: 10,
-          timeSpan: 2,
-          offsetToTest: 1,
-          tolerance: 1,
-          expectFind: true,
-          message: 'Tolerance = offset and span');
+    group('Specific tolerances in list', () {
+      test('Zero tolerance, but overlapping times', () {
+        runToleranceTest(
+            timeSpacing: 10,
+            timeSpan: 0,
+            offsetToTest: 0,
+            tolerance: 0,
+            expectFind: true);
+      });
+
+      test('Zero tolerance, offset times', () {
+        runToleranceTest(
+            timeSpacing: 10,
+            timeSpan: 0,
+            offsetToTest: 2,
+            tolerance: 0,
+            expectFind: false);
+      });
+
+      test('Tolerance > offset', () {
+        runToleranceTest(
+            timeSpacing: 10,
+            timeSpan: 0,
+            offsetToTest: 2,
+            tolerance: 3,
+            expectFind: true);
+      });
+      
+      test('Tolerance = offset and span', () {
+        runToleranceTest(
+            timeSpacing: 10,
+            timeSpan: 2,
+            offsetToTest: 1,
+            tolerance: 1,
+            expectFind: true);
+      });
     });
   });
 

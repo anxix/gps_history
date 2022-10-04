@@ -205,8 +205,10 @@ class QueryLocationByTime<C extends GpsPointsView<P>, P extends GpsPoint>
 
   @override
   LocationByTime<P> query(C collection) {
-    final searchAlgorithm = SearchAlgorithm.getBestAlgorithm(collection,
-        collection.sortedByTime, SearchCompareDiff(compareItemToTime, null));
+    final searchAlgorithm = SearchAlgorithm.getBestAlgorithm(
+        collection,
+        collection.sortedByTime,
+        SearchCompareDiff(compareItemToTime, diffItemAndTime));
     final resultIndex = searchAlgorithm.find(_time, _toleranceSeconds);
     return LocationByTime(_time, _toleranceSeconds,
         resultIndex != null ? collection[resultIndex] : null);

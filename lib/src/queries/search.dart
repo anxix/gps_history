@@ -19,8 +19,8 @@ import '../gpc_efficient.dart';
 typedef CompareItemToTargetFunc<C extends GpsPointsView, F> = int Function(
     C collection, int itemNr, F findTarget);
 
-/// Function to calculate the absolute difference between item [itemNr] of
-/// [collection] and [findTarget].
+/// Function to calculate the difference between item [itemNr] of [collection]
+/// and [findTarget].
 typedef DiffBetween<C extends GpsPointsView, F> = num Function(
     C collection, int itemNr, F findTarget);
 
@@ -153,49 +153,81 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
 
   /// Given a situation where an exact match for [target] was not found,
   /// attempt to find an item that's within the [tolerance] from that [target].
-  /// Matching will be done around a specified [referenceNonMatchingPosition]
+  /// Matching will be done around a specified [refNonMatchingPos]
   /// that's the position where the binary search stopped trying to identify
   /// matches.
   int? _findNearestMatchWithinTolerance(F target, num? tolerance,
-      final int start, final int end, final int referenceNonMatchingPosition) {
-    if (tolerance == null || compareDiff.diffFunc == null) {
+      final int start, final int end, final int refNonMatchingPos) {
+    // Catch situation that cannot possibly return anything useful.
+    if (tolerance == null || compareDiff.diffFunc == null || end - start == 0) {
       return null;
     }
 
     // Since the collection is sorted, it's only necessary to look at the
     // immediately adjacent items. Either one of those, or the reference
-    // position will be the best one.
-    final refDiff = compareDiff.diffFunc!
-            (collection, referenceNonMatchingPosition, target)
-        .abs();
+    // position will be the best one. Note that the reference position itself
+    // may be outside the valid range.
+    num? refDiff = start <= refNonMatchingPos && refNonMatchingPos < end
+        ? compareDiff.diffFunc!(collection, refNonMatchingPos, target).abs()
+        : null;
+    if (refDiff != null && refDiff > tolerance) {
+      refDiff = null;
+    }
 
-    if (start < referenceNonMatchingPosition) {
+    final beforeIndex = refNonMatchingPos - 1;
+    num? beforeDiff;
+    if (start <= beforeIndex) {
       // It's possible to look at a lower index -> see if that one is closer.
-      final itemNrBefore = referenceNonMatchingPosition - 1;
-      final beforeDiff =
-          compareDiff.diffFunc!(collection, itemNrBefore, target).abs();
-      if (beforeDiff < refDiff && beforeDiff <= tolerance) {
-        return itemNrBefore;
+      beforeDiff = compareDiff.diffFunc!(collection, beforeIndex, target).abs();
+      // If this is not within the tolerance, set it back to invalid.
+      if (beforeDiff > tolerance) {
+        beforeDiff = null;
       }
     }
 
-    if (referenceNonMatchingPosition < end - 1) {
+    final afterIndex = refNonMatchingPos + 1;
+    num? afterDiff;
+    if (afterIndex <= end - 1) {
       // It's possible to look at a higher index -> see if that one is closer.
-      final itemNrAfter = referenceNonMatchingPosition + 1;
-      final afterDiff = compareDiff.diffFunc!(collection, itemNrAfter, target);
-      if (afterDiff < refDiff && afterDiff <= tolerance) {
-        return itemNrAfter;
+      afterDiff = compareDiff.diffFunc!(collection, afterIndex, target);
+      // If this is not within tolerance, set it back to invalid.
+      if (afterDiff > tolerance) {
+        afterDiff = null;
       }
     }
 
-    // Neither the item before nor after is a better fit. Maybe reference is
-    // good enough.
-    if (refDiff <= tolerance) {
-      return referenceNonMatchingPosition;
+    // Find out which of the items is closest to the intended value, which means
+    // it has the lowest diff.
+    num? bestDiff;
+    int? bestIndex;
+    if (beforeDiff != null) {
+      bestDiff = beforeDiff;
+      bestIndex = beforeIndex;
     }
 
-    // Didn't find anything within the tolerance.
-    return null;
+    if (refDiff != null) {
+      var isBetter = true;
+      if (bestDiff != null) {
+        isBetter = refDiff < bestDiff;
+      }
+      if (isBetter) {
+        bestDiff = refDiff;
+        bestIndex = refNonMatchingPos;
+      }
+    }
+
+    if (afterDiff != null) {
+      var isBetter = true;
+      if (bestDiff != null) {
+        isBetter = afterDiff < bestDiff;
+      }
+      if (isBetter) {
+        bestDiff = afterDiff;
+        bestIndex = afterIndex;
+      }
+    }
+
+    return bestIndex;
   }
 
   @override
@@ -204,7 +236,7 @@ class BinarySearch<P extends GpsPoint, C extends GpsPointsView<P>, F>
     var localEnd = end;
 
     while (true) {
-      // Impossible situation -> have not found anything.
+      // Have not found anything.
       if (localStart == localEnd) {
         return _findNearestMatchWithinTolerance(
             target, tolerance, start, end, localStart);
