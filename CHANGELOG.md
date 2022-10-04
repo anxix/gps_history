@@ -5,6 +5,7 @@
 
 * New features:
   * Added bounding boxes and containership checks against them.
+  * Added queries by time, including using accuracy.
 
 * Fixes:
   * 
