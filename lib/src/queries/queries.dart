@@ -81,7 +81,7 @@ import '../utils/time.dart';
 abstract class QueryResult {}
 
 /// Abstract generic ancestor class for queries parametrized for collection type
-/// [C] and result type [R].
+/// [C] containing points of type [P] and returning result type [R].
 ///
 /// Since queries may have specific implementations for particular collection
 /// types, they are generics parametrized for collection type.
@@ -89,7 +89,8 @@ abstract class QueryResult {}
 /// The goal is to be able to send queries to a separate isolate and get the
 /// results back efficiently. This requires the [Query] children to store
 /// internally a representation that is cheap to transfer over an isolate port.
-abstract class Query<C extends GpsPointsView, R extends QueryResult> {
+abstract class Query<P extends GpsPoint, C extends GpsPointsView<P>,
+    R extends QueryResult> {
   /// Function that executes the actual query and returns the result.
   R query(C collection);
 }
@@ -114,8 +115,8 @@ class CollectionInfo extends QueryResult {
 /// This type of query can be useful e.g. for determining how many rows to
 /// report in a table of all points, or what time span a timeline should
 /// display.
-class QueryCollectionInfo<C extends GpsPointsView>
-    extends Query<C, CollectionInfo> {
+class QueryCollectionInfo<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends Query<P, C, CollectionInfo> {
   @override
   CollectionInfo query(C collection) {
     return CollectionInfo(
@@ -126,7 +127,8 @@ class QueryCollectionInfo<C extends GpsPointsView>
 }
 
 /// Query result for [QueryCollectionItems].
-class CollectionItems<C extends GpsPointsView> extends QueryResult {
+class CollectionItems<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends QueryResult {
   /// The starting index for which the query was executed.
   final int startIndex;
 
@@ -144,8 +146,8 @@ class CollectionItems<C extends GpsPointsView> extends QueryResult {
 /// cheaply via an isolate port.
 ///
 /// This type of query can be used to e.g. populate rows in a table.
-class QueryCollectionItems<C extends GpsPointsView>
-    extends Query<C, CollectionItems<C>> {
+class QueryCollectionItems<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends Query<P, C, CollectionItems<P, C>> {
   final int _startIndex;
   final int? _nrItems;
 
@@ -163,9 +165,9 @@ class QueryCollectionItems<C extends GpsPointsView>
         _nrItems = nrItems;
 
   @override
-  CollectionItems<C> query(C collection) {
+  CollectionItems<P, C> query(C collection) {
     final end = _nrItems == null ? collection.length : _startIndex + _nrItems!;
-    return CollectionItems<C>(
+    return CollectionItems<P, C>(
         _startIndex, collection.sublist(_startIndex, end) as C);
   }
 }
@@ -190,8 +192,8 @@ class LocationByTime<P extends GpsPoint> extends QueryResult {
 ///
 /// This type of query can be used to e.g. show a marker on a map based on
 /// a selected moment in time.
-class QueryLocationByTime<C extends GpsPointsView<P>, P extends GpsPoint>
-    extends Query<C, LocationByTime<P>> {
+class QueryLocationByTime<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends Query<P, C, LocationByTime<P>> {
   final GpsTime _time;
   final int? _toleranceSeconds;
 

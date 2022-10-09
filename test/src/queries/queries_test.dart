@@ -45,8 +45,8 @@ void main() {
   }
 
   group('QueryCollectionItems', () {
-    void runTest<C extends GpsPointsView>(
-        C source, QueryCollectionItems<C> query, CollectionItems expected) {
+    void runTest<P extends GpsPoint, C extends GpsPointsView<P>>(
+        C source, QueryCollectionItems<P, C> query, CollectionItems expected) {
       final result = query.query(source);
 
       expect(result.startIndex, expected.startIndex,
@@ -58,7 +58,7 @@ void main() {
     test('Empty', () {
       // Try on some type of collection.
       final gpc = GpcListBased();
-      final query = QueryCollectionItems<GpcListBased>();
+      final query = QueryCollectionItems<GpsPoint, GpcListBased>();
       runTest(gpc, query, CollectionItems(0, gpc));
     });
 
@@ -67,7 +67,7 @@ void main() {
       final gpc = GpcCompactGpsPoint()
         ..add(GpsPoint.allZero)
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)));
-      final query = QueryCollectionItems<GpcCompactGpsPoint>();
+      final query = QueryCollectionItems<GpsPoint, GpcCompactGpsPoint>();
       runTest(gpc, query, CollectionItems(0, gpc));
     });
 
@@ -76,8 +76,8 @@ void main() {
       final gpc = GpcCompactGpsPoint()
         ..add(GpsPoint.allZero)
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)));
-      final query =
-          QueryCollectionItems<GpcCompactGpsPoint>(startIndex: 1, nrItems: 0);
+      final query = QueryCollectionItems<GpsPoint, GpcCompactGpsPoint>(
+          startIndex: 1, nrItems: 0);
       runTest(gpc, query, CollectionItems(1, gpc.newEmpty()));
     });
 
@@ -88,8 +88,8 @@ void main() {
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(20)))
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(30)));
-      final query =
-          QueryCollectionItems<GpcCompactGpsPoint>(startIndex: 1, nrItems: 2);
+      final query = QueryCollectionItems<GpsPoint, GpcCompactGpsPoint>(
+          startIndex: 1, nrItems: 2);
       runTest(gpc, query, CollectionItems(1, gpc.sublist(1, 3)));
     });
   });
@@ -102,7 +102,7 @@ void main() {
       final collection = GpcListBased<GpsPoint>();
       final queryTime = GpsTime(10);
       final result =
-          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, null)
+          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
               .query(collection);
       expect(result.location, null);
       expect(result.time, queryTime);
@@ -119,7 +119,7 @@ void main() {
       final itemIndex = 4;
       final queryTime = collection[itemIndex].time;
       final result =
-          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, null)
+          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
               .query(collection);
       expect(result.location, collection[itemIndex]);
       expect(result.time, queryTime);
@@ -136,19 +136,19 @@ void main() {
       final itemIndex = 4;
       final queryTime = collection[itemIndex].time.add(seconds: 2);
       final perfectMatchResult =
-          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, null)
+          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
               .query(collection);
       expect(perfectMatchResult.location, null,
           reason: 'Perfect match should not be found');
 
       final smallToleranceMatchResult =
-          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, 1)
+          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, 1)
               .query(collection);
       expect(smallToleranceMatchResult.location, null,
           reason: 'Small tolerance match should not be found');
 
       final largeToleranceMatchResult =
-          QueryLocationByTime<GpcListBased<GpsPoint>, GpsPoint>(queryTime, 2)
+          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, 2)
               .query(collection);
       expect(largeToleranceMatchResult.location, collection[itemIndex],
           reason: 'Large tolerance match should be found');
