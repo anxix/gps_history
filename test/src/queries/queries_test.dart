@@ -161,6 +161,41 @@ void main() {
     });
   });
 
+  group('Generate intervals', () {
+    runIntervalsTest(GpsTime startTime, GpsTime endTime, int nrIntervals,
+        List<Interval> expectedIntervals,
+        [String message = '']) async {
+      final foundIntervals = <Interval>[];
+      await for (final interval
+          in generateIntervals(startTime, endTime, nrIntervals)) {
+        foundIntervals.add(interval);
+      }
+
+      final msg = message == '' ? '' : '$message: ';
+
+      expect(foundIntervals.length, expectedIntervals.length,
+          reason: '${msg}Incorrect number of intervals.');
+      for (var i = 0; i < foundIntervals.length; i++) {
+        expect(foundIntervals[i], expectedIntervals[i],
+            reason: '${msg}Incorrect interval at position $i');
+      }
+    }
+
+    test('Invalid times', () {
+      runIntervalsTest(GpsTime(2), GpsTime(1), 1, []);
+    });
+
+    test('Invalid intervals', () {
+      runIntervalsTest(GpsTime(1), GpsTime(2), -1, []);
+    });
+
+    test('Single interval', () {
+      runIntervalsTest(GpsTime(1), GpsTime(2), 1, [Interval.fromSeconds(1, 2)]);
+      runIntervalsTest(
+          GpsTime(0), GpsTime(20), 1, [Interval.fromSeconds(0, 20)]);
+    });
+  });
+
   group('QueryDataAvailability', () {
     late GpsTime startTime;
     late GpsTime endTime;

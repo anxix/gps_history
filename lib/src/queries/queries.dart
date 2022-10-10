@@ -72,6 +72,7 @@ import '../../gps_queries.dart';
 import '../base.dart';
 import '../base_collections.dart';
 import '../utils/bounding_box.dart';
+import '../utils/hash.dart';
 import '../utils/time.dart';
 
 /// Abstract ancestor class for query results.
@@ -269,12 +270,34 @@ class DataAvailability extends QueryResult {
   int get length => _items.length;
 }
 
-/// Represents a time interval for a query.
+/// Represents a time interval for a [QueryDataAvailability].
 class Interval {
+  /// Start time of the interval.
   GpsTime start;
+
+  /// End time of the interval.
   GpsTime end;
 
   Interval(this.start, this.end);
+
+  /// Creates an interval directly from times specified in seconds.
+  factory Interval.fromSeconds(int startSeconds, int endSeconds) {
+    return Interval(GpsTime(startSeconds), GpsTime(endSeconds));
+  }
+
+  @override
+  operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (runtimeType != other.runtimeType) {
+      return false;
+    }
+    return other is Interval && other.start == start && other.end == end;
+  }
+
+  @override
+  int get hashCode => hash2(start, end);
 }
 
 /// Returns a stream of [nrInterval] [Interval]s distributed as equally as
