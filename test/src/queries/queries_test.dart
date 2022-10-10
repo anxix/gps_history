@@ -162,12 +162,12 @@ void main() {
   });
 
   group('Generate intervals', () {
-    runIntervalsTest(GpsTime startTime, GpsTime endTime, int nrIntervals,
+    runIntervalsTest(int startTimeSeconds, int endTimeSeconds, int nrIntervals,
         List<Interval> expectedIntervals,
         [String message = '']) async {
       final foundIntervals = <Interval>[];
-      await for (final interval
-          in generateIntervals(startTime, endTime, nrIntervals)) {
+      await for (final interval in generateIntervals(
+          GpsTime(startTimeSeconds), GpsTime(endTimeSeconds), nrIntervals)) {
         foundIntervals.add(interval);
       }
 
@@ -182,17 +182,21 @@ void main() {
     }
 
     test('Invalid times', () {
-      runIntervalsTest(GpsTime(2), GpsTime(1), 1, []);
+      runIntervalsTest(2, 1, 1, []);
     });
 
     test('Invalid intervals', () {
-      runIntervalsTest(GpsTime(1), GpsTime(2), -1, []);
+      runIntervalsTest(1, 2, -1, []);
     });
 
     test('Single interval', () {
-      runIntervalsTest(GpsTime(1), GpsTime(2), 1, [Interval.fromSeconds(1, 2)]);
-      runIntervalsTest(
-          GpsTime(0), GpsTime(20), 1, [Interval.fromSeconds(0, 20)]);
+      runIntervalsTest(1, 2, 1, [Interval.fromSeconds(1, 2)]);
+      runIntervalsTest(0, 20, 1, [Interval.fromSeconds(0, 20)]);
+    });
+
+    test('Multi interval', () {
+      runIntervalsTest(1, 2, 1, [Interval.fromSeconds(1, 2)]);
+      runIntervalsTest(0, 20, 1, [Interval.fromSeconds(0, 20)]);
     });
   });
 
