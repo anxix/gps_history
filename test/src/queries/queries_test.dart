@@ -7,6 +7,7 @@
 
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_queries.dart';
+import 'package:gps_history/src/utils/bounding_box.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -32,19 +33,19 @@ void main() {
     });
   });
 
-  checkEqualCollections(GpsPointsView actual, GpsPointsView expected) {
-    expect(actual.runtimeType, expected.runtimeType,
-        reason: 'Collections not of same type');
-
-    expect(actual.length, expected.length,
-        reason: 'Collection not of same length');
-
-    for (var i = 0; i < actual.length; i++) {
-      expect(actual[i], expected[i], reason: 'Incorrect item at position $i');
-    }
-  }
-
   group('QueryCollectionItems', () {
+    checkEqualCollections(GpsPointsView actual, GpsPointsView expected) {
+      expect(actual.runtimeType, expected.runtimeType,
+          reason: 'Collections not of same type');
+
+      expect(actual.length, expected.length,
+          reason: 'Collection not of same length');
+
+      for (var i = 0; i < actual.length; i++) {
+        expect(actual[i], expected[i], reason: 'Incorrect item at position $i');
+      }
+    }
+
     void runTest<P extends GpsPoint, C extends GpsPointsView<P>>(
         C source, QueryCollectionItems<P, C> query, CollectionItems expected) {
       final result = query.query(source);
@@ -152,6 +153,25 @@ void main() {
               .query(collection);
       expect(largeToleranceMatchResult.location, collection[itemIndex],
           reason: 'Large tolerance match should be found');
+    });
+  });
+
+  group('QueryDataAvailability', () {
+    test('Empty collection', () {
+      final startTime = GpsTime(1);
+      final endTime = GpsTime(2);
+      final nrIntervals = 3;
+      final boundingBox = GeodeticLatLongBoundingBox(10, 20, 30, 40);
+
+      final query =
+          QueryDataAvailability(startTime, endTime, nrIntervals, boundingBox);
+      final result = query.query(GpcCompactGpsPoint());
+
+      expect(result.startTime, startTime, reason: 'Incorrect startTime.');
+      expect(result.endTime, endTime, reason: 'Incorrect endTime.');
+      expect(result.nrIntervals, nrIntervals, reason: 'Incorrect nrIntervals.');
+      expect(result.boundingBox, boundingBox,
+          reason: 'Incorrect bounding box.');
     });
   });
 }

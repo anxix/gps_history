@@ -297,8 +297,11 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
 
   @override
   DataAvailability query(C collection) {
-    final nrItems =
-        _nrIntervals > 0 && _startTime.isBefore(_endTime) ? _nrIntervals : 0;
+    final nrItems = _nrIntervals > 0 &&
+            _startTime.isBefore(_endTime) &&
+            collection.length > 0
+        ? _nrIntervals
+        : 0;
     final foundData = List<Data>.filled(nrItems, Data.notAvailable);
 
     if (nrItems > 0) {
