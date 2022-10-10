@@ -220,7 +220,7 @@ class QueryLocationByTime<P extends GpsPoint, C extends GpsPointsView<P>>
   }
 }
 
-/// Represents the data availability for [LocationAvailability] results.
+/// Represents the data availability for [DataAvailability] results.
 ///
 /// Possible values:
 /// * [Data.notAvailable]: no data was found for that interval
@@ -234,8 +234,8 @@ enum Data {
   availableWithinBoundingBox,
 }
 
-/// Query result for [QueryLocationAvailability].
-class LocationAvailability extends QueryResult {
+/// Query result for [QueryDataAvailability].
+class DataAvailability extends QueryResult {
   /// The start time for which the query was executed.
   final GpsTime startTime;
 
@@ -254,7 +254,7 @@ class LocationAvailability extends QueryResult {
   /// case if this was List<> based).
   final Uint8List _items;
 
-  LocationAvailability(this.startTime, this.endTime, this.nrIntervals,
+  DataAvailability(this.startTime, this.endTime, this.nrIntervals,
       this.boundingBox, List<Data> foundData)
       : _items = Uint8List(foundData.length) {
     for (var i = 0; i < foundData.length; i++) {
@@ -274,8 +274,11 @@ class LocationAvailability extends QueryResult {
 ///
 /// This type of query can be used to e.g. render a timeline, or show in
 /// a calendar which days have recordings in a particular geographic region.
-class QueryLocationAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
-    extends Query<P, C, LocationAvailability> {
+///
+/// The amount of data to be returned is expected to have an upper boundary
+/// of about 8k for a desktop with a very high resolution screen.
+class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends Query<P, C, DataAvailability> {
   final GpsTime _startTime;
   final GpsTime _endTime;
   final int _nrIntervals;
@@ -285,7 +288,7 @@ class QueryLocationAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
   /// split into [nrIntervals] intervals. The query will identify for each of
   /// these intervals if data is available in the target collection, optionally
   /// constrained to the [boundingBox].
-  QueryLocationAvailability(GpsTime startTime, GpsTime endTime, int nrIntervals,
+  QueryDataAvailability(GpsTime startTime, GpsTime endTime, int nrIntervals,
       GeodeticLatLongBoundingBox? boundingBox)
       : _startTime = startTime,
         _endTime = endTime,
@@ -293,8 +296,17 @@ class QueryLocationAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
         _boundingBox = boundingBox;
 
   @override
-  LocationAvailability query(C collection) {
-    // TODO: implement query
-    throw UnimplementedError();
+  DataAvailability query(C collection) {
+    final nrItems =
+        _nrIntervals > 0 && _startTime.isBefore(_endTime) ? _nrIntervals : 0;
+    final foundData = List<Data>.filled(nrItems, Data.notAvailable);
+
+    if (nrItems > 0) {
+      // TODO: implement query
+      throw UnimplementedError();
+    }
+
+    return DataAvailability(
+        _startTime, _endTime, _nrIntervals, _boundingBox, foundData);
   }
 }
