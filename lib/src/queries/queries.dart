@@ -66,9 +66,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:typed_data';
+
 import '../../gps_queries.dart';
 import '../base.dart';
 import '../base_collections.dart';
+import '../utils/bounding_box.dart';
 import '../utils/time.dart';
 
 /// Abstract ancestor class for query results.
@@ -217,4 +220,81 @@ class QueryLocationByTime<P extends GpsPoint, C extends GpsPointsView<P>>
   }
 }
 
-// class QueryBoundingBox extends Query {}
+/// Represents the data availability for [LocationAvailability] results.
+///
+/// Possible values:
+/// * [Data.notAvailable]: no data was found for that interval
+/// * [Data.availableOutsideBoundingBox]: data was found, but only outside the
+///   specified bounding box.
+/// * [Data.availableWithinBoundingBox]: data was found within the specified
+///   bounding box.
+enum Data {
+  notAvailable,
+  availableOutsideBoundingBox,
+  availableWithinBoundingBox,
+}
+
+/// Query result for [QueryLocationAvailability].
+class LocationAvailability extends QueryResult {
+  /// The start time for which the query was executed.
+  final GpsTime startTime;
+
+  /// The end time for which the query was executed.
+  final GpsTime endTime;
+
+  /// The number of time intervals (should be equal to the number of entries
+  /// in [_items]).
+  final int nrIntervals;
+
+  /// If specified, the bounding box within which the query was executed.
+  final GeodeticLatLongBoundingBox? boundingBox;
+
+  /// Contains for each interval a [Data] as integer (so
+  /// that it can be transferred cheaply via isolates, which would not be the
+  /// case if this was List<> based).
+  final Uint8List _items;
+
+  LocationAvailability(this.startTime, this.endTime, this.nrIntervals,
+      this.boundingBox, List<Data> foundData)
+      : _items = Uint8List(foundData.length) {
+    for (var i = 0; i < foundData.length; i++) {
+      _items[i] = foundData[i].index;
+    }
+  }
+
+  /// Returns for each interval what data availability was identified.
+  Data operator [](int index) => Data.values[_items[index]];
+
+  /// Returns the number of items, normally equal to [nrIntervals].
+  int get length => _items.length;
+}
+
+/// Identifies if location data is available for specific time intervals,
+/// optionally within a specific bounding box.
+///
+/// This type of query can be used to e.g. render a timeline, or show in
+/// a calendar which days have recordings in a particular geographic region.
+class QueryLocationAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
+    extends Query<P, C, LocationAvailability> {
+  final GpsTime _startTime;
+  final GpsTime _endTime;
+  final int _nrIntervals;
+  final GeodeticLatLongBoundingBox? _boundingBox;
+
+  /// Creates a query for the period between [startTime] and [endTime], to be
+  /// split into [nrIntervals] intervals. The query will identify for each of
+  /// these intervals if data is available in the target collection, optionally
+  /// constrained to the [boundingBox].
+  QueryLocationAvailability(GpsTime startTime, GpsTime endTime, int nrIntervals,
+      GeodeticLatLongBoundingBox? boundingBox)
+      : _startTime = startTime,
+        _endTime = endTime,
+        _nrIntervals = nrIntervals,
+        _boundingBox = boundingBox;
+
+  @override
+  LocationAvailability query(C collection) {
+    // TODO: implement query
+    throw UnimplementedError();
+  }
+}
