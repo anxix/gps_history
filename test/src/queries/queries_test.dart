@@ -157,21 +157,76 @@ void main() {
   });
 
   group('QueryDataAvailability', () {
-    test('Empty collection', () {
-      final startTime = GpsTime(1);
-      final endTime = GpsTime(2);
-      final nrIntervals = 3;
-      final boundingBox = GeodeticLatLongBoundingBox(10, 20, 30, 40);
+    late GpsTime startTime;
+    late GpsTime endTime;
+    late int nrIntervals;
+    late GeodeticLatLongBoundingBox boundingBox;
+    late GpcCompactGpsPoint collection;
 
+    setUp(() {
+      startTime = GpsTime(100);
+      endTime = GpsTime(200);
+      nrIntervals = 50;
+      boundingBox = GeodeticLatLongBoundingBox(10, 20, 30, 40);
+      // Very simple collection that should return a match.
+      collection = GpcCompactGpsPoint()
+        ..add(GpsPoint(
+            time: startTime.add(seconds: endTime.difference(startTime) ~/ 2),
+            latitude: boundingBox.bottomLatitude +
+                (boundingBox.topLatitude - boundingBox.bottomLatitude) ~/ 2,
+            longitude: boundingBox.leftLongitude +
+                (boundingBox.rightLongitude - boundingBox.leftLongitude) ~/ 1));
+    });
+
+    checkResult(
+        result,
+        GpsTime expectedStartTime,
+        GpsTime expectedEndTime,
+        int expectedNrIntervals,
+        GeodeticLatLongBoundingBox? expectedBoundingBox,
+        List<Data> expectedData,
+        [String message = '']) {
+      final msg = message == '' ? '' : '$message: ';
+      expect(result.startTime, expectedStartTime,
+          reason: '${msg}Incorrect startTime.');
+      expect(result.endTime, expectedEndTime,
+          reason: '${msg}Incorrect endTime.');
+      expect(result.nrIntervals, expectedNrIntervals,
+          reason: '${msg}Incorrect nrIntervals.');
+      expect(result.boundingBox, expectedBoundingBox,
+          reason: '${msg}Incorrect bounding box.');
+      expect(result.length, expectedData.length,
+          reason: '${msg}Wrong amount of data.');
+      for (var i = 0; i < result.length; i++) {
+        expect(result[i], expectedData[i],
+            reason: '${msg}Wrong data found at index $i');
+      }
+    }
+
+    test('Empty collection', () {
       final query =
           QueryDataAvailability(startTime, endTime, nrIntervals, boundingBox);
       final result = query.query(GpcCompactGpsPoint());
+      checkResult(result, startTime, endTime, nrIntervals, boundingBox, []);
+    });
 
-      expect(result.startTime, startTime, reason: 'Incorrect startTime.');
-      expect(result.endTime, endTime, reason: 'Incorrect endTime.');
-      expect(result.nrIntervals, nrIntervals, reason: 'Incorrect nrIntervals.');
-      expect(result.boundingBox, boundingBox,
-          reason: 'Incorrect bounding box.');
+    test('Invalid time range', () {
+      final query =
+          QueryDataAvailability(endTime, startTime, nrIntervals, null);
+      final result = query.query(collection);
+      checkResult(result, endTime, startTime, nrIntervals, null, []);
+    });
+
+    test('Invalid number of intervals', () {
+      var query = QueryDataAvailability(startTime, endTime, 0, boundingBox);
+      var result = query.query(collection);
+      checkResult(
+          result, startTime, endTime, 0, boundingBox, [], 'Zero interval');
+
+      query = QueryDataAvailability(startTime, endTime, -1, boundingBox);
+      result = query.query(collection);
+      checkResult(
+          result, startTime, endTime, -1, boundingBox, [], 'Negative interval');
     });
   });
 }
