@@ -1,8 +1,20 @@
+# 0.0.10
+
+* Public API changes:
+  * 
+
+* New features:
+  * 
+
+* Fixes:
+  * 
+
+
 # 0.0.9
 
 * New features:
   * Added bounding boxes and containership checks against them.
-  * Added queries by time, including using accuracy.n
+  * Added queries by time, including using accuracy.
 
 
 # 0.0.8
