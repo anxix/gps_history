@@ -162,7 +162,7 @@ void main() {
   });
 
   group('Generate intervals', () {
-    runIntervalsTest(int startTimeSeconds, int endTimeSeconds, int nrIntervals,
+    runTest(int startTimeSeconds, int endTimeSeconds, int nrIntervals,
         List<Interval> expectedIntervals,
         [String message = '']) async {
       final foundIntervals = <Interval>[];
@@ -182,21 +182,38 @@ void main() {
     }
 
     test('Invalid times', () {
-      runIntervalsTest(2, 1, 1, []);
+      runTest(2, 1, 1, []);
     });
 
     test('Invalid intervals', () {
-      runIntervalsTest(1, 2, -1, []);
+      runTest(1, 2, -1, []);
     });
 
     test('Single interval', () {
-      runIntervalsTest(1, 2, 1, [Interval.fromSeconds(1, 2)]);
-      runIntervalsTest(0, 20, 1, [Interval.fromSeconds(0, 20)]);
+      runTest(1, 2, 1, [Interval.fromSeconds(1, 2)]);
+      runTest(0, 20, 1, [Interval.fromSeconds(0, 20)]);
     });
 
     test('Multi interval', () {
-      runIntervalsTest(1, 2, 1, [Interval.fromSeconds(1, 2)]);
-      runIntervalsTest(0, 20, 1, [Interval.fromSeconds(0, 20)]);
+      runTest(0, 20, 2,
+          [Interval.fromSeconds(0, 10), Interval.fromSeconds(10, 20)], 'Long');
+
+      runTest(1, 2, 2, [Interval.fromSeconds(1, 2), Interval.fromSeconds(2, 2)],
+          'Short');
+
+      runTest(2, 13, 2,
+          [Interval.fromSeconds(2, 8), Interval.fromSeconds(8, 13)], 'Primes');
+    });
+  });
+
+  group('Interval', () {
+    test('toString', () {
+      expect(Interval.fromSeconds(1, 2).toString(), 'start: 1, end: 2');
+    });
+
+    test('hash', () {
+      expect(Interval.fromSeconds(1, 2).hashCode,
+          isNot(Interval.fromSeconds(2, 3).hashCode));
     });
   });
 

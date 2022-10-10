@@ -298,6 +298,9 @@ class Interval {
 
   @override
   int get hashCode => hash2(start, end);
+
+  @override
+  String toString() => 'start: $start, end: $end';
 }
 
 /// Returns a stream of [nrInterval] [Interval]s distributed as equally as
