@@ -297,6 +297,8 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
 
   @override
   DataAvailability query(C collection) {
+    // Determine how many items to generate based on the input parameters. This
+    // also helps prevent issues in case of bad input parameters.
     final nrItems = _nrIntervals > 0 &&
             _startTime.isBefore(_endTime) &&
             collection.length > 0
