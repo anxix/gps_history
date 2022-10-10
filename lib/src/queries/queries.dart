@@ -181,7 +181,7 @@ class LocationByTime<P extends GpsPoint> extends QueryResult {
   /// match was available).
   final int? toleranceSeconds;
 
-  /// The point that was found
+  /// The point that was found.
   final P? location;
 
   LocationByTime(this.time, this.toleranceSeconds, this.location);
