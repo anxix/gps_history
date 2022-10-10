@@ -12,20 +12,20 @@ import 'package:test/test.dart';
 
 void main() {
   group('QueryCollectionInfo', () {
-    test('Empty', () {
+    test('Empty', () async {
       final gpc = GpcListBased();
-      final queryResult = QueryCollectionInfo().query(gpc);
+      final queryResult = await QueryCollectionInfo().query(gpc);
 
       expect(queryResult.firstItemStartTime, null);
       expect(queryResult.lastItemEndTime, null);
       expect(queryResult.length, gpc.length);
     });
 
-    test('Simple', () {
+    test('Simple', () async {
       final gpc = GpcCompactGpsPoint()
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(3)))
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)));
-      final queryResult = QueryCollectionInfo().query(gpc);
+      final queryResult = await QueryCollectionInfo().query(gpc);
 
       expect(queryResult.firstItemStartTime, GpsTime(3));
       expect(queryResult.lastItemEndTime, GpsTime(10));
@@ -46,9 +46,9 @@ void main() {
       }
     }
 
-    void runTest<P extends GpsPoint, C extends GpsPointsView<P>>(
-        C source, QueryCollectionItems<P, C> query, CollectionItems expected) {
-      final result = query.query(source);
+    void runTest<P extends GpsPoint, C extends GpsPointsView<P>>(C source,
+        QueryCollectionItems<P, C> query, CollectionItems expected) async {
+      final result = await query.query(source);
 
       expect(result.startIndex, expected.startIndex,
           reason: 'Incorrect startIndex');
@@ -99,18 +99,19 @@ void main() {
     // Doesn't require extensive testing since it just wraps the search
     // algorithm functionality, which has its own thorough tests.
 
-    test('No match', () {
+    test('No match', () async {
       final collection = GpcListBased<GpsPoint>();
       final queryTime = GpsTime(10);
       final result =
-          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
+          await QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(
+                  queryTime, null)
               .query(collection);
       expect(result.location, null);
       expect(result.time, queryTime);
       expect(result.toleranceSeconds, null);
     });
 
-    test('Exact match', () {
+    test('Exact match', () async {
       final collection = GpcListBased<GpsPoint>()
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(20)))
@@ -120,14 +121,15 @@ void main() {
       final itemIndex = 4;
       final queryTime = collection[itemIndex].time;
       final result =
-          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
+          await QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(
+                  queryTime, null)
               .query(collection);
       expect(result.location, collection[itemIndex]);
       expect(result.time, queryTime);
       expect(result.toleranceSeconds, null);
     });
 
-    test('Match thanks to tolerance', () {
+    test('Match thanks to tolerance', () async {
       final collection = GpcListBased<GpsPoint>()
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(10)))
         ..add(GpsPoint.allZero.copyWith(time: GpsTime(20)))
@@ -137,19 +139,22 @@ void main() {
       final itemIndex = 4;
       final queryTime = collection[itemIndex].time.add(seconds: 2);
       final perfectMatchResult =
-          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, null)
+          await QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(
+                  queryTime, null)
               .query(collection);
       expect(perfectMatchResult.location, null,
           reason: 'Perfect match should not be found');
 
       final smallToleranceMatchResult =
-          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, 1)
+          await QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(
+                  queryTime, 1)
               .query(collection);
       expect(smallToleranceMatchResult.location, null,
           reason: 'Small tolerance match should not be found');
 
       final largeToleranceMatchResult =
-          QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(queryTime, 2)
+          await QueryLocationByTime<GpsPoint, GpcListBased<GpsPoint>>(
+                  queryTime, 2)
               .query(collection);
       expect(largeToleranceMatchResult.location, collection[itemIndex],
           reason: 'Large tolerance match should be found');
@@ -203,28 +208,28 @@ void main() {
       }
     }
 
-    test('Empty collection', () {
+    test('Empty collection', () async {
       final query =
           QueryDataAvailability(startTime, endTime, nrIntervals, boundingBox);
-      final result = query.query(GpcCompactGpsPoint());
+      final result = await query.query(GpcCompactGpsPoint());
       checkResult(result, startTime, endTime, nrIntervals, boundingBox, []);
     });
 
-    test('Invalid time range', () {
+    test('Invalid time range', () async {
       final query =
           QueryDataAvailability(endTime, startTime, nrIntervals, null);
-      final result = query.query(collection);
+      final result = await query.query(collection);
       checkResult(result, endTime, startTime, nrIntervals, null, []);
     });
 
-    test('Invalid number of intervals', () {
+    test('Invalid number of intervals', () async {
       var query = QueryDataAvailability(startTime, endTime, 0, boundingBox);
-      var result = query.query(collection);
+      var result = await query.query(collection);
       checkResult(
           result, startTime, endTime, 0, boundingBox, [], 'Zero interval');
 
       query = QueryDataAvailability(startTime, endTime, -1, boundingBox);
-      result = query.query(collection);
+      result = await query.query(collection);
       checkResult(
           result, startTime, endTime, -1, boundingBox, [], 'Negative interval');
     });

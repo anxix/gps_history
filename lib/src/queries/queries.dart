@@ -95,7 +95,7 @@ abstract class QueryResult {}
 abstract class Query<P extends GpsPoint, C extends GpsPointsView<P>,
     R extends QueryResult> {
   /// Function that executes the actual query and returns the result.
-  R query(C collection);
+  Future<R> query(C collection);
 }
 
 /// Query result for [QueryCollectionInfo].
@@ -121,7 +121,7 @@ class CollectionInfo extends QueryResult {
 class QueryCollectionInfo<P extends GpsPoint, C extends GpsPointsView<P>>
     extends Query<P, C, CollectionInfo> {
   @override
-  CollectionInfo query(C collection) {
+  Future<CollectionInfo> query(C collection) async {
     return CollectionInfo(
         collection.isNotEmpty ? collection.first.time : null,
         collection.isNotEmpty ? collection.last.endTime : null,
@@ -168,7 +168,7 @@ class QueryCollectionItems<P extends GpsPoint, C extends GpsPointsView<P>>
         _nrItems = nrItems;
 
   @override
-  CollectionItems<P, C> query(C collection) {
+  Future<CollectionItems<P, C>> query(C collection) async {
     final end = _nrItems == null ? collection.length : _startIndex + _nrItems!;
     return CollectionItems<P, C>(
         _startIndex, collection.sublist(_startIndex, end) as C);
@@ -209,7 +209,7 @@ class QueryLocationByTime<P extends GpsPoint, C extends GpsPointsView<P>>
         _toleranceSeconds = toleranceSeconds;
 
   @override
-  LocationByTime<P> query(C collection) {
+  Future<LocationByTime<P>> query(C collection) async {
     final searchAlgorithm = SearchAlgorithm.getBestAlgorithm(
         collection,
         collection.sortedByTime,
@@ -269,6 +269,34 @@ class DataAvailability extends QueryResult {
   int get length => _items.length;
 }
 
+/// Represents a time interval for a query.
+class Interval {
+  GpsTime start;
+  GpsTime end;
+
+  Interval(this.start, this.end);
+}
+
+/// Returns a stream of [nrInterval] [Interval]s distributed as equally as
+/// possible between [startTime] and [endTime].
+Stream<Interval> generateIntervals(
+    GpsTime startTime, GpsTime endTime, int nrIntervals) async* {
+  if (nrIntervals <= 0 || !startTime.isBefore(endTime)) {
+    return;
+  }
+
+  final intervalDuration = endTime.difference(startTime) / nrIntervals;
+
+  for (var intervalNr = 0; intervalNr < nrIntervals; intervalNr++) {
+    final intervalStart =
+        startTime.add(seconds: (intervalNr * intervalDuration).round());
+    final intervalEnd =
+        startTime.add(seconds: ((intervalNr + 1) * intervalDuration).round());
+
+    yield Interval(intervalStart, intervalEnd);
+  }
+}
+
 /// Identifies if location data is available for specific time intervals,
 /// optionally within a specific bounding box.
 ///
@@ -296,19 +324,22 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
         _boundingBox = boundingBox;
 
   @override
-  DataAvailability query(C collection) {
+  Future<DataAvailability> query(C collection) async {
     // Determine how many items to generate based on the input parameters. This
     // also helps prevent issues in case of bad input parameters.
-    final nrItems = _nrIntervals > 0 &&
+    final nrIntervals = _nrIntervals > 0 &&
             _startTime.isBefore(_endTime) &&
             collection.length > 0
         ? _nrIntervals
         : 0;
-    final foundData = List<Data>.filled(nrItems, Data.notAvailable);
+    final foundData = List<Data>.filled(nrIntervals, Data.notAvailable);
 
-    if (nrItems > 0) {
-      // TODO: implement query
-      throw UnimplementedError();
+    if (nrIntervals > 0) {
+      await for (final interval
+          in generateIntervals(_startTime, _endTime, nrIntervals)) {
+        // TODO: implement query
+        throw UnimplementedError();
+      }
     }
 
     return DataAvailability(
