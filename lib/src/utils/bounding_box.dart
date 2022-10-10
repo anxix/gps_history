@@ -9,6 +9,7 @@
  */
 
 import 'binary_conversions.dart';
+import 'hash.dart';
 
 /// Represents a latitude/longitude aligned bounding box for a query, intended
 /// to be subclassed and implemented for geodetic (floating point latitude
@@ -95,6 +96,26 @@ abstract class LatLongBoundingBox<T extends num> {
         (wrapsAntimeridian
             ? (leftLongitude <= longitude || longitude <= rightLongitude)
             : (leftLongitude <= longitude && longitude <= rightLongitude));
+  }
+
+  @override
+  bool operator ==(other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (runtimeType != other.runtimeType) {
+      return false;
+    }
+    return other is LatLongBoundingBox &&
+        other.bottomLatitude == bottomLatitude &&
+        other.leftLongitude == leftLongitude &&
+        other.topLatitude == topLatitude &&
+        other.rightLongitude == rightLongitude;
+  }
+
+  @override
+  int get hashCode {
+    return hash4(bottomLatitude, leftLongitude, topLatitude, rightLongitude);
   }
 }
 

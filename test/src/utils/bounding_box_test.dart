@@ -24,6 +24,36 @@ class PointTest {
 }
 
 void main() {
+  group('Properties', () {
+    test('Equals', () {
+      final flatBb0 = FlatLatLongBoundingBox(10, 20, 30, 40);
+      final flatBb1 = FlatLatLongBoundingBox(10, 20, 30, 40);
+      expect(flatBb0, flatBb0,
+          reason: 'Expected bounding box to be equal to itself.');
+      expect(flatBb0, flatBb1,
+          reason: 'Expected two bounding boxes with same values to be equal.');
+
+      final geoBb0 = GeodeticLatLongBoundingBox(
+          flatBb0.bottomLatitude.toDouble(),
+          flatBb0.leftLongitude.toDouble(),
+          flatBb0.topLatitude.toDouble(),
+          flatBb0.rightLongitude.toDouble());
+      expect(geoBb0, isNot(flatBb0),
+          reason:
+              'Expected two bounding boxes of different type and with same values to not be equal.');
+    });
+
+    test('Hash', () {
+      final flatBb0 = FlatLatLongBoundingBox(10, 20, 30, 40);
+      final flatBb1 = FlatLatLongBoundingBox(11, 22, 33, 44);
+      final flatBb2 = FlatLatLongBoundingBox(10, 20, 30, 40);
+      expect(flatBb0.hashCode, isNot(flatBb1.hashCode),
+          reason: 'Expected different hashes with different values.');
+      expect(flatBb0.hashCode, flatBb2.hashCode,
+          reason: 'Expected same hashes with same values.');
+    });
+  });
+
   group('Contains', () {
     /// Creates the bounding box defined by the arguments and checks for each
     /// defined test in [tests] whether the containership check returns the
