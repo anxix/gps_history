@@ -228,7 +228,7 @@ void main() {
       startTime = GpsTime(100);
       endTime = GpsTime(200);
       nrIntervals = 50;
-      boundingBox = GeodeticLatLongBoundingBox(10, 20, 30, 40);
+      boundingBox = GeodeticLatLongBoundingBox(0, 0, 10, 10);
       // Very simple collection that should return a match.
       collection = GpcCompactGpsPoint()
         ..add(GpsPoint(
@@ -239,23 +239,9 @@ void main() {
                 (boundingBox.rightLongitude - boundingBox.leftLongitude) ~/ 1));
     });
 
-    checkResult(
-        result,
-        GpsTime expectedStartTime,
-        GpsTime expectedEndTime,
-        int expectedNrIntervals,
-        GeodeticLatLongBoundingBox? expectedBoundingBox,
-        List<Data> expectedData,
+    checkResultDataOnly(DataAvailability result, List<Data> expectedData,
         [String message = '']) {
       final msg = message == '' ? '' : '$message: ';
-      expect(result.startTime, expectedStartTime,
-          reason: '${msg}Incorrect startTime.');
-      expect(result.endTime, expectedEndTime,
-          reason: '${msg}Incorrect endTime.');
-      expect(result.nrIntervals, expectedNrIntervals,
-          reason: '${msg}Incorrect nrIntervals.');
-      expect(result.boundingBox, expectedBoundingBox,
-          reason: '${msg}Incorrect bounding box.');
       expect(result.length, expectedData.length,
           reason: '${msg}Wrong amount of data.');
       for (var i = 0; i < result.length; i++) {
@@ -264,30 +250,88 @@ void main() {
       }
     }
 
+    checkResultFull(
+        DataAvailability result,
+        GpsTime expectedStartTime,
+        GpsTime expectedEndTime,
+        int expectedNrIntervals,
+        GeodeticLatLongBoundingBox? expectedBoundingBox,
+        List<Data> expectedData,
+        [String message = '']) {
+      final msg = message == '' ? '' : '$message: ';
+
+      expect(result.startTime, expectedStartTime,
+          reason: '${msg}Incorrect startTime.');
+      expect(result.endTime, expectedEndTime,
+          reason: '${msg}Incorrect endTime.');
+      expect(result.nrIntervals, expectedNrIntervals,
+          reason: '${msg}Incorrect nrIntervals.');
+      expect(result.boundingBox, expectedBoundingBox,
+          reason: '${msg}Incorrect bounding box.');
+
+      checkResultDataOnly(result, expectedData, message);
+    }
+
     test('Empty collection', () async {
       final query =
           QueryDataAvailability(startTime, endTime, nrIntervals, boundingBox);
       final result = await query.query(GpcCompactGpsPoint());
-      checkResult(result, startTime, endTime, nrIntervals, boundingBox, []);
+      checkResultFull(result, startTime, endTime, nrIntervals, boundingBox, []);
     });
 
     test('Invalid time range', () async {
       final query =
           QueryDataAvailability(endTime, startTime, nrIntervals, null);
       final result = await query.query(collection);
-      checkResult(result, endTime, startTime, nrIntervals, null, []);
+      checkResultFull(result, endTime, startTime, nrIntervals, null, []);
     });
 
     test('Invalid number of intervals', () async {
       var query = QueryDataAvailability(startTime, endTime, 0, boundingBox);
       var result = await query.query(collection);
-      checkResult(
+      checkResultFull(
           result, startTime, endTime, 0, boundingBox, [], 'Zero interval');
 
       query = QueryDataAvailability(startTime, endTime, -1, boundingBox);
       result = await query.query(collection);
-      checkResult(
+      checkResultFull(
           result, startTime, endTime, -1, boundingBox, [], 'Negative interval');
+    });
+
+    test('Unsorted collection', () async {
+      collection.sortingEnforcement = SortingEnforcement.notRequired;
+      collection.add(
+          // Add a point outside the bounding box.
+          collection[0].copyWith(
+              time: collection[0].time.add(seconds: -25),
+              latitude: boundingBox.topLatitude + 1,
+              longitude: boundingBox.rightLongitude + 1));
+      expect(collection.sortedByTime, false,
+          reason: 'Expected collection to be unsorted');
+
+      var query = QueryDataAvailability(startTime, endTime, 4, null);
+      var result = await query.query(collection);
+      checkResultDataOnly(
+          result,
+          [
+            Data.notAvailable,
+            Data.availableWithinBoundingBox,
+            Data.availableWithinBoundingBox,
+            Data.notAvailable
+          ],
+          'Unsorted collection no bounding box');
+
+      query = QueryDataAvailability(startTime, endTime, 4, boundingBox);
+      result = await query.query(collection);
+      checkResultDataOnly(
+          result,
+          [
+            Data.notAvailable,
+            Data.availableOutsideBoundingBox,
+            Data.availableWithinBoundingBox,
+            Data.notAvailable
+          ],
+          'Unsorted collection with bounding box');
     });
   });
 }

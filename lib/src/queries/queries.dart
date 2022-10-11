@@ -361,14 +361,58 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
     final foundData = List<Data>.filled(nrIntervals, Data.notAvailable);
 
     if (nrIntervals > 0) {
+      // TODO: Convert bounding box to flat representation if necessary.
+
+      var prevEnd = 0;
+      var intervalNr = -1;
       await for (final interval
           in generateIntervals(_startTime, _endTime, nrIntervals)) {
-        // TODO: implement query
-        throw UnimplementedError();
+        intervalNr++;
+        if (collection.sortedByTime) {
+          // TODO: Keep track of collection range that should be searched (binary only).
+          // TODO: implement sorted query
+          throw UnimplementedError();
+        } else {
+          foundData[intervalNr] =
+              _linearSearchForInterval(collection, interval, foundData);
+        }
       }
     }
 
     return DataAvailability(
         _startTime, _endTime, _nrIntervals, _boundingBox, foundData);
+  }
+
+  Data _linearSearchForInterval(
+      collection, Interval interval, List<Data> foundData) {
+    var result = Data.notAvailable;
+
+    // Unsorted -> horribly slow linear search.
+    for (var i = 0; i < collection.length; i++) {
+      final item = collection[i];
+      final timeComparison = compareTimeSpans(
+          startA: interval.start.secondsSinceEpoch,
+          endA: interval.end.secondsSinceEpoch,
+          startB: item.time.secondsSinceEpoch,
+          endB: item.endTime.secondsSinceEpoch);
+
+      if (timeComparison == TimeComparisonResult.overlapping ||
+          timeComparison == TimeComparisonResult.same) {
+        // This is a matching time, so it's definitely relevant.
+        if (_boundingBox == null ||
+            _boundingBox!.contains(item.latitude, item.longitude)) {
+          // It's in the bounding box or the bounding box is irrelevant,
+          // so this is as good as it gets -> go to next interval.
+          return Data.availableWithinBoundingBox;
+        } else {
+          // Bounding box is relevant and not within the box -> store as
+          // match, but continue looking as there may still be a match
+          // that will also be within the box.
+          result = Data.availableOutsideBoundingBox;
+        }
+      }
+    }
+
+    return result;
   }
 }
