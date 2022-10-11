@@ -353,16 +353,17 @@ void main() {
             latitude: boundingBox.bottomLatitude - 1,
             longitude: boundingBox.leftLongitude));
 
-        // 2: t=142..157, inside BB
+        // 2: t=142..150, inside BB
         stays.add(GpsStay(
             time: GpsTime(142),
-            endTime: GpsTime(157),
+            endTime: GpsTime(150),
             latitude: boundingBox.topLatitude,
             longitude: boundingBox.rightLongitude));
 
+        // 3: t=176..187, inside BB
         stays.add(GpsStay(
-            time: GpsTime(168),
-            endTime: GpsTime(177),
+            time: GpsTime(176),
+            endTime: GpsTime(187),
             latitude: boundingBox.topLatitude,
             longitude: boundingBox.rightLongitude));
 
@@ -385,8 +386,53 @@ void main() {
         expect(stays.sortedByTime, true,
             reason: 'Test intended to run on sorted list');
 
-        checkResultDataOnly(await runQuery(1, boundingBox),
-            [Data.availableWithinBoundingBox], '1 interval');
+        checkResultDataOnly(
+            await runQuery(1, boundingBox), [Data.availableWithinBoundingBox]);
+      });
+
+      test('Two intervals', () async {
+        checkResultDataOnly(await runQuery(2, boundingBox),
+            [Data.availableWithinBoundingBox, Data.availableWithinBoundingBox]);
+      });
+
+      test('Five intervals', () async {
+        checkResultDataOnly(await runQuery(5, boundingBox), [
+          Data.availableWithinBoundingBox,
+          Data.availableOutsideBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox
+        ]);
+      });
+
+      test('Seven intervals', () async {
+        checkResultDataOnly(await runQuery(7, boundingBox), [
+          Data.availableWithinBoundingBox,
+          Data.availableOutsideBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.notAvailable,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox
+        ]);
+      });
+
+      test('Thirteen intervals', () async {
+        checkResultDataOnly(await runQuery(13, boundingBox), [
+          Data.availableWithinBoundingBox,
+          Data.availableOutsideBoundingBox,
+          Data.availableOutsideBoundingBox,
+          Data.availableOutsideBoundingBox,
+          Data.notAvailable,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.notAvailable,
+          Data.notAvailable,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.availableWithinBoundingBox,
+          Data.availableOutsideBoundingBox
+        ]);
       });
     });
   });
