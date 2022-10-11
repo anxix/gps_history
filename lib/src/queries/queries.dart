@@ -363,16 +363,25 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
     if (nrIntervals > 0) {
       // TODO: Convert bounding box to flat representation if necessary.
 
-      var prevEnd = 0;
+      final intervalsStream =
+          generateIntervals(_startTime, _endTime, nrIntervals);
+
       var intervalNr = -1;
-      await for (final interval
-          in generateIntervals(_startTime, _endTime, nrIntervals)) {
-        intervalNr++;
-        if (collection.sortedByTime) {
-          // TODO: Keep track of collection range that should be searched (binary only).
-          // TODO: implement sorted query
-          throw UnimplementedError();
-        } else {
+      if (collection.sortedByTime) {
+        final searchAlgorithm = SearchAlgorithm.getBestAlgorithm<P, C, GpsTime>(
+            collection,
+            true,
+            SearchCompareDiff(compareItemToTime, diffItemAndTime));
+        int prevEndIndex = 0;
+        await for (final interval in intervalsStream) {
+          intervalNr++;
+          // TODO: switch to binary search
+          foundData[intervalNr] =
+              _linearSearchForInterval(collection, interval, foundData);
+        }
+      } else {
+        await for (final interval in intervalsStream) {
+          intervalNr++;
           foundData[intervalNr] =
               _linearSearchForInterval(collection, interval, foundData);
         }

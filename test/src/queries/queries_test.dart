@@ -333,5 +333,61 @@ void main() {
           ],
           'Unsorted collection with bounding box');
     });
+
+    group('Sorted collection', () {
+      late GpcCompactGpsStay stays;
+
+      setUp(() {
+        stays = GpcCompactGpsStay();
+        // 0: t=100..105, inside BB
+        stays.add(GpsStay(
+            time: GpsTime(100),
+            endTime: GpsTime(105),
+            latitude: boundingBox.bottomLatitude,
+            longitude: boundingBox.leftLongitude));
+
+        // 1: t=110..125, outside BB
+        stays.add(GpsStay(
+            time: GpsTime(110),
+            endTime: GpsTime(125),
+            latitude: boundingBox.bottomLatitude - 1,
+            longitude: boundingBox.leftLongitude));
+
+        // 2: t=142..157, inside BB
+        stays.add(GpsStay(
+            time: GpsTime(142),
+            endTime: GpsTime(157),
+            latitude: boundingBox.topLatitude,
+            longitude: boundingBox.rightLongitude));
+
+        stays.add(GpsStay(
+            time: GpsTime(168),
+            endTime: GpsTime(177),
+            latitude: boundingBox.topLatitude,
+            longitude: boundingBox.rightLongitude));
+
+        // 4: t=195..200, outside BB
+        stays.add(GpsStay(
+            time: GpsTime(195),
+            endTime: GpsTime(200),
+            latitude: boundingBox.topLatitude + 1,
+            longitude: boundingBox.rightLongitude + 2));
+      });
+
+      Future<DataAvailability> runQuery(
+          int nrIntervals, GeodeticLatLongBoundingBox boundingBox) async {
+        final query = QueryDataAvailability<GpsStay, GpcCompactGpsStay>(
+            startTime, endTime, nrIntervals, boundingBox);
+        return query.query(stays);
+      }
+
+      test('Single interval', () async {
+        expect(stays.sortedByTime, true,
+            reason: 'Test intended to run on sorted list');
+
+        checkResultDataOnly(await runQuery(1, boundingBox),
+            [Data.availableWithinBoundingBox], '1 interval');
+      });
+    });
   });
 }
