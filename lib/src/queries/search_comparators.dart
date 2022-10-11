@@ -29,6 +29,10 @@ int compareItemToTime(GpsPointsView collection, int itemNr, GpsTime time) {
   }
 }
 
+/// Calculates the difference (in seconds) between the item at position
+/// [itemNr] in [collection] and some other [time].
+///
+/// For more info on the behaviour, see [diffIntTime].
 num diffItemAndTime(GpsPointsView collection, int itemNr, GpsTime time) {
   final result = collection.diffElementTimeAndSeparateTime(itemNr, time);
   return result;
