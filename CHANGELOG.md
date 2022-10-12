@@ -4,7 +4,7 @@
   * 
 
 * New features:
-  * 
+  * QueryDataAvailability implemented.
 
 * Fixes:
   * 
