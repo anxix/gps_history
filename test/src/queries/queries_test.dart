@@ -402,6 +402,20 @@ void main() {
         return query.query(stays);
       }
 
+      test('Time range before time covered by collection', () async {
+        final query = QueryDataAvailability<GpsStay, GpcCompactGpsStay>(
+            GpsTime(0), GpsTime(50), 1, null);
+        final result = await query.query(stays);
+        checkResultDataOnly(result, [Data.notAvailable]);
+      });
+
+      test('Time range after time covered by collection', () async {
+        final query = QueryDataAvailability<GpsStay, GpcCompactGpsStay>(
+            GpsTime(500), GpsTime(600), 1, null);
+        final result = await query.query(stays);
+        checkResultDataOnly(result, [Data.notAvailable]);
+      });
+
       test('Single interval', () async {
         expect(stays.sortedByTime, true,
             reason: 'Test intended to run on sorted list');
