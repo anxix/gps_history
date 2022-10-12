@@ -90,7 +90,6 @@ abstract class SearchAlgorithm<P extends GpsPoint, C extends GpsPointsView<P>,
   /// Internal implementation for [find], which does not do any validity checks
   /// on its arguments. Not to be called directly.
   @protected
-  // ignore: non_constant_identifier_names
   int? findUnsafe(F target, num? tolerance, int start, int end);
 
   /// Tries to find and return the item index between [start] and [end] for
