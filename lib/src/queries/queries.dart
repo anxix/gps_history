@@ -371,19 +371,27 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
         final searchAlgorithm = SearchAlgorithm.getBestAlgorithm<P, C, GpsTime>(
             collection,
             true,
-            SearchCompareDiff(compareItemToTime, diffItemAndTime));
-        int prevEndIndex = 0;
+            SearchCompareDiff<C, GpsTime>(compareItemToTime, diffItemAndTime));
+
+        // Pick a tolerance based on the interval. This should guarantee that
+        // it either finds both start and end of the interval, or neither.
+        final tolerance = _endTime.difference(_startTime);
+
         await for (final interval in intervalsStream) {
           intervalNr++;
-          // TODO: switch to binary search
-          foundData[intervalNr] =
-              _linearSearchForInterval(collection, interval, foundData);
+          var startIndex = searchAlgorithm.find(interval.start, tolerance);
+          var endIndex = interval.start == interval.end
+              ? startIndex
+              : searchAlgorithm.find(interval.end, tolerance);
+
+          foundData[intervalNr] = _binarySearchForInterval(
+              collection, interval, startIndex, endIndex);
         }
       } else {
         await for (final interval in intervalsStream) {
           intervalNr++;
           foundData[intervalNr] =
-              _linearSearchForInterval(collection, interval, foundData);
+              _linearSearchForInterval(collection, interval);
         }
       }
     }
@@ -392,8 +400,45 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
         _startTime, _endTime, _nrIntervals, _boundingBox, foundData);
   }
 
-  Data _linearSearchForInterval(
-      collection, Interval interval, List<Data> foundData) {
+  Data _binarySearchForInterval(
+      collection, Interval interval, int? startIndex, int? endIndex) {
+    var result = Data.notAvailable;
+
+    // If nothing found, looks like no data available for this interval.
+    if (startIndex == null || endIndex == null) {
+      return result;
+    }
+
+    // Data found for the interval -> see if it is indeed interesting.
+    for (var index = startIndex; index <= endIndex; index++) {
+      final gpsItem = collection[index];
+      final comparison = compareTimeSpans(
+          startA: gpsItem.time.secondsSinceEpoch,
+          endA: gpsItem.endTime.secondsSinceEpoch,
+          startB: interval.start.secondsSinceEpoch,
+          endB: interval.end.secondsSinceEpoch);
+
+      // If the item is relevant to the interval, compare bounding box.
+      if (comparison == TimeComparisonResult.overlapping ||
+          comparison == TimeComparisonResult.same) {
+        if (_boundingBox == null ||
+            _boundingBox!.contains(gpsItem.latitude, gpsItem.longitude)) {
+          // It's in the bounding box or the bounding box is irrelevant,
+          // so this is as good as it gets -> go to next interval.
+          return Data.availableWithinBoundingBox;
+        } else {
+          // Bounding box is relevant and not within the box -> store as
+          // match, but continue looking as there may still be a match
+          // that will also be within the box.
+          result = Data.availableOutsideBoundingBox;
+        }
+      }
+    }
+
+    return result;
+  }
+
+  Data _linearSearchForInterval(collection, Interval interval) {
     var result = Data.notAvailable;
 
     // Unsorted -> horribly slow linear search.

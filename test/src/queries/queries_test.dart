@@ -411,7 +411,11 @@ void main() {
 
       test('Time range after time covered by collection', () async {
         final query = QueryDataAvailability<GpsStay, GpcCompactGpsStay>(
-            GpsTime(500), GpsTime(600), 1, null);
+            GpsTime(500),
+            GpsTime(
+                60000), // use very long span because the algo uses a tolerance based on the span duration
+            1,
+            null);
         final result = await query.query(stays);
         checkResultDataOnly(result, [Data.notAvailable]);
       });
