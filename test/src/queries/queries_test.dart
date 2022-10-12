@@ -298,40 +298,60 @@ void main() {
           result, startTime, endTime, -1, boundingBox, [], 'Negative interval');
     });
 
-    test('Unsorted collection', () async {
-      collection.sortingEnforcement = SortingEnforcement.notRequired;
-      collection.add(
-          // Add a point outside the bounding box.
-          collection[0].copyWith(
-              time: collection[0].time.add(seconds: -25),
-              latitude: boundingBox.topLatitude + 1,
-              longitude: boundingBox.rightLongitude + 1));
-      expect(collection.sortedByTime, false,
-          reason: 'Expected collection to be unsorted');
+    group('Unsorted collection', () {
+      setUp(() {
+        collection.sortingEnforcement = SortingEnforcement.notRequired;
+        collection.add(
+            // Add a point outside the bounding box.
+            collection[0].copyWith(
+                time: collection[0].time.add(seconds: -25),
+                latitude: boundingBox.topLatitude + 1,
+                longitude: boundingBox.rightLongitude + 1));
+      });
 
-      var query = QueryDataAvailability(startTime, endTime, 4, null);
-      var result = await query.query(collection);
-      checkResultDataOnly(
-          result,
-          [
-            Data.notAvailable,
-            Data.availableWithinBoundingBox,
-            Data.availableWithinBoundingBox,
-            Data.notAvailable
-          ],
-          'Unsorted collection no bounding box');
+      test('Time range before time covered by collection', () async {
+        final query = QueryDataAvailability(GpsTime(0), GpsTime(50), 1, null);
+        final result = await query.query(collection);
+        checkResultDataOnly(result, [Data.notAvailable]);
+      });
 
-      query = QueryDataAvailability(startTime, endTime, 4, boundingBox);
-      result = await query.query(collection);
-      checkResultDataOnly(
-          result,
-          [
-            Data.notAvailable,
-            Data.availableOutsideBoundingBox,
-            Data.availableWithinBoundingBox,
-            Data.notAvailable
-          ],
-          'Unsorted collection with bounding box');
+      test('Time range after time covered by collection', () async {
+        final query =
+            QueryDataAvailability(GpsTime(500), GpsTime(600), 1, null);
+        final result = await query.query(collection);
+        checkResultDataOnly(result, [Data.notAvailable]);
+      });
+
+      test('No bounding box', () async {
+        expect(collection.sortedByTime, false,
+            reason: 'Expected collection to be unsorted');
+
+        final query = QueryDataAvailability(startTime, endTime, 4, null);
+        final result = await query.query(collection);
+        checkResultDataOnly(
+            result,
+            [
+              Data.notAvailable,
+              Data.availableWithinBoundingBox,
+              Data.availableWithinBoundingBox,
+              Data.notAvailable
+            ],
+            'Unsorted collection no bounding box');
+      });
+
+      test('With bounding box', () async {
+        final query = QueryDataAvailability(startTime, endTime, 4, boundingBox);
+        final result = await query.query(collection);
+        checkResultDataOnly(
+            result,
+            [
+              Data.notAvailable,
+              Data.availableOutsideBoundingBox,
+              Data.availableWithinBoundingBox,
+              Data.notAvailable
+            ],
+            'Unsorted collection with bounding box');
+      });
     });
 
     group('Sorted collection', () {
