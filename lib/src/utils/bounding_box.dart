@@ -117,6 +117,10 @@ abstract class LatLongBoundingBox<T extends num> {
   int get hashCode {
     return hash4(bottomLatitude, leftLongitude, topLatitude, rightLongitude);
   }
+
+  @override
+  String toString() =>
+      'lower=($bottomLatitude, $leftLongitude), upper=($topLatitude, $rightLongitude)';
 }
 
 /// A bounding box implementation for the geodetic coordinate system.
