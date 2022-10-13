@@ -62,5 +62,5 @@ void main() async {
   }
 
   print(
-      'Found ${result.length} inside BB($boundingBox), responses:\n   $nrInBoundingBox in BB, $nrOutsideBoundingBox outside BB, $nrNotAvailable unavailable.');
+      'Using ${result.length} intervals, with BB($boundingBox), responses:\n   $nrInBoundingBox in BB, $nrOutsideBoundingBox outside BB, $nrNotAvailable unavailable.');
 }
