@@ -362,7 +362,11 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
     final foundData = List<Data>.filled(nrIntervals, Data.notAvailable);
 
     if (nrIntervals > 0) {
-      // TODO: Convert bounding box to flat representation if necessary.
+      // For collections using binary storage internally it can be a lot more
+      // efficient to execute bounding box comparisons on their internal
+      // representation. Shows about a 2x performance improvement in the
+      // query_data_available_benchmark testcase for a situation where many
+      // bounding box comparisons are necessary.
       final flatBB = _boundingBox != null && collection is GpcCompact
           ? FlatLatLongBoundingBox.fromGeodetic(_boundingBox!)
           : null;
