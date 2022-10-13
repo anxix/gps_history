@@ -71,6 +71,7 @@ import 'dart:typed_data';
 import '../../gps_queries.dart';
 import '../base.dart';
 import '../base_collections.dart';
+import '../gpc_efficient.dart';
 import '../utils/bounding_box.dart';
 import '../utils/hash.dart';
 import '../utils/time.dart';
@@ -362,6 +363,9 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
 
     if (nrIntervals > 0) {
       // TODO: Convert bounding box to flat representation if necessary.
+      final flatBB = _boundingBox != null && collection is GpcCompact
+          ? FlatLatLongBoundingBox.fromGeodetic(_boundingBox!)
+          : null;
 
       final intervalsStream =
           generateIntervals(_startTime, _endTime, nrIntervals);
@@ -385,7 +389,7 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
               : searchAlgorithm.find(interval.end, tolerance);
 
           foundData[intervalNr] = _binarySearchForInterval(
-              collection, interval, startIndex, endIndex);
+              collection, interval, startIndex, endIndex, flatBB);
         }
       } else {
         await for (final interval in intervalsStream) {
@@ -400,13 +404,20 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
         _startTime, _endTime, _nrIntervals, _boundingBox, foundData);
   }
 
-  Data _binarySearchForInterval(
-      C collection, Interval interval, int? startIndex, int? endIndex) {
+  Data _binarySearchForInterval(C collection, Interval interval,
+      int? startIndex, int? endIndex, FlatLatLongBoundingBox? flatBB) {
     var result = Data.notAvailable;
 
     // If nothing found, looks like no data available for this interval.
     if (startIndex == null || endIndex == null) {
       return result;
+    }
+
+    late LatLongBoundingBox? bb;
+    if (flatBB != null) {
+      bb = flatBB;
+    } else {
+      bb = _boundingBox;
     }
 
     // Data found for the interval -> see if it is indeed interesting.
@@ -416,12 +427,10 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
           interval.start.secondsSinceEpoch,
           interval.end.secondsSinceEpoch);
 
-      final gpsItem = collection[index];
       // If the item is relevant to the interval, compare bounding box.
       if (comparison == TimeComparisonResult.overlapping ||
           comparison == TimeComparisonResult.same) {
-        if (_boundingBox == null ||
-            _boundingBox!.contains(gpsItem.latitude, gpsItem.longitude)) {
+        if (bb == null || collection.elementContainedByBoundingBox(index, bb)) {
           // It's in the bounding box or the bounding box is irrelevant,
           // so this is as good as it gets -> go to next interval.
           return Data.availableWithinBoundingBox;

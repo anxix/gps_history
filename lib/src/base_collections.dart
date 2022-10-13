@@ -11,6 +11,7 @@
 import 'package:meta/meta.dart';
 
 import 'base.dart';
+import 'utils/bounding_box.dart';
 import 'utils/random_access_iterable.dart';
 import 'utils/time.dart';
 
@@ -118,6 +119,21 @@ abstract class GpsPointsView<T extends GpsPoint>
     final elem = this[elementNrA];
     return diffTime(
         startTimeA: elem.time, endTimeA: elem.endTime, timeB: timeB);
+  }
+
+  /// Determine if the element at position [elementNr] is contained by the
+  /// [boundingBox].
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// algorithms, for example if they have a way to do quick position
+  /// comparisons without doing full item retrieval.
+  bool elementContainedByBoundingBox(
+      int elementNr, LatLongBoundingBox boundingBox) {
+    if (boundingBox is FlatLatLongBoundingBox) {
+      boundingBox = GeodeticLatLongBoundingBox.fromFlat(boundingBox);
+    }
+    final item = this[elementNr];
+    return boundingBox.contains(item.latitude, item.longitude);
   }
 }
 

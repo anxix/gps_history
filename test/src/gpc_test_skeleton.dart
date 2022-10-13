@@ -9,6 +9,7 @@
 
 import 'dart:math';
 
+import 'package:gps_history/src/utils/bounding_box.dart';
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
 
@@ -542,5 +543,25 @@ void testGpsPointsCollection<T extends GpsPoint>(
             newItem.time.secondsSinceEpoch - 10,
             newItem.endTime.secondsSinceEpoch + 10),
         TimeComparisonResult.overlapping);
+  });
+
+  test('Bounding box', () {
+    final item = itemConstructor(1);
+    gpc.add(item);
+    final geodeticBBContaining = GeodeticLatLongBoundingBox(item.latitude - 1,
+        item.longitude - 1, item.latitude + 1, item.longitude + 1);
+    final geodeticBBExcluding = GeodeticLatLongBoundingBox(item.latitude + 1,
+        item.longitude + 1, item.latitude + 2, item.longitude + 2);
+
+    expect(gpc.elementContainedByBoundingBox(0, geodeticBBContaining), true);
+    expect(
+        gpc.elementContainedByBoundingBox(
+            0, FlatLatLongBoundingBox.fromGeodetic(geodeticBBContaining)),
+        true);
+    expect(gpc.elementContainedByBoundingBox(0, geodeticBBExcluding), false);
+    expect(
+        gpc.elementContainedByBoundingBox(
+            0, FlatLatLongBoundingBox.fromGeodetic(geodeticBBExcluding)),
+        false);
   });
 }

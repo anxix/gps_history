@@ -14,6 +14,7 @@ import 'dart:typed_data';
 import 'base.dart';
 import 'base_collections.dart';
 import 'utils/binary_conversions.dart';
+import 'utils/bounding_box.dart';
 import 'utils/random_access_iterable.dart';
 import 'utils/time.dart';
 
@@ -358,6 +359,19 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     final itemTime = Conversions.gpsTimeToUint32(elementB.time);
 
     return compareIntRepresentationTime(elementTime, itemTime);
+  }
+
+  @override
+  bool elementContainedByBoundingBox(
+      int elementNr, LatLongBoundingBox boundingBox) {
+    // Internal storage uses the same notation as the FlatLatLongBoundingBox,
+    // hence prefer using that type of bounding box.
+    if (boundingBox is GeodeticLatLongBoundingBox) {
+      boundingBox = FlatLatLongBoundingBox.fromGeodetic(boundingBox);
+    }
+    final byteIndex = _elementNrToByteOffset(elementNr);
+    return boundingBox.contains(_getUint32(byteIndex + _offsetLatitude),
+        _getUint32(byteIndex + _offsetLongitude));
   }
 }
 
