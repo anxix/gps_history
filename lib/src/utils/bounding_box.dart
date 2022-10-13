@@ -83,6 +83,8 @@ abstract class LatLongBoundingBox<T extends num> {
   /// Initializes the global extends fields, to be overridden by child classes.
   initGlobalExtents();
 
+  /// Determines if the bounding box contains the point at
+  /// coordinates ([latitude], [longitude]).
   bool contains(T latitude, T longitude) {
     // Catch the situation where the point is on one of the poles.
     if ((touchesNorthPole && latitude == topLatitude) ||
