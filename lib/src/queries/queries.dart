@@ -401,7 +401,7 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
   }
 
   Data _binarySearchForInterval(
-      collection, Interval interval, int? startIndex, int? endIndex) {
+      C collection, Interval interval, int? startIndex, int? endIndex) {
     var result = Data.notAvailable;
 
     // If nothing found, looks like no data available for this interval.
@@ -411,13 +411,12 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
 
     // Data found for the interval -> see if it is indeed interesting.
     for (var index = startIndex; index <= endIndex; index++) {
-      final gpsItem = collection[index];
-      final comparison = compareTimeSpans(
-          startA: gpsItem.time.secondsSinceEpoch,
-          endA: gpsItem.endTime.secondsSinceEpoch,
-          startB: interval.start.secondsSinceEpoch,
-          endB: interval.end.secondsSinceEpoch);
+      final comparison = collection.compareElementTimeWithSeparateTimeSpan(
+          index,
+          interval.start.secondsSinceEpoch,
+          interval.end.secondsSinceEpoch);
 
+      final gpsItem = collection[index];
       // If the item is relevant to the interval, compare bounding box.
       if (comparison == TimeComparisonResult.overlapping ||
           comparison == TimeComparisonResult.same) {
@@ -438,7 +437,7 @@ class QueryDataAvailability<P extends GpsPoint, C extends GpsPointsView<P>>
     return result;
   }
 
-  Data _linearSearchForInterval(collection, Interval interval) {
+  Data _linearSearchForInterval(C collection, Interval interval) {
     var result = Data.notAvailable;
 
     // Unsorted -> horribly slow linear search.
