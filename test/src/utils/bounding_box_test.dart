@@ -161,4 +161,25 @@ void main() {
       ]);
     });
   });
+
+  group('Conversions', () {
+    final geodeticBB = GeodeticLatLongBoundingBox(10, 20, 30, 40);
+    final flatBB = FlatLatLongBoundingBox(
+        Conversions.latitudeToUint32(10),
+        Conversions.longitudeToUint32(20),
+        Conversions.latitudeToUint32(30),
+        Conversions.longitudeToUint32(40));
+
+    test('Flat from geodetic', () {
+      final flatFromGeodetic = FlatLatLongBoundingBox.fromGeodetic(geodeticBB);
+
+      expect(flatFromGeodetic, flatBB);
+    });
+
+    test('Geodetic from flat', () {
+      final geodeticFromFlat = GeodeticLatLongBoundingBox.fromFlat(flatBB);
+
+      expect(geodeticFromFlat, geodeticBB);
+    });
+  });
 }

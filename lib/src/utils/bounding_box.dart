@@ -128,6 +128,16 @@ class GeodeticLatLongBoundingBox extends LatLongBoundingBox<double> {
   GeodeticLatLongBoundingBox(super.bottomLatitude, super.leftLongitude,
       super.topLatitude, super.rightLongitude);
 
+  /// Creates a geodetic bounding box based on a flat bounding box
+  /// source [flatBB].
+  factory GeodeticLatLongBoundingBox.fromFlat(FlatLatLongBoundingBox flatBB) {
+    return GeodeticLatLongBoundingBox(
+        Conversions.uint32ToLatitude(flatBB.bottomLatitude),
+        Conversions.uint32ToLongitude(flatBB.leftLongitude),
+        Conversions.uint32ToLatitude(flatBB.topLatitude),
+        Conversions.uint32ToLongitude(flatBB.rightLongitude));
+  }
+
   @override
   initGlobalExtents() {
     globalMinLatitude = -90.0;
@@ -142,6 +152,17 @@ class GeodeticLatLongBoundingBox extends LatLongBoundingBox<double> {
 class FlatLatLongBoundingBox extends LatLongBoundingBox<int> {
   FlatLatLongBoundingBox(super.bottomLatitude, super.leftLongitude,
       super.topLatitude, super.rightLongitude);
+
+  /// Creates a flat bounding box based on a geodetic bounding box
+  /// source [geodeticBB].
+  factory FlatLatLongBoundingBox.fromGeodetic(
+      GeodeticLatLongBoundingBox geodeticBB) {
+    return FlatLatLongBoundingBox(
+        Conversions.latitudeToUint32(geodeticBB.bottomLatitude),
+        Conversions.longitudeToUint32(geodeticBB.leftLongitude),
+        Conversions.latitudeToUint32(geodeticBB.topLatitude),
+        Conversions.longitudeToUint32(geodeticBB.rightLongitude));
+  }
 
   @override
   initGlobalExtents() {
