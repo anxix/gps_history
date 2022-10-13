@@ -76,12 +76,25 @@ abstract class GpsPointsView<T extends GpsPoint>
   /// retrieval.
   TimeComparisonResult compareElementTimeWithSeparateTime(
       int elementNrA, GpsTime timeB) {
+    return compareElementTimeWithSeparateTimeSpan(
+        elementNrA, timeB.secondsSinceEpoch, timeB.secondsSinceEpoch);
+  }
+
+  /// Performs [compareTimeSpans] for the item in the positions [elementNrA]
+  /// and some separate time span between [startB] and [endB] (in seconds since
+  /// epoch) that's presumably not in the list, then returns the result.
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// algorithms, for example if they have a way to do quick time comparisons
+  /// without doing full item retrieval.
+  TimeComparisonResult compareElementTimeWithSeparateTimeSpan(
+      int elementNrA, int startB, int endB) {
     final elemA = this[elementNrA];
     return compareTimeSpans(
         startA: elemA.time.secondsSinceEpoch,
         endA: elemA.endTime.secondsSinceEpoch,
-        startB: timeB.secondsSinceEpoch,
-        endB: timeB.secondsSinceEpoch);
+        startB: startB,
+        endB: endB);
   }
 
   /// Performs [compareTime] for the item in the positions [elementNrA]

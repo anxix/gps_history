@@ -534,5 +534,13 @@ void testGpsPointsCollection<T extends GpsPoint>(
         TimeComparisonResult.after);
     expect(gpc.compareElementTimeWithSeparateItem(1, newItem),
         TimeComparisonResult.same);
+
+    // Comparisons with time spans.
+    expect(
+        gpc.compareElementTimeWithSeparateTimeSpan(
+            1,
+            newItem.time.secondsSinceEpoch - 10,
+            newItem.endTime.secondsSinceEpoch + 10),
+        TimeComparisonResult.overlapping);
   });
 }
