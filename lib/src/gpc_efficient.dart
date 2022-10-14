@@ -439,6 +439,13 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
         Conversions.gpsTimeToUint32(element.endTime));
   }
 
+  @override
+  void callLatLongE7FuncForItemAt(ItemLatLongFunction func, int index) {
+    final byteIndex = _elementNrToByteOffset(index);
+    func(index, _getUint32(byteIndex + GpcCompact._offsetLatitude),
+        _getUint32(byteIndex + GpcCompact._offsetLongitude));
+  }
+
   /// Compares the time conditions for the two elements and indices [elementNrA]
   /// and [elementNrB].
   @override

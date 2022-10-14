@@ -9,6 +9,7 @@
 
 import 'dart:math';
 
+import 'package:gps_history/src/utils/binary_conversions.dart';
 import 'package:gps_history/src/utils/bounding_box.dart';
 import 'package:test/test.dart';
 import 'package:gps_history/gps_history.dart';
@@ -563,5 +564,25 @@ void testGpsPointsCollection<T extends GpsPoint>(
         gpc.elementContainedByBoundingBox(
             0, FlatLatLongBoundingBox.fromGeodetic(geodeticBBExcluding)),
         false);
+  });
+
+  test('For each lat/long E7', () {
+    gpc.add(itemConstructor(1));
+    gpc.add(itemConstructor(2));
+    gpc.add(itemConstructor(3));
+
+    // Test the entire list.
+    int loopNr = -1;
+    gpc.forEachLatLongE7((index, latitudeE7, longitudeE7) {
+      loopNr++;
+      expect(index, loopNr);
+      expect(latitudeE7, Conversions.latitudeToUint32(gpc[index].latitude));
+      expect(longitudeE7, Conversions.longitudeToUint32(gpc[index].longitude));
+    });
+
+    // Test just subset.
+    gpc.forEachLatLongE7((index, latitudeE7, longitudeE7) {
+      expect(index, 1);
+    }, 1, 2);
   });
 }

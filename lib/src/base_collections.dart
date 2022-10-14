@@ -11,9 +11,15 @@
 import 'package:meta/meta.dart';
 
 import 'base.dart';
+import 'utils/binary_conversions.dart';
 import 'utils/bounding_box.dart';
 import 'utils/random_access_iterable.dart';
 import 'utils/time.dart';
+
+/// Function that takes an item index, as well as a latitude and longitude in
+/// E7 formatting.
+typedef ItemLatLongFunction = void Function(
+    int index, int latitudeE7, int longitudeE7);
 
 /// Exception class for sorting issues in [GpsPointsView] (sub)classes.
 class GpsPointsViewSortingException extends GpsHistoryException {
@@ -134,6 +140,34 @@ abstract class GpsPointsView<T extends GpsPoint>
     }
     final item = this[elementNr];
     return boundingBox.contains(item.latitude, item.longitude);
+  }
+
+  /// Executes [func] for each item starting at [start] and up to and including
+  /// [end] (if specified) or the end of the list if not specified. [func]
+  /// takes as parameters the index of an item and its latitude and longitude
+  /// in E7 format (see [Conversions.latitudeToUint32] for more info).
+  ///
+  /// This can be faster than doing an external loop, depending on the
+  /// implementation of [callLatLongE7FuncForItemAt].
+  void forEachLatLongE7(ItemLatLongFunction func, [int start = 0, int? end]) {
+    end = RangeError.checkValidRange(start, end, length);
+
+    for (var i = start; i < end; i++) {
+      callLatLongE7FuncForItemAt(func, i);
+    }
+  }
+
+  /// Call [func] with the latitude and longitude in E7 format for the item
+  /// at [index].
+  ///
+  /// Children my override this method to implement more efficient or custom
+  /// algorithms, for example if they have a way to do quick position
+  /// retrieval without doing full item retrieval.
+  @protected
+  void callLatLongE7FuncForItemAt(ItemLatLongFunction func, int index) {
+    final item = this[index];
+    func(index, Conversions.latitudeToUint32(item.latitude),
+        Conversions.longitudeToUint32(item.longitude));
   }
 }
 
