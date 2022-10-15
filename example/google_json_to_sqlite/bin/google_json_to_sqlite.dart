@@ -37,8 +37,8 @@ void main() async {
   await db.execute('''
     CREATE TABLE Points (
         id INTEGER PRIMARY KEY,
-        datetime TEXT,
-        datetime_s_from_epoch INTEGER,
+        time TEXT,
+        time_s_from_epoch INTEGER,
         latitude REAL,
         longitude REAL,
         altitude REAL,
@@ -49,14 +49,28 @@ void main() async {
     )
     ''');
 
+  await db.execute('''
+    CREATE TABLE Stays (
+        id INTEGER PRIMARY KEY,
+        time TEXT,
+        time_s_from_epoch INTEGER,
+        latitude REAL,
+        longitude REAL,
+        altitude REAL,
+        accuracy REAL,
+        endtime TEXT,
+        endtime_s_from_epoch INTEGER
+    )
+    ''');
+
   // Create indexes on everything for easy exploring in a database browser.
   // This increases the size of the generated database file by about a factor 3,
   // but makes it feasible to sort and filter quickly by any column in a database
   // browser. Without indexes, the process is painfully slow, at least in
   // DB Browser for SQLite on Linux.
   await db.execute('''
-    CREATE INDEX idx_datetime ON Points(datetime);
-    CREATE INDEX idx_datetime_s_from_epoch ON Points(datetime_s_from_epoch);
+    CREATE INDEX idx_time ON Points(time);
+    CREATE INDEX idx_time_s_from_epoch ON Points(time_s_from_epoch);
     CREATE INDEX idx_latitude ON Points(latitude);
     CREATE INDEX idx_longitude ON Points(longitude);
     CREATE INDEX idx_altitude ON Points(altitude);
@@ -66,20 +80,30 @@ void main() async {
     CREATE INDEX idx_speedAccuracy ON Points(speedAccuracy);
     ''');
 
-  var fileStream = file.openRead();
-
-  var points = fileStream.transform(GoogleJsonHistoryDecoder(
-      minSecondsBetweenDatapoints: null, accuracyThreshold: null));
+  await db.execute('''
+    CREATE INDEX idx_s_time ON Stays(time);
+    CREATE INDEX idx_s_time_s_from_epoch ON Stays(time_s_from_epoch);
+    CREATE INDEX idx_s_latitude ON Stays(latitude);
+    CREATE INDEX idx_s_longitude ON Stays(longitude);
+    CREATE INDEX idx_s_altitude ON Stays(altitude);
+    CREATE INDEX idx_s_accuracy ON Stays(accuracy);
+    CREATE INDEX idx_s_endtime ON Stays(endtime);
+    CREATE INDEX idx_s_endtime_s_from_epoch ON Stays(endtime_s_from_epoch);
+    ''');
 
   await db.transaction((txn) async {
     final batch = txn.batch();
-    var count = 0;
+    var pointsCount = 0;
+    var staysCount = 0;
     try {
-      await for (var p in points) {
+      var fileStream = file.openRead();
+      final pointsStream = fileStream.transform(GoogleJsonHistoryDecoder(
+          minSecondsBetweenDatapoints: null, accuracyThreshold: null));
+      await for (final p in pointsStream) {
         // Insert the point in the SQLite database.
         await txn.insert('Points', {
-          'datetime': p.time.toDateTimeUtc().toIso8601String(),
-          'datetime_s_from_epoch': (p.time.secondsSinceEpoch),
+          'time': p.time.toDateTimeUtc().toIso8601String(),
+          'time_s_from_epoch': (p.time.secondsSinceEpoch),
           'latitude': p.latitude,
           'longitude': p.longitude,
           'altitude': p.altitude,
@@ -88,16 +112,43 @@ void main() async {
           'speed': p is GpsMeasurement ? p.speed : null,
           'speedAccuracy': p is GpsMeasurement ? p.speedAccuracy : null,
         });
-        count++;
-        if (count % 10000 == 0) {
+        pointsCount++;
+        if (pointsCount % 10000 == 0) {
           final now = DateTime.now();
           var formatter = DateFormat('H:mm:ss');
           print(
-              '${formatter.format(now)}.${(now.millisecond / 100).truncate()} - Added $count points');
+              '${formatter.format(now)}.${(now.millisecond / 100).truncate()} - Added $pointsCount points');
+        }
+      }
+
+      fileStream = file.openRead();
+      final staysStream = fileStream
+          .transform(GoogleJsonHistoryDecoder(
+              minSecondsBetweenDatapoints: 1.0, accuracyThreshold: null))
+          .transform(PointsToStaysDecoder(
+              maxTimeGapSeconds: 24 * 3600, maxDistanceGapMeters: 100));
+      await for (final s in staysStream) {
+        // Insert the stay in the SQLite database.
+        await txn.insert('Stays', {
+          'time': s.time.toDateTimeUtc().toIso8601String(),
+          'time_s_from_epoch': (s.time.secondsSinceEpoch),
+          'latitude': s.latitude,
+          'longitude': s.longitude,
+          'altitude': s.altitude,
+          'accuracy': s.accuracy,
+          'endtime': s.endTime.toDateTimeUtc().toIso8601String(),
+          'endtime_s_from_epoch': (s.endTime.secondsSinceEpoch),
+        });
+        staysCount++;
+        if (staysCount % 10000 == 0) {
+          final now = DateTime.now();
+          var formatter = DateFormat('H:mm:ss');
+          print(
+              '${formatter.format(now)}.${(now.millisecond / 100).truncate()} - Added $staysCount stays');
         }
       }
     } finally {
-      print('Committing $count points...');
+      print('Committing $pointsCount points and $staysCount stays...');
       await batch.commit(noResult: true, continueOnError: true);
     }
   }).whenComplete(() async {
