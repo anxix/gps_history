@@ -10,22 +10,6 @@ import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
 import 'package:gps_history/src/utils/grid.dart';
-import 'package:gps_history/src/utils/hash.dart';
-
-class LatLong {
-  int lat;
-  int long;
-
-  LatLong(this.lat, this.long);
-
-  @override
-  bool operator ==(other) {
-    return other is LatLong && other.lat == lat && other.long == long;
-  }
-
-  @override
-  int get hashCode => hash2(lat, long);
-}
 
 void wait(String? msg) {
   if (msg != null) {
