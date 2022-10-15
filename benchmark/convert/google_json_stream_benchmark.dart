@@ -9,6 +9,79 @@ import 'dart:io';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
+import 'package:gps_history/src/utils/grid.dart';
+import 'package:gps_history/src/utils/hash.dart';
+
+class LatLong {
+  int lat;
+  int long;
+
+  LatLong(this.lat, this.long);
+
+  @override
+  bool operator ==(other) {
+    return other is LatLong && other.lat == lat && other.long == long;
+  }
+
+  @override
+  int get hashCode => hash2(lat, long);
+}
+
+void wait(String? msg) {
+  if (msg != null) {
+    print('$msg Press ENTER to continue.');
+  }
+  stdin.readLineSync();
+}
+
+void buildSparseArray(GpcCompactGpsPoint points) async {
+  wait('Convert to stays.');
+
+  final stopwatch = Stopwatch();
+  stopwatch.start();
+
+  final converter = PointsToStaysDecoder(
+      maxTimeGapSeconds: 24 * 3600, maxDistanceGapMeters: 100);
+  final stays = GpcCompactGpsStay()..capacity = points.length;
+  final pointsStream = Stream<GpsPoint>.fromIterable(points);
+  await for (final stay in pointsStream.transform(converter)) {
+    stays.add(stay);
+  }
+
+  stopwatch.stop();
+  print(
+      'Converted to ${stays.length} stays in ${stopwatch.elapsedMilliseconds} ms');
+
+  wait('Build map.');
+
+  stopwatch.reset();
+  stopwatch.start();
+
+  final grid = Grid(stays);
+
+  stopwatch.stop();
+
+  wait('Finished building map.');
+
+  final lengths = <int>[];
+  grid.forEachCell((itemsInCell) {
+    lengths.add(itemsInCell.length);
+  });
+  lengths.sort();
+
+  print(
+      'Built map with ${lengths.length} in ${stopwatch.elapsedMilliseconds} ms');
+
+  if (lengths.length > 2) {
+    print('Cell with largest number of values contains ${lengths.last} items\n '
+        '  median is ${lengths[lengths.length ~/ 2]} items\n '
+        '  90% is ${lengths[(lengths.length * 0.9).round()]}\n '
+        '  95% is ${lengths[(lengths.length * 0.95).round()]}\n '
+        '  99% is ${lengths[(lengths.length * 0.99).round()]}\n'
+        '  99.9% is ${lengths[(lengths.length * 0.999).round()]}\n'
+        '  99.99% is ${lengths[(lengths.length * 0.9999).round()]}\n');
+  }
+}
 
 /// Try out the performance of the custom JSON.
 /// Can also be used to check that its results are the same as those of the
@@ -30,6 +103,8 @@ void main() async {
 
   final fileStream = file.openRead();
 
+  wait('Loading file to points.');
+
   stopwatch.start();
 
   final points = fileStream.transform(GoogleJsonHistoryDecoder(
@@ -41,9 +116,12 @@ void main() async {
   }
 
   stopwatch.stop();
+
   final dt = stopwatch.elapsedMilliseconds / 1000;
   print(
       'Read ${gpsPoints.length} in $dt s: ${gpsPoints.length / 1000000 / dt} Mpoints/s or ${dt / (gpsPoints.length / 1000000)} s/Mpoint');
+
+  wait('Finished reading file to points.');
 
   final diffs = <int>[];
   int sumdiffs = 0;
@@ -72,4 +150,6 @@ void main() async {
 
   print(
       'maxdiff=$maxdiff, mindiff=$mindiff, avgdiff=${sumdiffs / diffs.length}, mediandiff=${diffs[diffs.length ~/ 2]}');
+
+  buildSparseArray(gpsPoints);
 }
