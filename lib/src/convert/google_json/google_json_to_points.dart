@@ -63,8 +63,8 @@
 import 'dart:convert';
 import 'dart:math';
 
-import '../base.dart';
-import '../utils/time.dart';
+import '../../base.dart';
+import '../../utils/time.dart';
 
 const _charDoubleQuote = 34;
 const _charMinus = 45;
