@@ -10,5 +10,5 @@
 
 library gps_history_convert;
 
-export 'src/convert/google_json/gj_to_points.dart';
+export 'src/convert/google_json/gj_stream_to_points.dart';
 export 'src/convert/points_to_stays.dart';
