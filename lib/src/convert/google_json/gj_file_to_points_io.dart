@@ -149,26 +149,30 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
     // laptop CPU.
     final bytesPerChunk = 1 + fileSize ~/ nrChunks;
     final raFile = await file.open();
-    while (true) {
-      if (chunks.isNotEmpty) {
-        final lastChunk = chunks.last;
-        if (lastChunk.end >= fileSize) {
-          break;
+    try {
+      while (true) {
+        if (chunks.isNotEmpty) {
+          final lastChunk = chunks.last;
+          if (lastChunk.end >= fileSize) {
+            break;
+          }
         }
-      }
 
-      var chunkEnd = min(bytesPerChunk * (1 + chunks.length), fileSize);
-      // If the previous chunk is already longer than what one might expect
-      // the next chunk to end at (should not happen except for intentionally
-      // malformed input), make sure there is no overlap created between the
-      // new and the previous chunk.
-      if (chunks.isNotEmpty) {
-        chunkEnd = max(chunkEnd, chunks.last.end);
+        var chunkEnd = min(bytesPerChunk * (1 + chunks.length), fileSize);
+        // If the previous chunk is already longer than what one might expect
+        // the next chunk to end at (should not happen except for intentionally
+        // malformed input), make sure there is no overlap created between the
+        // new and the previous chunk.
+        if (chunks.isNotEmpty) {
+          chunkEnd = max(chunkEnd, chunks.last.end);
+        }
+        raFile.setPositionSync(chunkEnd);
+        await _moveToChunkBoundary(raFile);
+        chunks.add(FileChunk(
+            chunks.isEmpty ? 0 : chunks.last.end, raFile.positionSync()));
       }
-      raFile.setPositionSync(chunkEnd);
-      await _moveToChunkBoundary(raFile);
-      chunks.add(FileChunk(
-          chunks.isEmpty ? 0 : chunks.last.end, raFile.positionSync()));
+    } finally {
+      await raFile.close();
     }
     return chunks;
   }
