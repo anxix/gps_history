@@ -9,6 +9,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:gps_history/gps_history.dart';
 import 'package:gps_history/gps_history_convert.dart';
+import 'package:gps_history/src/convert/google_json/gj_file_to_points_io.dart';
 import 'package:gps_history/src/utils/grid.dart';
 
 void wait(String? msg) {
@@ -18,7 +19,7 @@ void wait(String? msg) {
   stdin.readLineSync();
 }
 
-void buildSparseArray(GpcCompactGpsPoint points) async {
+void buildSparseArray(GpcCompactGpsMeasurement points) async {
   wait('Convert to stays.');
 
   final stopwatch = Stopwatch();
@@ -72,32 +73,42 @@ void buildSparseArray(GpcCompactGpsPoint points) async {
 /// reference decoder implemented in the benchmark
 /// ```google_json_reference_decoder.dart```.
 void main() async {
+  print('Number of CPUs: ${Platform.numberOfProcessors}');
   // Indicate whether all the found points should be printed at the end.
   final printPoints = false;
   // Location of the file to parse.
   final filename = '../../large_data/locationhistory.json';
   // Filtering parameters that only influence the binary implementation,
   // allowing it to not emit points that are of low quality or too frequent.
-  final binaryMinSecondsBetweenDatapoints = 1.0;
-  final binaryAccuracyThreshold = null;
+  final minSecondsBetweenDatapoints = 1.0;
+  final accuracyThreshold = null;
 
   final file = File(filename);
   final stopwatch = Stopwatch();
-  final gpsPoints = GpcCompactGpsPoint();
 
-  final fileStream = file.openRead();
+  const maxNrThreads = 32;
 
   wait('Loading file to points.');
 
   stopwatch.start();
 
-  final points = fileStream.transform(GoogleJsonHistoryDecoder(
-      minSecondsBetweenDatapoints: binaryMinSecondsBetweenDatapoints,
-      accuracyThreshold: binaryAccuracyThreshold));
+  final chunks =
+      await GoogleJsonFileParserMultithreaded.getChunks(file, maxNrThreads);
 
-  await for (final p in points) {
-    gpsPoints.add(p);
-  }
+  stopwatch.stop();
+
+  final dtChunk = stopwatch.elapsedMilliseconds;
+  print('Chunked to ${chunks.length} in $dtChunk ms');
+  print(chunks);
+
+  stopwatch.reset();
+  stopwatch.start();
+  final parsingOptions = ParsingOptions(filename,
+      maxNrThreads: maxNrThreads,
+      accuracyThreshold: accuracyThreshold,
+      minSecondsBetweenDatapoints: minSecondsBetweenDatapoints);
+  final gpsPoints =
+      await GoogleJsonFileParserMultithreaded(parsingOptions).parse();
 
   stopwatch.stop();
 
