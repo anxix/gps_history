@@ -9,6 +9,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import 'dart:io';
+import 'dart:math';
+
 import '../../gpc_efficient.dart';
 import 'gj_file_to_points_base.dart';
 
@@ -49,14 +52,159 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   GoogleJsonFileParserMultithreaded(this.options);
 
   @override
-  GpcCompactGpsStay parse() {
-    // Determine the number of threads to use.
+  Future<GpcCompactGpsStay> parse() async {
+    final file = File(options.fileName);
 
-    // Find the chunk boundaries.
+    final chunks = await getChunks(file, options.maxNrThreads);
 
     // Parse the chunks.
+    if (chunks.length == 1) {
+      // Only one chunk required -> don't bother with setting up an isolate,
+      // which will require additional memory.
+    } else {
+      // Use isolates to speed up simultaneous processing of multiple chunks.
+    }
 
     // Return the results.
     throw UnimplementedError();
+  }
+
+  /// Determines into how many chunks the file should be split, taking into
+  /// account the [fileSizeBytes], an optionally imposed [maxNrChunks], the
+  /// [nrCpus] and optionally the [freeRamBytes].
+  ///
+  /// All parameters are treated in a very tolerant manner, so a result will
+  /// come out even in case of invalid parameters.
+  static int getNrChunks(
+      {int fileSizeBytes = 0,
+      int? maxNrChunks,
+      int nrCpus = 1,
+      int? freeRamBytes}) {
+    // Parsing is very quick, so there's no use in chunking files that are
+    // relatively small and can be parsed in a fraction of a second.
+    if (fileSizeBytes < 1000000) {
+      return 1;
+    }
+
+    // Determine if we're possibly going to have a memory problem in case of
+    // multithreaded processing.determineNrChunks
+    if (freeRamBytes != null) {
+      // Order of magnitude derived from a large sample file is 250 bytes of
+      // JSON per point, but this can vary wildly.
+      final estimatedNrPoints = fileSizeBytes ~/ 250;
+
+      // 20 bytes per point in GpcCompactGpsStay.
+      final estimatedGpcSize = estimatedNrPoints * 20;
+
+      // Multithreading might double the amount of required memory as the data
+      // will be stored in chunks in the different threads, and then added
+      // together into the final result.
+      final estimatedRequiredFreeSpace = estimatedGpcSize * 2;
+
+      // Give it some margin (factor 2) and if there's not enough free memory,
+      // go to just one chunk.
+      if (estimatedRequiredFreeSpace * 2 < freeRamBytes) {
+        return 1;
+      }
+    }
+
+    // Trim nrCpus and maxNrChunks to reasonable boundaries: must have at least
+    // one chunk and at most one chunk per cpu.
+    nrCpus = max(1, nrCpus);
+    maxNrChunks = max(maxNrChunks ?? nrCpus, 1);
+    // Prevent ridiculous results by capping at 32 chunks.
+    return min(min(nrCpus, maxNrChunks), 32);
+  }
+
+  /// Determines how to read the [file] in independent chunks and returns
+  /// those chunks as a result. If specified [maxNrChunks] will be the maximum
+  /// number of chunks created, otherwise the maximum will depend on the
+  /// number of processors on the system (uses [getNrChunks] for the
+  /// actual number of chunks).
+  static Future<List<FileChunk>> getChunks(File file, int? maxNrChunks) async {
+    final chunks = <FileChunk>[];
+
+    final fileSize = file.lengthSync();
+
+    // numberOfProcessors will include hyperthreading or power-efficient cores.
+    // Either way, prefer not to hog all resources, so leave 2 cores unused.
+    final nrCpus = max(1, Platform.numberOfProcessors - 2);
+    final nrChunks = getNrChunks(
+        maxNrChunks: maxNrChunks, fileSizeBytes: fileSize, nrCpus: nrCpus);
+
+    // In case of single chunk, don't do any further processing.
+    if (nrChunks == 1) {
+      chunks.add(FileChunk(0, fileSize));
+      return chunks;
+    }
+
+    // Determining chunks by jumping around a random access file takes at most
+    // a few milliseconds, while using stream-based processing requires going
+    // through most of the file and can take e.g. 0.25s on a 500 MB file on a
+    // laptop CPU.
+    final bytesPerChunk = 1 + fileSize ~/ nrChunks;
+    final raFile = await file.open();
+    while (true) {
+      if (chunks.isNotEmpty) {
+        final lastChunk = chunks.last;
+        if (lastChunk.end >= fileSize) {
+          break;
+        }
+      }
+
+      var chunkEnd = min(bytesPerChunk * (1 + chunks.length), fileSize);
+      // If the previous chunk is already longer than what one might expect
+      // the next chunk to end at (should not happen except for intentionally
+      // malformed input), make sure there is no overlap created between the
+      // new and the previous chunk.
+      if (chunks.isNotEmpty) {
+        chunkEnd = max(chunkEnd, chunks.last.end);
+      }
+      raFile.setPositionSync(chunkEnd);
+      await _moveToChunkBoundary(raFile);
+      chunks.add(FileChunk(
+          chunks.isEmpty ? 0 : chunks.last.end, raFile.positionSync()));
+    }
+    return chunks;
+  }
+
+  /// Increases the position in [raFile] until a location is found that is
+  /// suitable for splitting the parsing over multiple threads in a way that
+  /// ensures every thread ends up with a correct and completely defined subset
+  /// of points (i.e. data belonging to a single point will not be split over
+  /// different threads).
+  ///
+  /// A suitable place is after a JSON object is defined, which is detected by
+  /// the sequence of closed curly brace followed by comma: "},".
+  static _moveToChunkBoundary(RandomAccessFile raFile) async {
+    bool lookingForClosingCurly = true;
+    bool lookingForComma = false;
+    // Starting at current position, look at one character at a time trying to
+    // identify the location of "}," (ASCII 125, 44).
+    final maxChars = raFile.lengthSync() - raFile.positionSync();
+    var charNr = 0;
+    while (charNr < maxChars) {
+      final byte = raFile.readByteSync();
+      charNr++;
+      if (lookingForClosingCurly) {
+        if (byte == 125) {
+          // Found closing curly brace -> see if next char is a comma.
+          lookingForClosingCurly = false;
+          lookingForComma = true;
+        }
+      } else if (lookingForComma) {
+        if (byte == 44) {
+          // It's a comma and we were looking for one -> done, found good split.
+          return;
+        } else {
+          // We're looking for a comma, but it's not what we found (i.e. the
+          // preceding closing curly brace was not the closing delimiter of a
+          // JSON object definition) -> start looking for the next closing
+          // curly brace.
+          lookingForClosingCurly = true;
+          lookingForComma = false;
+        }
+      }
+    }
   }
 }

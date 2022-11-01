@@ -50,7 +50,7 @@ class GoogleJsonFileParser {
   ///
   /// Returns the result of the parsing. Selected to use [GpcCompactGpsStay]
   /// because we need accuracy and stays are smaller than measurements.
-  GpcCompactGpsStay parse() {
+  Future<GpcCompactGpsStay> parse() async {
     throw UnimplementedError();
   }
 }
