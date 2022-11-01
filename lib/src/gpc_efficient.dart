@@ -401,7 +401,7 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
 /// *little endian* representation:
 /// - [GpsStay.accuracy]: [Uint16] representation of accuracy.
 ///   For details see [Conversions.smallDoubleToUint16].
-/// - [GpsStay.endTime]: [Uint32] representation of heading.
+/// - [GpsStay.endTime]: [Uint32] representation of endtime.
 ///   For details see [Conversions.gpsTimeToUint32].
 ///
 /// Added together it's 6 bytes per element extra compared to what's needed
