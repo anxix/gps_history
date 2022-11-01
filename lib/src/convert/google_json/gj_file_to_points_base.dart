@@ -26,7 +26,7 @@ class ParsingOptions {
 
   /// Passed directly to constructor of [GoogleJsonHistoryDecoder], see its
   /// documentation for details.
-  double? minSecondsBetweenDatapoints;
+  double minSecondsBetweenDatapoints;
 
   /// Passed directly to constructor of [GoogleJsonHistoryDecoder], see its
   /// documentation for details.
@@ -35,7 +35,7 @@ class ParsingOptions {
   /// Constructor.
   ParsingOptions(this.fileName,
       {this.accuracyThreshold,
-      this.minSecondsBetweenDatapoints,
+      this.minSecondsBetweenDatapoints = 1.0,
       this.maxNrThreads});
 }
 
@@ -48,9 +48,9 @@ class GoogleJsonFileParser {
 
   /// Parsing method, to be implemented in child class that does support io.
   ///
-  /// Returns the result of the parsing. Selected to use [GpcCompactGpsStay]
-  /// because we need accuracy and stays are smaller than measurements.
-  Future<GpcCompactGpsStay> parse() async {
+  /// Returns the result of the parsing. Selected to use
+  /// [GpcCompactGpsMeasurement] because we need accuracy.
+  Future<GpcCompactGpsMeasurement> parse() async {
     throw UnimplementedError();
   }
 }

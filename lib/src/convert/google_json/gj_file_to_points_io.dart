@@ -10,8 +10,12 @@
  */
 
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 
+import 'package:gps_history/src/base.dart';
+
+import '../../../gps_history_convert.dart';
 import '../../gpc_efficient.dart';
 import 'gj_file_to_points_base.dart';
 
@@ -52,7 +56,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   GoogleJsonFileParserMultithreaded(this.options);
 
   @override
-  Future<GpcCompactGpsStay> parse() async {
+  Future<GpcCompactGpsMeasurement> parse() async {
     final file = File(options.fileName);
 
     final chunks = await getChunks(file, options.maxNrThreads);
@@ -61,12 +65,13 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
     if (chunks.length == 1) {
       // Only one chunk required -> don't bother with setting up an isolate,
       // which will require additional memory.
+      return parseStream(file.openRead(), options.minSecondsBetweenDatapoints,
+          options.accuracyThreshold);
     } else {
       // Use isolates to speed up simultaneous processing of multiple chunks.
+      return parseFileInChunks(file, chunks,
+          options.minSecondsBetweenDatapoints, options.accuracyThreshold);
     }
-
-    // Return the results.
-    throw UnimplementedError();
   }
 
   /// Determines into how many chunks the file should be split, taking into
@@ -93,8 +98,8 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
       // JSON per point, but this can vary wildly.
       final estimatedNrPoints = fileSizeBytes ~/ 250;
 
-      // 20 bytes per point in GpcCompactGpsStay.
-      final estimatedGpcSize = estimatedNrPoints * 20;
+      // 20 bytes per point in [GpcCompactGpsMeasurement].
+      final estimatedGpcSize = estimatedNrPoints * 24;
 
       // Multithreading might double the amount of required memory as the data
       // will be stored in chunks in the different threads, and then added
@@ -206,5 +211,53 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
         }
       }
     }
+  }
+
+  /// Parses the [file] split according to the specified [chunks] in separate
+  /// isolates and returns the identified points. For the meaning of the rest
+  /// of the parameters, see [GoogleJsonHistoryDecoder].
+  Future<GpcCompactGpsMeasurement> parseFileInChunks(
+      File file,
+      List<FileChunk> chunks,
+      double minSecondsBetweenDatapoints,
+      double? accuracyThreshold) async {
+    final result = GpcCompactGpsMeasurement();
+
+    // Split the work in separate isolates.
+    final recPorts = <ReceivePort>[];
+    for (final chunk in chunks) {
+      final rp = ReceivePort('$chunk');
+      recPorts.add(rp);
+      Isolate.spawn((SendPort sp) async {
+        final fileStream = file.openRead(chunk.start, chunk.end);
+        final chunkResult = await parseStream(
+            fileStream, minSecondsBetweenDatapoints, accuracyThreshold);
+        Isolate.exit(sp, chunkResult);
+      }, rp.sendPort);
+    }
+
+    final pointLists = <GpcCompactGpsMeasurement>[];
+    for (final rp in recPorts) {
+      final gpc = await rp.first as GpcCompactGpsMeasurement;
+      pointLists.add(gpc);
+      result.addAll(gpc);
+    }
+    return result;
+  }
+
+  /// Parses the contents of [jsonStream] and returns the identified points
+  /// as result. For the meaning of the rest of the parameters, see
+  /// [GoogleJsonHistoryDecoder].
+  Future<GpcCompactGpsMeasurement> parseStream(Stream<List<int>> jsonStream,
+      double minSecondsBetweenDatapoints, double? accuracyThreshold) async {
+    final result = GpcCompactGpsMeasurement();
+    final pointsStream = jsonStream.transform(GoogleJsonHistoryDecoder(
+        minSecondsBetweenDatapoints: minSecondsBetweenDatapoints,
+        accuracyThreshold: accuracyThreshold));
+    await for (final point in pointsStream) {
+      result.add(
+          point is GpsMeasurement ? point : GpsMeasurement.fromPoint(point));
+    }
+    return result;
   }
 }
