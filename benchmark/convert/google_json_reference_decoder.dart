@@ -24,6 +24,7 @@ void main() async {
 
   final stopwatch = Stopwatch();
   final gpsPoints = GpcCompactGpsPoint();
+  gpsPoints.sortingEnforcement = SortingEnforcement.skipWrongItems;
   final file = File(filename);
   var fileStream = file.openRead();
 
