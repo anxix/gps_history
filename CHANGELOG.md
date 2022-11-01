@@ -5,6 +5,9 @@
 
 * New features:
   * QueryDataAvailability implemented.
+  * Multithreaded parsing of Google JSON location history files on platforms
+    that support the io library. This gives about a 2.7x higher parsing speed
+    on a quad core than a single core.
 
 * Fixes:
   * 

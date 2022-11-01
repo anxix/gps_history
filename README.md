@@ -17,6 +17,9 @@ frequency >= 1 second. Features:
     almost no memory on top of the base memory use of the application and 
     outputs points about 2.5x-3.5x faster. Parse Google location history on
     mobile devices without any worries about running out of RAM.
+  * Support for multithreaded parsing of Google location history JSON on 
+    platforms that support the io library, giving about 2.7x performance boost
+    for a quad core compared to single core parsing.
   * Modular and extensible architecture: add your own points definitions, 
     containers or persistence mechanisms.
   * Many unit tests, examples, benchmarks and lots of documentation.
