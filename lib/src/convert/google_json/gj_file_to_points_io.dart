@@ -15,9 +15,9 @@ import 'dart:math';
 
 import 'package:gps_history/src/base.dart';
 
-import '../../../gps_history_convert.dart';
 import '../../gpc_efficient.dart';
 import 'gj_file_to_points_base.dart';
+import 'gj_stream_to_points.dart';
 
 /// Returns a parser that does parse the contents of the file specified in the
 /// [options], and supports multithreaded (Isolate based) parsing.

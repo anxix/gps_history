@@ -10,5 +10,7 @@
 
 library gps_history_convert;
 
+export 'src/convert/google_json/gj_file_to_points_base.dart'
+    show ParsingOptions, GoogleJsonFileParser;
 export 'src/convert/google_json/gj_stream_to_points.dart';
 export 'src/convert/points_to_stays.dart';
