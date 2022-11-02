@@ -24,5 +24,7 @@ export 'src/persist/p_gpc_efficient.dart';
 void initializeDefaultPersisters() {
   Persistence.get()
     ..register(PGpcCompactGpsPoint())
+    ..register(PGpcCompactGpsPointWithAccuracy())
+    ..register(PGpcCompactGpsStay())
     ..register(PGpcCompactGpsMeasurement());
 }
