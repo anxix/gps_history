@@ -373,6 +373,13 @@ abstract class GpcCompact<T extends GpsPoint> extends GpcEfficient<T> {
     return boundingBox.contains(_getUint32(byteIndex + _offsetLatitude),
         _getUint32(byteIndex + _offsetLongitude));
   }
+
+  @override
+  void callLatLongE7FuncForItemAt(ItemLatLongFunction func, int index) {
+    final byteIndex = _elementNrToByteOffset(index);
+    func(index, _getUint32(byteIndex + GpcCompact._offsetLatitude),
+        _getUint32(byteIndex + GpcCompact._offsetLongitude));
+  }
 }
 
 /// Implements efficient storage for [GpsPoint] elements.
@@ -437,13 +444,6 @@ class GpcCompactGpsStay extends GpcCompact<GpsStay> {
         Conversions.smallDoubleToUint16(element.accuracy));
     _setUint32(byteIndex + _offsetEndTime,
         Conversions.gpsTimeToUint32(element.endTime));
-  }
-
-  @override
-  void callLatLongE7FuncForItemAt(ItemLatLongFunction func, int index) {
-    final byteIndex = _elementNrToByteOffset(index);
-    func(index, _getUint32(byteIndex + GpcCompact._offsetLatitude),
-        _getUint32(byteIndex + GpcCompact._offsetLongitude));
   }
 
   /// Compares the time conditions for the two elements and indices [elementNrA]
