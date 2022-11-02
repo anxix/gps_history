@@ -1,7 +1,9 @@
 # 0.0.10
 
 * Public API changes:
-  * 
+  * The header for PGpcCompactGpsPoint is changed so it no longer terminates
+    in an "s". Existing files will be incompatible. Since it's such an early
+    version, decided not to add compatibility code.
 
 * New features:
   * QueryDataAvailability implemented.
