@@ -77,6 +77,11 @@ void main() {
     testEqualityOfPoints(GpsPoint.allZero.copyWith);
   });
 
+  group('Test GpsPointWithAccuracy', () {
+    testBasicPoint(GpsPointWithAccuracy.allZero.copyWith);
+    testEqualityOfPoints(GpsPointWithAccuracy.allZero.copyWith);
+  });
+
   /// Test correct construction of [GpsMeasurement] from [GpsPoint].
   void testStayFromPoint() {
     test('Correct construction from point', () {

@@ -143,6 +143,18 @@ void main() {
           longitude: 175.0 + i,
           altitude: 16E3 + i));
 
+  testGpc<GpsPointWithAccuracy>(
+      'GpcCompactGpsPointWithAccuracy with extreme values',
+      () => GpcCompactGpsPointWithAccuracy(),
+      (int i) => GpsPointWithAccuracy(
+          // Repeat the test with values close to the maximum date range, to
+          // check that storage works OK near the boundaries.
+          time: GpsTime.fromUtc(2100).add(days: i),
+          latitude: i.toDouble(), // required to be equal to i
+          longitude: 175.0 + i,
+          altitude: 16E3 + i,
+          accuracy: 3.2));
+
   testGpc<GpsStay>(
       'GpcCompactGpsMeasurement with extreme values',
       () => GpcCompactGpsStay(),
