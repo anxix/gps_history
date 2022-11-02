@@ -48,9 +48,8 @@ class GoogleJsonFileParser {
 
   /// Parsing method, to be implemented in child class that does support io.
   ///
-  /// Returns the result of the parsing. Selected to use
-  /// [GpcCompactGpsMeasurement] because we need accuracy.
-  Future<GpcCompactGpsMeasurement> parse() async {
+  /// Returns the result of the parsing.
+  Future<GpcCompactGpsPointWithAccuracy> parse() async {
     throw UnimplementedError();
   }
 }

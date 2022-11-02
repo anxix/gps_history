@@ -15,12 +15,10 @@ import '../base.dart';
 import '../utils/distance.dart';
 import '../utils/time.dart';
 
-typedef GpsPointIterable = Iterable<GpsPoint>;
-
 /// Decoder that merges entities in a source stream to [GpsStay] entities, which
 /// will typically reduce the total number of entries in the stream
 /// significantly.
-class PointsToStaysDecoder extends Converter<GpsPoint, GpsStay> {
+class PointsToStaysDecoder extends Converter<GpsPointWithAccuracy, GpsStay> {
   final int? _maxTimeGapSeconds;
   final double? _maxDistanceGapMeters;
 
@@ -32,14 +30,14 @@ class PointsToStaysDecoder extends Converter<GpsPoint, GpsStay> {
   /// number of [GpsStay] entities, which can therefore not be returned as
   /// one single result.
   @override
-  GpsStay convert(GpsPoint input) {
+  GpsStay convert(GpsPointWithAccuracy input) {
     // This method doesn't really make sense, because the input may end up
     // generating more than one GpsStay.
     throw UnimplementedError();
   }
 
   @override
-  Sink<GpsPoint> startChunkedConversion(Sink<GpsStay> sink) {
+  Sink<GpsPointWithAccuracy> startChunkedConversion(Sink<GpsStay> sink) {
     return _GpsPointsToStaysSink(sink,
         maxTimeGapSeconds: _maxTimeGapSeconds,
         maxDistanceGapMeters: _maxDistanceGapMeters);
@@ -47,7 +45,8 @@ class PointsToStaysDecoder extends Converter<GpsPoint, GpsStay> {
 }
 
 /// Sink for converting chunks of [GpsPoint] or child classes to [GpsStay].
-class _GpsPointsToStaysSink extends ChunkedConversionSink<GpsPoint> {
+class _GpsPointsToStaysSink
+    extends ChunkedConversionSink<GpsPointWithAccuracy> {
   /// Target for the identified [GpsStay] instances.
   final Sink<GpsStay> _outputSink;
 
@@ -105,7 +104,10 @@ class PointMerger {
     final rt = point.runtimeType;
 
     // Make sure we're not dealing with an unsupported type.
-    if (rt != GpsPoint && rt != GpsMeasurement && rt != GpsStay) {
+    if (rt != GpsPoint &&
+        rt != GpsPointWithAccuracy &&
+        rt != GpsStay &&
+        rt != GpsMeasurement) {
       throw TypeError();
     }
 
@@ -165,11 +167,7 @@ class PointMerger {
     // endTime definitely needs to be updated.
     final endTime = point.endTime;
 
-    var newAccuracy = point is GpsStay
-        ? point.accuracy
-        : point is GpsMeasurement
-            ? point.accuracy
-            : null;
+    var newAccuracy = point is GpsPointWithAccuracy ? point.accuracy : null;
 
     // Update position if accuracy of new point is better than that of the
     // current stay.
@@ -199,7 +197,7 @@ class PointMerger {
       _currentStay = point.copyWith();
     } else {
       _currentStay = GpsStay.fromPoint(point,
-          accuracy: point is GpsMeasurement ? point.accuracy : null);
+          accuracy: point is GpsPointWithAccuracy ? point.accuracy : null);
     }
   }
 

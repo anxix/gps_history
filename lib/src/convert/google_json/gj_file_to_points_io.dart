@@ -13,8 +13,6 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 
-import 'package:gps_history/src/base.dart';
-
 import '../../gpc_efficient.dart';
 import 'gj_file_to_points_base.dart';
 import 'gj_stream_to_points.dart';
@@ -56,7 +54,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   GoogleJsonFileParserMultithreaded(this.options);
 
   @override
-  Future<GpcCompactGpsMeasurement> parse() async {
+  Future<GpcCompactGpsPointWithAccuracy> parse() async {
     final file = File(options.fileName);
 
     final chunks = await getChunks(file, options.maxNrThreads);
@@ -220,12 +218,12 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   /// Parses the [file] split according to the specified [chunks] in separate
   /// isolates and returns the identified points. For the meaning of the rest
   /// of the parameters, see [GoogleJsonHistoryDecoder].
-  Future<GpcCompactGpsMeasurement> parseFileInChunks(
+  Future<GpcCompactGpsPointWithAccuracy> parseFileInChunks(
       File file,
       List<FileChunk> chunks,
       double minSecondsBetweenDatapoints,
       double? accuracyThreshold) async {
-    final result = GpcCompactGpsMeasurement();
+    final result = GpcCompactGpsPointWithAccuracy();
 
     // Split the work in separate isolates.
     final recPorts = <ReceivePort>[];
@@ -240,9 +238,9 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
       }, rp.sendPort);
     }
 
-    final pointLists = <GpcCompactGpsMeasurement>[];
+    final pointLists = <GpcCompactGpsPointWithAccuracy>[];
     for (final rp in recPorts) {
-      final gpc = await rp.first as GpcCompactGpsMeasurement;
+      final gpc = await rp.first as GpcCompactGpsPointWithAccuracy;
       pointLists.add(gpc);
       result.addAll(gpc);
     }
@@ -252,15 +250,16 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   /// Parses the contents of [jsonStream] and returns the identified points
   /// as result. For the meaning of the rest of the parameters, see
   /// [GoogleJsonHistoryDecoder].
-  Future<GpcCompactGpsMeasurement> parseStream(Stream<List<int>> jsonStream,
-      double minSecondsBetweenDatapoints, double? accuracyThreshold) async {
-    final result = GpcCompactGpsMeasurement();
+  Future<GpcCompactGpsPointWithAccuracy> parseStream(
+      Stream<List<int>> jsonStream,
+      double minSecondsBetweenDatapoints,
+      double? accuracyThreshold) async {
+    final result = GpcCompactGpsPointWithAccuracy();
     final pointsStream = jsonStream.transform(GoogleJsonHistoryDecoder(
         minSecondsBetweenDatapoints: minSecondsBetweenDatapoints,
         accuracyThreshold: accuracyThreshold));
     await for (final point in pointsStream) {
-      result.add(
-          point is GpsMeasurement ? point : GpsMeasurement.fromPoint(point));
+      result.add(point);
     }
     return result;
   }

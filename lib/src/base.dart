@@ -150,14 +150,85 @@ class GpsInvalidValue extends GpsHistoryException {
   GpsInvalidValue([message]) : super(message);
 }
 
+/// GPS point that also (optionally) stores an accuracy.
+///
+/// Some fields may be unavailable (null), depending on data source.
+class GpsPointWithAccuracy extends GpsPoint {
+  /// The accuracy of the measurement.
+  final double? accuracy;
+
+  /// A point with all fields set to null if possible, or to zero otherwise.
+  static final zeroOrNulls =
+      GpsPointWithAccuracy.fromPoint(GpsPoint.zeroOrNulls);
+
+  /// A point with all fields set to zero.
+  static final allZero =
+      GpsPointWithAccuracy.fromPoint(GpsPoint.allZero, accuracy: 0);
+
+  /// Constructor.
+  const GpsPointWithAccuracy(
+      {required GpsTime time,
+      required double latitude,
+      required double longitude,
+      double? altitude,
+      this.accuracy})
+      : super(
+          time: time,
+          latitude: latitude,
+          longitude: longitude,
+          altitude: altitude,
+        );
+
+  /// Constructs a [GpsPointWithAccuracy] from the data in [point], with
+  /// the additional information in [accuracy].
+  GpsPointWithAccuracy.fromPoint(GpsPoint point, {this.accuracy})
+      : super(
+          time: point.time,
+          latitude: point.latitude,
+          longitude: point.longitude,
+          altitude: point.altitude,
+        );
+
+  /// Create a copy of the point with optionally one or more of its fields set
+  /// to new values.
+  @override
+  GpsPointWithAccuracy copyWith(
+      {GpsTime? time,
+      double? latitude,
+      double? longitude,
+      double? altitude,
+      double? accuracy}) {
+    return GpsPointWithAccuracy(
+      time: time ?? this.time,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitude: altitude ?? this.altitude,
+      accuracy: accuracy ?? this.accuracy,
+    );
+  }
+
+  @override
+  bool operator ==(other) {
+    if (!(super == (other))) {
+      return false;
+    }
+    return other is GpsPointWithAccuracy && other.accuracy == accuracy;
+  }
+
+  @override
+  int get hashCode {
+    return hash2(super.hashCode, accuracy);
+  }
+
+  @override
+  String toString() => '${super.toString()}\tacc: $accuracy';
+}
+
 /// GPS point representing a stay in that location for some amount of time.
 ///
 /// Some fields may be unavailable (null), depending on data source. The
 /// inherited [time] indicates the start of the stay.
-class GpsStay extends GpsPoint {
-  /// The accuracy of the measurement.
-  final double? accuracy;
-
+class GpsStay extends GpsPointWithAccuracy {
   /// Internal representation of [endTime]. Will be kept to null
   /// when it's a zero-length stay ([time] == [endTime]).
   final GpsTime? _endTime;
@@ -198,7 +269,7 @@ class GpsStay extends GpsPoint {
       required double latitude,
       required double longitude,
       double? altitude,
-      this.accuracy,
+      double? accuracy,
       GpsTime? endTime})
       : _endTime = _endTimeToInternal(endTime, time),
         super(
@@ -206,17 +277,19 @@ class GpsStay extends GpsPoint {
           latitude: latitude,
           longitude: longitude,
           altitude: altitude,
+          accuracy: accuracy,
         );
 
   /// Constructs a [GpsStay] from the data in [point], with optionally the
   /// additional information in [accuracy] and [endTime].
-  GpsStay.fromPoint(GpsPoint point, {this.accuracy, GpsTime? endTime})
+  GpsStay.fromPoint(GpsPoint point, {double? accuracy, GpsTime? endTime})
       : _endTime = _endTimeToInternal(endTime, point.time),
         super(
           time: point.time,
           latitude: point.latitude,
           longitude: point.longitude,
           altitude: point.altitude,
+          accuracy: accuracy,
         );
 
   /// Create a copy of the point with optionally one or more of its fields set
@@ -300,27 +373,22 @@ class GpsStay extends GpsPoint {
     if (!(super == (other))) {
       return false;
     }
-    return other is GpsStay &&
-        other.accuracy == accuracy &&
-        other.endTime == endTime;
+    return other is GpsStay && other.endTime == endTime;
   }
 
   @override
   int get hashCode {
-    return hash3(super.hashCode, accuracy, endTime);
+    return hash2(super.hashCode, endTime);
   }
 
   @override
-  String toString() => '${super.toString()}\tacc: $accuracy\tend: $endTime';
+  String toString() => '${super.toString()}\tend: $endTime';
 }
 
 /// GPS point with additional information related to the measurement.
 ///
 /// Some fields may be unavailable (null), depending on data source.
-class GpsMeasurement extends GpsPoint {
-  /// The accuracy of the measurement.
-  final double? accuracy;
-
+class GpsMeasurement extends GpsPointWithAccuracy {
   /// The heading of the device.
   final double? heading;
 
@@ -345,7 +413,7 @@ class GpsMeasurement extends GpsPoint {
     required double latitude,
     required double longitude,
     double? altitude,
-    this.accuracy,
+    double? accuracy,
     this.heading,
     this.speed,
     this.speedAccuracy,
@@ -354,11 +422,12 @@ class GpsMeasurement extends GpsPoint {
           latitude: latitude,
           longitude: longitude,
           altitude: altitude,
+          accuracy: accuracy,
         );
 
   GpsMeasurement.fromPoint(
     GpsPoint point, {
-    this.accuracy,
+    double? accuracy,
     this.heading,
     this.speed,
     this.speedAccuracy,
@@ -366,7 +435,8 @@ class GpsMeasurement extends GpsPoint {
             time: point.time,
             latitude: point.latitude,
             longitude: point.longitude,
-            altitude: point.altitude);
+            altitude: point.altitude,
+            accuracy: accuracy);
 
   @override
   GpsMeasurement copyWith(
@@ -396,7 +466,6 @@ class GpsMeasurement extends GpsPoint {
       return false;
     }
     return other is GpsMeasurement &&
-        other.accuracy == accuracy &&
         other.heading == heading &&
         other.speed == speed &&
         other.speedAccuracy == speedAccuracy;
@@ -404,10 +473,10 @@ class GpsMeasurement extends GpsPoint {
 
   @override
   int get hashCode {
-    return hash5(super.hashCode, accuracy, heading, speed, speedAccuracy);
+    return hash4(super.hashCode, heading, speed, speedAccuracy);
   }
 
   @override
   String toString() =>
-      '${super.toString()}\tacc: $accuracy\thdng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
+      '${super.toString()}\thdng: $heading\tspd: $speed\tspdacc: $speedAccuracy';
 }

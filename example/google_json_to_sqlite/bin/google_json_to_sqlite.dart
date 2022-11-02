@@ -107,7 +107,7 @@ void main() async {
           'latitude': p.latitude,
           'longitude': p.longitude,
           'altitude': p.altitude,
-          'accuracy': p is GpsMeasurement ? p.accuracy : null,
+          'accuracy': p is GpsPointWithAccuracy ? p.accuracy : null,
           'heading': p is GpsMeasurement ? p.heading : null,
           'speed': p is GpsMeasurement ? p.speed : null,
           'speedAccuracy': p is GpsMeasurement ? p.speedAccuracy : null,

@@ -19,7 +19,7 @@ void wait(String? msg) {
   stdin.readLineSync();
 }
 
-void buildSparseArray(GpcCompactGpsMeasurement points) async {
+void buildSparseArray(GpcCompactGpsPointWithAccuracy points) async {
   wait('Convert to stays.');
 
   final stopwatch = Stopwatch();
@@ -78,8 +78,7 @@ void main() async {
   final printPoints = false;
   // Location of the file to parse.
   final filename = '../../large_data/locationhistory.json';
-  // Filtering parameters that only influence the binary implementation,
-  // allowing it to not emit points that are of low quality or too frequent.
+  // Filtering parameters for the parser.
   final minSecondsBetweenDatapoints = 1.0;
   final accuracyThreshold = null;
 

@@ -26,7 +26,7 @@ void main() {
     final offsetAtMaxDistanceGapMeter =
         maxDistanceGapMeters * 1 / metersPerDegreeLatitude;
 
-    runTest(List<GpsPoint> input, List<GpsStay> expected) {
+    runTest(List<GpsPointWithAccuracy> input, List<GpsStay> expected) {
       final results = <GpsStay>[];
       final merger = PointMerger((result) => results.add(result),
           maxTimeGapSeconds: maxTimeGapSeconds,
@@ -45,13 +45,13 @@ void main() {
     });
 
     test('Single item', () {
-      makeAndTestPoint(GpsPoint Function() maker) {
+      makeAndTestPoint(GpsPointWithAccuracy Function() maker) {
         final p = maker();
         runTest([p], [GpsStay.fromPoint(p)]);
       }
 
-      makeAndTestPoint(() =>
-          GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3, altitude: 4));
+      makeAndTestPoint(() => GpsPointWithAccuracy(
+          time: GpsTime(1), latitude: 2, longitude: 3, altitude: 4));
 
       // Test GpsStay with both null and non-null endTime.
       makeAndTestPoint(
@@ -73,7 +73,8 @@ void main() {
     });
 
     test('No merging discontinuous time', () {
-      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p1 =
+          GpsPointWithAccuracy(time: GpsTime(1), latitude: 2, longitude: 3);
       final p2 = p1.copyWith(time: p1.time.add(seconds: maxTimeGapSeconds + 1));
       final result = [GpsStay.fromPoint(p1), GpsStay.fromPoint(p2)];
 
@@ -84,7 +85,8 @@ void main() {
     });
 
     test('No merging discontinuous space', () {
-      final p1 = GpsPoint(time: GpsTime(2), latitude: 0, longitude: 1);
+      final p1 =
+          GpsPointWithAccuracy(time: GpsTime(2), latitude: 0, longitude: 1);
       final p2 = p1.copyWith(
           time: p1.time.add(seconds: maxTimeGapSeconds - 1),
           latitude: p1.latitude + 1.1 * offsetAtMaxDistanceGapMeter);
@@ -97,7 +99,8 @@ void main() {
     });
 
     test('Merging nearby time in identical space', () {
-      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p1 =
+          GpsPointWithAccuracy(time: GpsTime(1), latitude: 2, longitude: 3);
       final p2 = p1.copyWith(time: p1.time.add(seconds: maxTimeGapSeconds - 1));
       final result = [GpsStay.fromPoint(p1).copyWith(endTime: p2.time)];
 
@@ -108,7 +111,8 @@ void main() {
     });
 
     test('Merging nearby time in nearby space', () {
-      final p1 = GpsPoint(time: GpsTime(1), latitude: 2, longitude: 3);
+      final p1 =
+          GpsPointWithAccuracy(time: GpsTime(1), latitude: 2, longitude: 3);
       final p2 = p1.copyWith(
           time: p1.time.add(seconds: maxTimeGapSeconds - 1),
           latitude: p1.latitude + 0.9 * offsetAtMaxDistanceGapMeter);
@@ -131,11 +135,11 @@ void main() {
       runTest([p1, p2], result);
     });
 
-    test('Merging GpsStays and GpsPoint', () {
+    test('Merging GpsStays and GpsPointWithAccuracy', () {
       final p1 = GpsStay(
           time: GpsTime(1), latitude: 0, longitude: 0, endTime: GpsTime(2));
       final nextStartTime = p1.endTime.add(seconds: maxTimeGapSeconds - 1);
-      final p2 = GpsPoint(
+      final p2 = GpsPointWithAccuracy(
           time: nextStartTime, latitude: p1.latitude, longitude: p1.latitude);
       final result = [p1.copyWith(endTime: p2.time)];
 
@@ -200,7 +204,8 @@ void main() {
     });
 
     test('Identical points', () {
-      final p1 = GpsPoint(time: GpsTime(10), latitude: 1, longitude: 2);
+      final p1 =
+          GpsPointWithAccuracy(time: GpsTime(10), latitude: 1, longitude: 2);
 
       final result = [GpsStay.fromPoint(p1)];
 
@@ -220,7 +225,7 @@ void main() {
     });
 
     test('convert', () {
-      expect(() => decoder.convert(GpsPoint.allZero),
+      expect(() => decoder.convert(GpsPointWithAccuracy.allZero),
           throwsA(isA<UnimplementedError>()));
     });
 
@@ -229,7 +234,7 @@ void main() {
       final s2 = GpsStay(time: GpsTime(2), latitude: 3, longitude: 4);
       final stays = [s1, s2];
 
-      final stream = Stream<GpsPoint>.fromIterable(stays);
+      final stream = Stream<GpsPointWithAccuracy>.fromIterable(stays);
 
       final result = <GpsStay>[];
       final staysStream = stream.transform(decoder);

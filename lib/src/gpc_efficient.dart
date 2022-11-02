@@ -400,6 +400,46 @@ class GpcCompactGpsPoint extends GpcCompact<GpsPoint> {
   }
 }
 
+/// Implements efficient storage for [GpsPointWithAccuracy] elements.
+///
+/// The basic storage is the same of [GpcCompactGpsPoint], with additional
+/// field for accuracy, which may be null.
+/// This is stored as follows after the inherited fields, all in
+/// *little endian* representation:
+/// - [GpsPointWithAccuracy.accuracy]: [Uint16] representation of accuracy.
+///   For details see [Conversions.smallDoubleToUint16].
+///
+/// Added together it's 2 bytes per element extra compared to what's needed
+/// for the inherited [GpsPoint] properties.
+class GpcCompactGpsPointWithAccuracy extends GpcCompact<GpsPointWithAccuracy> {
+  static const int _offsetAccuracy = 14;
+
+  @override
+  GpcCompactGpsPointWithAccuracy newEmpty({int? capacity}) {
+    return GpcCompactGpsPointWithAccuracy()..capacity = capacity ?? 0;
+  }
+
+  @override
+  int get elementSizeInBytes => 16;
+
+  @override
+  GpsPointWithAccuracy _readElementFromBytes(int byteIndex) {
+    final point = _readGpsPointFromBytes(byteIndex);
+
+    return GpsPointWithAccuracy.fromPoint(point,
+        accuracy: Conversions.uint16ToSmallDouble(
+            _getUint16(byteIndex + _offsetAccuracy)));
+  }
+
+  @override
+  void _writeElementToBytes(GpsPointWithAccuracy element, int byteIndex) {
+    _writeGpsPointToBytes(element, byteIndex);
+
+    _setUint16(byteIndex + _offsetAccuracy,
+        Conversions.smallDoubleToUint16(element.accuracy));
+  }
+}
+
 /// Implements efficient storage for [GpsStay] elements.
 ///
 /// The basic storage is the same of [GpcCompactGpsPoint], with additional

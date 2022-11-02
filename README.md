@@ -2,10 +2,14 @@
 Module intended to represent recorded histories of GPS points recorded at a
 frequency >= 1 second. Features:
 
-  * Three types of GPS point: a lean one with just the bare minimums and one
-    with more meta information such as heading, speed, etc. that's useful for
-    GPX files for example. Additionally a point that represents a longer stay
-    at a location, which can be used to reduce duplicate entries in a database.
+  * Multiple types of GPS point: 
+    * a lean one with just the bare minimums (time, latitude, longitude, 
+      altitude).
+    * a lean+ one, which adds accuracy to the above.
+    * one with all meta information such as heading, speed, etc. that's useful
+      for GPX files for example. 
+    * one that represents a longer stay at a location, which can be used to
+      reduce duplicate entries in a database.
   * Different in-memory storage systems for GPS points: either simply 
     list-based, or efficient binary representation of just 14 to 22 bytes per
     point (at the cost of small loss of accuracy that's below what GPS sensors

@@ -94,13 +94,13 @@ const _charLowerZ = 122;
 class PointParser {
   /// Function called when a point has been identified (typically a [Sink.add]
   /// accepting the points).
-  final void Function(GpsPoint point) resultReporter;
+  final void Function(GpsPointWithAccuracy point) resultReporter;
 
   // Parameters for filtering out undesired data points. Not creating points
   // also saves time in the overall parsing.
   final double? _minSecondsBetweenDatapoints;
   final double? _accuracyThreshold;
-  GpsPoint? _prevParsedPoint;
+  GpsPointWithAccuracy? _prevParsedPoint;
 
   /// The various values of points that we're interested in, as read so far.
   final _values = List<int?>.filled(5, null);
@@ -407,17 +407,12 @@ class PointParser {
       // Don't do anything, we don't want this point.
     } else {
       // We do want this point -> create and report it.
-      var p = GpsPoint(
+      var p = GpsPointWithAccuracy(
           time: time,
           latitude: latitudeE7! / 1E7,
           longitude: longitudeE7! / 1E7,
-          altitude: altitude?.toDouble());
-
-      // If we have accuracy specified, return a GpsMeasurement object that's
-      // capable of storing accuracy information.
-      if (accuracy != null) {
-        p = GpsMeasurement.fromPoint(p, accuracy: accuracy!.toDouble());
-      }
+          altitude: altitude?.toDouble(),
+          accuracy: accuracy?.toDouble());
 
       _prevParsedPoint = p;
       resultReporter(p);
@@ -429,7 +424,8 @@ class PointParser {
 
 /// Decoder for a stream of bytes from a Google location history JSON file to
 /// a stream of [GpsPoint] and/or [GpsMeasurement] instances.
-class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
+class GoogleJsonHistoryDecoder
+    extends Converter<List<int>, GpsPointWithAccuracy> {
   double? _minSecondsBetweenDatapoints;
   double? _accuracyThreshold;
 
@@ -457,14 +453,14 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
   /// number of [GpsPoint] entities, which can therefore not be returned as
   /// one single result.
   @override
-  GpsPoint convert(List<int> bytes, [int start = 0, int? end]) {
+  GpsPointWithAccuracy convert(List<int> bytes, [int start = 0, int? end]) {
     // This method doesn't really make sense, because the input may end up
     // generating zero, one or more than one point.
     throw UnimplementedError();
   }
 
   @override
-  Sink<List<int>> startChunkedConversion(Sink<GpsPoint> sink) {
+  Sink<List<int>> startChunkedConversion(Sink<GpsPointWithAccuracy> sink) {
     return _GpsPointParserSink(
         sink, _minSecondsBetweenDatapoints, _accuracyThreshold);
   }
@@ -473,7 +469,7 @@ class GoogleJsonHistoryDecoder extends Converter<List<int>, GpsPoint> {
 /// Sink for converting chunks of data from Google location history JSON file to
 /// GPS points.
 class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
-  final Sink<GpsPoint> _outputSink;
+  final Sink<GpsPointWithAccuracy> _outputSink;
 
   PointParser? _pointParser;
 
@@ -482,7 +478,7 @@ class _GpsPointParserSink extends ChunkedConversionSink<List<int>> {
   _GpsPointParserSink(this._outputSink, double? minSecondsBetweenDatapoints,
       double? accuracyThreshold) {
     _pointParser = PointParser(minSecondsBetweenDatapoints, accuracyThreshold,
-        (GpsPoint point) => _outputSink.add(point));
+        (GpsPointWithAccuracy point) => _outputSink.add(point));
   }
 
   @override

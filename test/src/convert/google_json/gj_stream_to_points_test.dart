@@ -12,15 +12,16 @@ import 'package:gps_history/gps_history_convert.dart';
 final oneDay = 24 * 3600 * 1000; // one day in milliseconds
 
 /// Create a default point configuration that's used in many tests.
-GpsPoint makeDefaultPoint() {
-  return GpsPoint(time: GpsTime.zero, latitude: 1.0E-7, longitude: 2.0E-7);
+GpsPointWithAccuracy makeDefaultPoint() {
+  return GpsPointWithAccuracy(
+      time: GpsTime.zero, latitude: 1.0E-7, longitude: 2.0E-7);
 }
 
 /// Tests the PointParser against the specified sequence of [chunks], ensuring
 /// that it returns the correct response after parsing ([expectedPoints]).
-void _testPointParser(
-    String testName, List<List<int>> chunks, List<GpsPoint?> expectedPoints) {
-  void checkParserResult(List<GpsPoint> foundPoints) {
+void _testPointParser(String testName, List<List<int>> chunks,
+    List<GpsPointWithAccuracy?> expectedPoints) {
+  void checkParserResult(List<GpsPointWithAccuracy> foundPoints) {
     expect(foundPoints.length, expectedPoints.length,
         reason: 'Incorrect number of parsed points.');
 
@@ -31,8 +32,8 @@ void _testPointParser(
   }
 
   test(testName, () {
-    final foundPoints = <GpsPoint>[];
-    pointsCollector(GpsPoint point) {
+    final foundPoints = <GpsPointWithAccuracy>[];
+    pointsCollector(GpsPointWithAccuracy point) {
       foundPoints.add(point);
     }
 
@@ -60,8 +61,8 @@ void _testPointParser(
 
 /// Tests the PointParser against the specified sequence of [strings], ensuring
 /// that it returns the correct response after parsing ([expectedPoints]).
-void _testPointParserStrings(
-    String testName, List<String> strings, List<GpsPoint?> expectedPoints) {
+void _testPointParserStrings(String testName, List<String> strings,
+    List<GpsPointWithAccuracy?> expectedPoints) {
   final chunks = List<List<int>>.filled(0, [], growable: true);
   for (var string in strings) {
     chunks.add(string.codeUnits);
@@ -109,7 +110,7 @@ void testPointParser() {
     '"longitudeE7" : 6,',
     '"altitude" : 8,'
   ], [
-    GpsPoint(
+    GpsPointWithAccuracy(
         time: GpsTime.fromUtc(1970, month: 1, day: 2),
         latitude: 5.0E-7,
         longitude: 6.0E-7,
@@ -123,7 +124,7 @@ void testPointParser() {
     '"longitudeE7" : -6,',
     '"altitude" : -80,'
   ], [
-    GpsPoint(
+    GpsPointWithAccuracy(
         time: GpsTime.zero,
         latitude: -5.0E-7,
         longitude: -6.0E-7,
@@ -140,20 +141,20 @@ void testPointParser() {
     '"longitudeE7" : 6,'
   ], [
     makeDefaultPoint(),
-    GpsPoint(
+    GpsPointWithAccuracy(
         time: GpsTime.fromUtc(1970, month: 1, day: 2),
         latitude: 5.0E-7,
         longitude: 6.0E-7)
   ]);
 
-  // Test parsing to [GpsMeasurement].
-  _testPointParserStrings('Parse to GpsMeasurement', [
+  // Test parsing to [GpsPointWithAccuracy].
+  _testPointParserStrings('Parse to GpsPointWithAccuracy', [
     '"timestampMs" : 0,',
     '"latitudeE7" : 1,',
     '"longitudeE7" : 2,',
     '"accuracy" : 12,',
   ], [
-    GpsMeasurement.fromPoint(makeDefaultPoint(), accuracy: 12)
+    GpsPointWithAccuracy.fromPoint(makeDefaultPoint(), accuracy: 12)
   ]);
 
   // Test parsing with some real data.
@@ -167,7 +168,7 @@ void testPointParser() {
         '"verticalAccuracy" : 3\n'
         '}, {'
   ], [
-    GpsMeasurement(
+    GpsPointWithAccuracy(
         time: GpsTime.fromUtc(2021,
             month: 3, day: 26, hour: 20, minute: 14, second: 51),
         latitude: 37.1395513,
@@ -180,7 +181,7 @@ void testPointParser() {
 /// Runs a conversion test of the specified [jsonByteChunks] and checks if they
 /// are parsed to the [expectedPoints].
 void testChunkedJsonToGps(String testName, List<List<int>> jsonByteChunks,
-    List<GpsPoint> expectedPoints) {
+    List<GpsPointWithAccuracy> expectedPoints) {
   test(testName, () {
     final chunkedIntStream = Stream.fromIterable(jsonByteChunks);
     final points = chunkedIntStream.transform(GoogleJsonHistoryDecoder());
@@ -195,7 +196,8 @@ void testChunkedJsonToGps(String testName, List<List<int>> jsonByteChunks,
 /// with what size the chunks should be increased (e.g. 100 characters with
 /// [chunkingPairSizeInc]==2 would test chunk pairs of lengths (0, 100),
 /// (2, 98), (4, 96), etc.).
-void testJsonToGps(String testName, String json, List<GpsPoint> expectedPoints,
+void testJsonToGps(
+    String testName, String json, List<GpsPointWithAccuracy> expectedPoints,
     [int? chunkingPairSizeInc]) {
   final stringAsIntList = json.codeUnits;
 
@@ -247,7 +249,7 @@ void main() {
     "longitudeE7" : 6''',
       [
         onePointGpsPoint,
-        GpsPoint(
+        GpsPointWithAccuracy(
             time: GpsTime.fromUtc(1970, month: 1, day: 2),
             latitude: 5.0E-7,
             longitude: 6.0E-7)
@@ -255,10 +257,11 @@ void main() {
       1);
 
   // Test that fails parsing without a specific bit of logic in the parser.
-  testJsonToGps(
-      'Test parsing when last character is part of number',
-      '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20',
-      [GpsPoint(time: GpsTime.zero, latitude: 1.3E-6, longitude: 2.0E-6)]);
+  testJsonToGps('Test parsing when last character is part of number',
+      '"timestampMs":0,\n"latitudeE7" :13\n"longitudeE7": 20', [
+    GpsPointWithAccuracy(
+        time: GpsTime.zero, latitude: 1.3E-6, longitude: 2.0E-6)
+  ]);
 
   // The tests below should not take a large amount of time. They are
   // aimed at checking that feeding a large amount of garbage data doesn't

@@ -23,7 +23,7 @@ void main() async {
   final filename = '../../large_files/locationhistory.json';
 
   final stopwatch = Stopwatch();
-  final gpsPoints = GpcCompactGpsPoint();
+  final gpsPoints = GpcCompactGpsPointWithAccuracy();
   gpsPoints.sortingEnforcement = SortingEnforcement.skipWrongItems;
   final file = File(filename);
   var fileStream = file.openRead();
@@ -43,16 +43,12 @@ void main() async {
       var accuracy = lm.containsKey('accuracy') ? lm['accuracy'] as int : null;
       var altitude = lm.containsKey('altitude') ? lm['altitude'] as int : null;
 
-      var p = GpsPoint(
+      var p = GpsPointWithAccuracy(
           time: GpsTime.fromMillisecondsSinceEpochUtc(time),
           latitude: latE7 / 1E7,
           longitude: longE7 / 1E7,
-          altitude: altitude?.toDouble());
-      // If we have accuracy specified, return a GpsMeasurement object that's
-      // capable of storing accuracy information.
-      if (accuracy != null) {
-        p = GpsMeasurement.fromPoint(p, accuracy: accuracy.toDouble());
-      }
+          altitude: altitude?.toDouble(),
+          accuracy: accuracy?.toDouble());
       gpsPoints.add(p);
     }
 
