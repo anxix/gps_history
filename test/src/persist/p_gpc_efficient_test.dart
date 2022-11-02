@@ -54,7 +54,7 @@ Future<void>
 
     test('many items', () async {
       final collection = collectionConstructor();
-      for (var i = 0; i < 1000000; i++) {
+      for (var i = 0; i < 10000; i++) {
         collection.add(itemConstructor(i));
       }
 
@@ -74,7 +74,29 @@ void main() async {
           longitude: (i + 1) / 2000.0,
           altitude: (i + 1) / 100));
 
-  // TODO: add tests for Stay and WithAccuracy
+  await testPersister(
+      'GpcCompactGpsPointWithAccuracy',
+      () => PGpcCompactGpsPointWithAccuracy(),
+      () => GpcCompactGpsPointWithAccuracy(),
+      (i) => GpsPointWithAccuracy(
+          time: GpsTime.zero.add(hours: i),
+          latitude: (i + 1) / 1000.0,
+          longitude: (i + 1) / 2000.0,
+          altitude: (i + 1) / 100,
+          accuracy: (i + 1) / 200));
+
+  await testPersister(
+    'GpcCompactGpsStay',
+    () => PGpcCompactGpsStay(),
+    () => GpcCompactGpsStay(),
+    (i) => GpsStay(
+        time: GpsTime.zero.add(hours: i),
+        latitude: (i + 1) / 1000.0,
+        longitude: (i + 1) / 2000.0,
+        altitude: (i + 1) / 100,
+        accuracy: (i + 1) / 200,
+        endTime: GpsTime.zero.add(hours: i, minutes: 1)),
+  );
 
   await testPersister(
       'GpcCompactGpsMeasurement',
