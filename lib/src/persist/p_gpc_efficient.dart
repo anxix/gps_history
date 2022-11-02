@@ -85,11 +85,38 @@ class PGpcCompactGpsPoint extends PGpcEfficient<GpcCompactGpsPoint> {
 
   @override
   SignatureAndVersion get signatureAndVersion {
-    return SignatureAndVersion(signatureFromString('CGpsPoints'), 1);
+    return SignatureAndVersion(signatureFromString('CGpsPoint'), 1);
   }
 
   @override
   Type get supportedType => GpcCompactGpsPoint;
+}
+
+/// Persister for [GpcCompactGpsPointWithAccuracy].
+class PGpcCompactGpsPointWithAccuracy
+    extends PGpcEfficient<GpcCompactGpsPointWithAccuracy> {
+  PGpcCompactGpsPointWithAccuracy() : super();
+
+  @override
+  SignatureAndVersion get signatureAndVersion {
+    return SignatureAndVersion(signatureFromString('CGpsPointWithAcc'), 1);
+  }
+
+  @override
+  Type get supportedType => GpcCompactGpsPointWithAccuracy;
+}
+
+/// Persister for [GpcCompactGpsStay].
+class PGpcCompactGpsStay extends PGpcEfficient<GpcCompactGpsStay> {
+  PGpcCompactGpsStay() : super();
+
+  @override
+  SignatureAndVersion get signatureAndVersion {
+    return SignatureAndVersion(signatureFromString('CGpsStay'), 1);
+  }
+
+  @override
+  Type get supportedType => GpcCompactGpsStay;
 }
 
 /// Persister for [GpcCompactGpsMeasurement].

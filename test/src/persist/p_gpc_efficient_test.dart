@@ -74,6 +74,8 @@ void main() async {
           longitude: (i + 1) / 2000.0,
           altitude: (i + 1) / 100));
 
+  // TODO: add tests for Stay and WithAccuracy
+
   await testPersister(
       'GpcCompactGpsMeasurement',
       () => PGpcCompactGpsMeasurement(),
