@@ -72,53 +72,6 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
     }
   }
 
-  /// Determines into how many chunks the file should be split, taking into
-  /// account the [fileSizeBytes], an optionally imposed [maxNrChunks], the
-  /// [nrCpus] and optionally the [freeRamBytes].
-  ///
-  /// All parameters are treated in a very tolerant manner, so a result will
-  /// come out even in case of invalid parameters.
-  static int getNrChunks(
-      {int fileSizeBytes = 0,
-      int? maxNrChunks,
-      int nrCpus = 1,
-      int? freeRamBytes}) {
-    // Parsing is very quick, so there's no use in chunking files that are
-    // relatively small and can be parsed in a fraction of a second.
-    if (fileSizeBytes < 1000000) {
-      return 1;
-    }
-
-    // Determine if we're possibly going to have a memory problem in case of
-    // multithreaded processing.determineNrChunks
-    if (freeRamBytes != null) {
-      // Order of magnitude derived from a large sample file is 250 bytes of
-      // JSON per point, but this can vary wildly.
-      final estimatedNrPoints = fileSizeBytes ~/ 250;
-
-      // 20 bytes per point in [GpcCompactGpsMeasurement].
-      final estimatedGpcSize = estimatedNrPoints * 24;
-
-      // Multithreading might double the amount of required memory as the data
-      // will be stored in chunks in the different threads, and then added
-      // together into the final result.
-      final estimatedRequiredFreeSpace = estimatedGpcSize * 2;
-
-      // Give it some margin (factor 2) and if there's not enough free memory,
-      // go to just one chunk.
-      if (estimatedRequiredFreeSpace * 2 < freeRamBytes) {
-        return 1;
-      }
-    }
-
-    // Trim nrCpus and maxNrChunks to reasonable boundaries: must have at least
-    // one chunk and at most one chunk per cpu.
-    nrCpus = max(1, nrCpus);
-    maxNrChunks = max(maxNrChunks ?? nrCpus, 1);
-    // Prevent ridiculous results by capping at 32 chunks.
-    return min(min(nrCpus, maxNrChunks), 32);
-  }
-
   /// Determines how to read the [file] in independent chunks and returns
   /// those chunks as a result. If specified [maxNrChunks] will be the maximum
   /// number of chunks created, otherwise the maximum will depend on the
@@ -132,7 +85,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
     // numberOfProcessors will include hyperthreading or power-efficient cores.
     // Either way, prefer not to hog all resources, so leave 2 cores unused.
     final nrCpus = max(1, Platform.numberOfProcessors - 2);
-    final nrChunks = getNrChunks(
+    final nrChunks = GoogleJsonFileParser.getNrChunks(
         maxNrChunks: maxNrChunks, fileSizeBytes: fileSize, nrCpus: nrCpus);
 
     // In case of single chunk, don't do any further processing.
