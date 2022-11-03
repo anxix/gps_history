@@ -21,7 +21,7 @@ frequency >= 1 second. Features:
     almost no memory on top of the base memory use of the application and 
     outputs points about 2.5x-3.5x faster. Parse Google location history on
     mobile devices without any worries about running out of RAM.
-  * Support for multithreaded parsing of Google location history JSON on 
+  * Support for multithreaded parsing of Google location history JSON files on 
     platforms that support the io library, giving about 2.7x performance boost
     for a quad core compared to single core parsing.
   * Modular and extensible architecture: add your own points definitions, 
@@ -102,5 +102,5 @@ void main() async {
 }
 ```
 
-# Automatic master branch test state
+## Automatic master branch test state
 [![Dart](https://github.com/anxix/gps_history/actions/workflows/dart.yml/badge.svg)](https://github.com/anxix/gps_history/actions/workflows/dart.yml)
