@@ -82,25 +82,12 @@ void main() async {
   final minSecondsBetweenDatapoints = 1.0;
   final accuracyThreshold = null;
 
-  final file = File(filename);
   final stopwatch = Stopwatch();
 
   const maxNrThreads = 32;
 
   wait('Loading file to points.');
 
-  stopwatch.start();
-
-  final chunks =
-      await GoogleJsonFileParserMultithreaded.getChunks(file, maxNrThreads);
-
-  stopwatch.stop();
-
-  final dtChunk = stopwatch.elapsedMilliseconds;
-  print('Chunked to ${chunks.length} in $dtChunk ms');
-  print(chunks);
-
-  stopwatch.reset();
   stopwatch.start();
   final parsingOptions = ParsingOptions(filename,
       maxNrThreads: maxNrThreads,
