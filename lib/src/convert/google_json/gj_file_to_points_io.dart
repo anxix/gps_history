@@ -57,17 +57,18 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   Future<GpcCompactGpsPointWithAccuracy> parse() async {
     final file = File(options.fileName);
 
-    final chunks = await getChunks(file, options.maxNrThreads);
+    final chunks = await _getChunks(file, options.maxNrThreads,
+        forceOverrideNrChunksForTests: options.forceOverrideNrChunksForTests);
 
     // Parse the chunks.
     if (chunks.length == 1) {
       // Only one chunk required -> don't bother with setting up an isolate,
       // which will require additional memory.
-      return parseStream(file.openRead(), options.minSecondsBetweenDatapoints,
+      return _parseStream(file.openRead(), options.minSecondsBetweenDatapoints,
           options.accuracyThreshold);
     } else {
       // Use isolates to speed up simultaneous processing of multiple chunks.
-      return parseFileInChunks(file, chunks,
+      return _parseFileInChunks(file, chunks,
           options.minSecondsBetweenDatapoints, options.accuracyThreshold);
     }
   }
@@ -77,7 +78,11 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   /// number of chunks created, otherwise the maximum will depend on the
   /// number of processors on the system (uses [getNrChunks] for the
   /// actual number of chunks).
-  static Future<List<FileChunk>> getChunks(File file, int? maxNrChunks) async {
+  ///
+  /// The [forceOverrideNrChunksForTests] parameter should not be used, it's
+  /// only necessary for tests.
+  static Future<List<FileChunk>> _getChunks(File file, int? maxNrChunks,
+      {int? forceOverrideNrChunksForTests}) async {
     final chunks = <FileChunk>[];
 
     final fileSize = file.lengthSync();
@@ -85,8 +90,9 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
     // numberOfProcessors will include hyperthreading or power-efficient cores.
     // Either way, prefer not to hog all resources, so leave 2 cores unused.
     final nrCpus = max(1, Platform.numberOfProcessors - 2);
-    final nrChunks = GoogleJsonFileParser.getNrChunks(
-        maxNrChunks: maxNrChunks, fileSizeBytes: fileSize, nrCpus: nrCpus);
+    final nrChunks = forceOverrideNrChunksForTests ??
+        GoogleJsonFileParser.getNrChunks(
+            maxNrChunks: maxNrChunks, fileSizeBytes: fileSize, nrCpus: nrCpus);
 
     // In case of single chunk, don't do any further processing.
     if (nrChunks == 1) {
@@ -171,7 +177,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   /// Parses the [file] split according to the specified [chunks] in separate
   /// isolates and returns the identified points. For the meaning of the rest
   /// of the parameters, see [GoogleJsonHistoryDecoder].
-  Future<GpcCompactGpsPointWithAccuracy> parseFileInChunks(
+  Future<GpcCompactGpsPointWithAccuracy> _parseFileInChunks(
       File file,
       List<FileChunk> chunks,
       double minSecondsBetweenDatapoints,
@@ -185,7 +191,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
       recPorts.add(rp);
       Isolate.spawn((SendPort sp) async {
         final fileStream = file.openRead(chunk.start, chunk.end);
-        final chunkResult = await parseStream(
+        final chunkResult = await _parseStream(
             fileStream, minSecondsBetweenDatapoints, accuracyThreshold);
         Isolate.exit(sp, chunkResult);
       }, rp.sendPort);
@@ -203,7 +209,7 @@ class GoogleJsonFileParserMultithreaded implements GoogleJsonFileParser {
   /// Parses the contents of [jsonStream] and returns the identified points
   /// as result. For the meaning of the rest of the parameters, see
   /// [GoogleJsonHistoryDecoder].
-  Future<GpcCompactGpsPointWithAccuracy> parseStream(
+  Future<GpcCompactGpsPointWithAccuracy> _parseStream(
       Stream<List<int>> jsonStream,
       double minSecondsBetweenDatapoints,
       double? accuracyThreshold) async {

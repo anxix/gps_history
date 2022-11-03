@@ -61,5 +61,18 @@ main() {
     final parser = GoogleJsonFileParser(options);
     final result = await parser.parse();
     expect(result.length, 16, reason: 'Incorrect single threaded parsing');
+
+    for (var nrThreads = 2; nrThreads < 32; nrThreads++) {
+      options.forceOverrideNrChunksForTests = nrThreads;
+
+      final threadedResult = await parser.parse();
+      expect(threadedResult.length, result.length,
+          reason: 'Incorrect length for $nrThreads threads.');
+
+      for (var itemNr = 0; itemNr < result.length; itemNr++) {
+        expect(threadedResult[itemNr], result[itemNr],
+            reason: 'Incorrect item at index $itemNr for $nrThreads threads.');
+      }
+    }
   });
 }

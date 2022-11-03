@@ -20,19 +20,23 @@ import 'gj_file_to_points_no_io.dart'
 /// Container of parsing options to be passed to [CoogleJsonFileParser].
 class ParsingOptions {
   /// Name of the file to be parsed.
-  String fileName;
+  final String fileName;
 
   /// The maximum number of threads to be used in parsing. If null, will be
   /// automatically determined based on number of available CPU cores.
-  int? maxNrThreads;
+  final int? maxNrThreads;
 
   /// Passed directly to constructor of [GoogleJsonHistoryDecoder], see its
   /// documentation for details.
-  double minSecondsBetweenDatapoints;
+  final double minSecondsBetweenDatapoints;
 
   /// Passed directly to constructor of [GoogleJsonHistoryDecoder], see its
   /// documentation for details.
-  double? accuracyThreshold;
+  final double? accuracyThreshold;
+
+  /// Value to be used only for purposes of tests, to force a specific number
+  /// of chunks to be used regardless of number of available system resources.s
+  int? forceOverrideNrChunksForTests;
 
   /// Constructor.
   ParsingOptions(this.fileName,
